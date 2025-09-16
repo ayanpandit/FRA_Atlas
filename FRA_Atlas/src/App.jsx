@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import CardNav from "./components/navbar";
+import Home from "./pages/home";
+import logo from "./assets/react.svg";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const items = [
+    {
+      label: "option1",
+      bgColor: "#FACC15",
+      textColor: "#fff",
+      links: [
+        { label: "suboption1", ariaLabel: "suboption1" },
+        { label: "suboption2", ariaLabel: "suboption2" }
+      ]
+    },
+    {
+      label: "option2", 
+      bgColor: "#000000",
+      textColor: "#fff",
+      links: [
+        { label: "suboption1", ariaLabel: "suboption1" },
+        { label: "suboption2", ariaLabel: "suboption2" }
+      ]
+    },
+    {
+      label: "option3",
+      bgColor: "#FACC15", 
+      textColor: "#fff",
+      links: [
+        { label: "suboption1", ariaLabel: "suboption1" },
+        { label: "suboption2", ariaLabel: "suboption2" },
+        { label: "suboption3", ariaLabel: "suboption3" }
+      ]
+    }
+  ];
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <CardNav
+        logo={logo}
+        logoAlt="Company Logo"
+        items={items}
+        baseColor="#ffffff" //  navbar ka background color
+        menuColor="#000000" // two lines color
+        buttonBgColor="#FACC15"//get started button color
+        buttonTextColor="#000000"// get started button text color
+        ease="power3.out"
+      />
+      <Home />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
