@@ -1,7 +1,12 @@
 import CardNav from "./components/navbar";
 import Hero from "./pages/hero";
+import About from "./pages/about";
 import Features from "./pages/feature";
 import logo from "./assets/react.svg";
+import Temp from "./pages/temp";
+import Future from "./pages/future";
+import Yojana from "./pages/yojana";
+import Footer from "./pages/footer";
 
 function App() {
   const items = [
@@ -48,7 +53,13 @@ function App() {
         ease="power3.out"
       />
       <Hero />
-      <Features /> 
+      <About />
+      <Future />
+      <Yojana />
+      <Features />
+      <Temp />
+      <Footer />
+      
     </>
   );
 }

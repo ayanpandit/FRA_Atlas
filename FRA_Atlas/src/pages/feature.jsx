@@ -84,22 +84,13 @@ const Features = () => {
   }, []);
 
   return (
+    
     <section 
-      className="relative min-h-screen py-20 overflow-hidden bg-gray-900 flex items-center justify-center"
+      className="relative min-h-screen py-20 overflow-hidden flex items-center justify-center"
     >
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+     <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
-          {/* Small tag above title - matching Hero */}
-          <p className="mb-2 text-xs font-semibold tracking-widest uppercase text-center" style={{ marginTop: '2em' }}>
-            <span 
-              className="inline-block px-4 py-1 rounded-full text-black shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
-              style={{ backgroundColor: '#FACC15' }}
-            >
-              PLATFORM FEATURES
-            </span>
-          </p>
           
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2" style={{ marginTop: '1em' }}>
             Our <span style={{ color: '#FACC15' }}>Reach</span> Across India
