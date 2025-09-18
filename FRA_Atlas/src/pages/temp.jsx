@@ -6,7 +6,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* States Coverage & Data Availability Section */}
-      <section className="py-16 sm:py-20 bg-gray-50">
+      <section className="py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* States Coverage */}
