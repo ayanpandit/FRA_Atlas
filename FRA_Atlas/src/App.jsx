@@ -1,5 +1,6 @@
 import CardNav from "./components/navbar";
-import Home from "./pages/home";
+import Hero from "./pages/hero";
+import Features from "./pages/feature";
 import logo from "./assets/react.svg";
 
 function App() {
@@ -46,7 +47,8 @@ function App() {
         buttonTextColor="#000000"// get started button text color
         ease="power3.out"
       />
-      <Home />
+      <Hero />
+      <Features /> 
     </>
   );
 }
