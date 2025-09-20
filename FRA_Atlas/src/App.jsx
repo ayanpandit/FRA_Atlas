@@ -1,12 +1,12 @@
 import CardNav from "./components/navbar";
 import Hero from "./pages/hero";
 import About from "./pages/about";
-import Features from "./pages/feature";
 import logo from "./assets/react.svg";
-import Temp from "./pages/temp";
-import Future from "./pages/future";
+import Data_Availability from "./pages/data availability";
+import Timelines from "./pages/timelines"; 
 import Yojana from "./pages/yojana";
 import Footer from "./pages/footer";
+import Level from "./pages/level";
 
 function App() {
   const items = [
@@ -53,12 +53,24 @@ function App() {
         ease="power3.out"
       />
       <Hero />
-      <About />
-      <Future />
-      <Yojana />
-      <Features />
-      <Temp />
-      <Footer />
+  <div style={{ backgroundColor: '#FFECC0' }}>
+        <About />
+      </div>
+  <div style={{ backgroundColor: '#FFECC0' }}>
+        <Timelines />
+      </div>
+      <div style={{ backgroundColor: '#FFECC0' }}>
+        <Level />
+      </div>
+      <div style={{ backgroundColor: '#FFECC0' }}>
+        <Yojana />
+      </div>
+      <div style={{ backgroundColor: '#FFECC0' }}>
+        <Data_Availability />
+      </div>
+      <div style={{ backgroundColor: '#FFECC0' }}>
+        <Footer />
+      </div>
       
     </>
   );

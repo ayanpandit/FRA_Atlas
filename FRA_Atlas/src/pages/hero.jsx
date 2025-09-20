@@ -1,9 +1,6 @@
-// src/components/HeroSection.jsx
+
 import React, { useState, useEffect } from "react";
 import backImg from "../assets/back.jpg";
-
-
-// New structure for content
 const tagText = "AI-Powered";
 const h1Text = "FRA Atlas for Smarter Tribal Land Governance";
 const subText = "Digitizing forest rights, mapping assets with AI & Remote Sensing, and enabling data-driven decisions through WebGIS & DSS.";
@@ -14,20 +11,6 @@ const FADE_IN_DELAY = 400; // ms after typing ends
 const Hero = () => {
   const [typed, setTyped] = useState("");
   const [showSub, setShowSub] = useState(false);
-
-  // Define image URLs for the 3D ring
-  const images = [
-    "/src/assets/1.jpg",
-    "/src/assets/2.jpg",
-    "/src/assets/3.jpg",
-    "/src/assets/4.jpg",
-    "/src/assets/5.jpg",
-    "/src/assets/6.jpg",
-    "/src/assets/7.jpg",
-    "/src/assets/8.jpg",
-    "/src/assets/9.jpg",
-  ];
-
   useEffect(() => {
     let i = 0;
     const type = () => {
@@ -105,7 +88,7 @@ const Hero = () => {
       {/* SVG Wave Pattern at Bottom for Smooth Transition */}
       <div className="absolute left-0 right-0 bottom-0 w-full overflow-hidden pointer-events-none" style={{ lineHeight: 0 }}>
         <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-[120px]">
-          <path fill="#fff" fillOpacity="1" d="M0,80 C480,160 960,0 1440,80 L1440,120 L0,120 Z" />
+          <path fill="#F0F1C5" fillOpacity="1" d="M0,80 C480,160 960,0 1440,80 L1440,120 L0,120 Z" />
         </svg>
       </div>
     </section>
