@@ -1,3 +1,4 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import CardNav from "./components/navbar";
 import Hero from "./pages/hero";
 import About from "./pages/about";
@@ -7,6 +8,7 @@ import Timelines from "./pages/timelines";
 import Yojana from "./pages/yojana";
 import Footer from "./pages/footer";
 import Level from "./pages/level";
+import Workflow from "./pages/workflow";
 
 function App() {
   const items = [
@@ -41,38 +43,44 @@ function App() {
   ];
 
   return (
-    <>
-      <CardNav
-        logo={logo}
-        logoAlt="Company Logo"
-        items={items}
-        baseColor="#ffffff" //  navbar ka background color
-        menuColor="#000000" // two lines color
-        buttonBgColor="#FACC15"//get started button color
-        buttonTextColor="#000000"// get started button text color
-        ease="power3.out"
-      />
-      <Hero />
-  <div style={{ backgroundColor: '#FFECC0' }}>
-        <About />
-      </div>
-  <div style={{ backgroundColor: '#FFECC0' }}>
-        <Timelines />
-      </div>
-      <div style={{ backgroundColor: '#FFECC0' }}>
-        <Level />
-      </div>
-      <div style={{ backgroundColor: '#FFECC0' }}>
-        <Yojana />
-      </div>
-      <div style={{ backgroundColor: '#FFECC0' }}>
-        <Data_Availability />
-      </div>
-      <div style={{ backgroundColor: '#FFECC0' }}>
-        <Footer />
-      </div>
-      
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          <>
+            <CardNav
+              logo={logo}
+              logoAlt="Company Logo"
+              items={items}
+              baseColor="#ffffff"
+              menuColor="#000000"
+              buttonBgColor="#FACC15"
+              buttonTextColor="#000000"
+              ease="power3.out"
+            />
+            <Hero />
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <About />
+            </div>
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <Timelines />
+            </div>
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <Level />
+            </div>
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <Yojana />
+            </div>
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <Data_Availability />
+            </div>
+            <div style={{ backgroundColor: '#FFECC0' }}>
+              <Footer />
+            </div>
+          </>
+        } />
+        <Route path="/workflow" element={<Workflow />} />
+      </Routes>
+    </Router>
   );
 }
 
