@@ -1,0 +1,163 @@
+import React, { useState, useEffect, useRef } from 'react';
+import Sidebar from '../components/sidebar';
+import Dashboard from '../pages/dashboard';
+import PattaManagement from '../pages/patta_management';
+import BeneficiarySchemes from '../pages/beneficiary_schemes';
+import Map_Land_Analysis from '../pages/map_land_analysis';
+import UserManagement from '../pages/user_management'; 
+
+const Workflow = () => {
+  const [activeComponent, setActiveComponent] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [transition, setTransition] = useState(false);
+  
+  const sidebarRef = useRef(null);
+  const resizeRef = useRef(null);
+
+  // Handle hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        setActiveComponent(hash);
+      }
+    };
+
+    handleHashChange(); // Handle initial hash
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [setActiveComponent]);
+
+  // Screen size detection and responsive handling
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      
+      // Responsive sidebar width adjustments
+      if (width < 768) {
+        setSidebarWidth(0);
+        setSidebarCollapsed(true);
+      } else if (width < 1024) {
+        setSidebarWidth(64);
+        setSidebarCollapsed(true);
+      } else if (width < 1280) {
+        setSidebarWidth(200);
+        setSidebarCollapsed(false);
+      } else {
+        setSidebarWidth(280);
+        setSidebarCollapsed(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Render main content
+  const renderMainContent = () => {
+    switch (activeComponent) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'patta_management':
+        return <PattaManagement />;
+      case 'beneficiary_schemes':
+        return <BeneficiarySchemes />;
+      case 'map_land_analysis':
+        return <Map_Land_Analysis />;
+        case 'user_management':
+        return <UserManagement />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
+  const effectiveSidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : sidebarWidth);
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+      {/* Sidebar Container */}
+      <div 
+        ref={sidebarRef}
+        className={`
+          relative bg-white shadow-2xl border-r border-gray-200
+          ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'flex-shrink-0'}
+          ${isMobile && sidebarCollapsed ? 'transform -translate-x-full' : ''}
+        `}
+        style={{ 
+          width: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
+          minWidth: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
+          maxWidth: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
+          transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
+        }}
+      >
+        <Sidebar 
+          activeComponent={activeComponent} 
+          setActiveComponent={setActiveComponent}
+          isCollapsed={sidebarCollapsed}
+          setIsCollapsed={setSidebarCollapsed}
+          sidebarWidth={sidebarWidth}
+          setSidebarWidth={setSidebarWidth}
+        />
+
+        {/* Resize Handle */}
+        {!isMobile && !sidebarCollapsed && (
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizing(true);
+              
+              const startX = e.clientX;
+              const startWidth = sidebarWidth;
+              
+              const handleMouseMove = (moveEvent) => {
+                const newWidth = Math.max(200, Math.min(600, startWidth + (moveEvent.clientX - startX)));
+                setSidebarWidth(newWidth);
+              };
+              
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+                setIsResizing(false);
+              };
+              
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          />
+        )}
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobile && !sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Main Content Area */}
+      <div 
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
+        style={{ 
+          width: `calc(100% - ${effectiveSidebarWidth}px)`,
+          transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
+        }}
+      >
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 lg:p-8">
+            {renderMainContent()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Workflow;
