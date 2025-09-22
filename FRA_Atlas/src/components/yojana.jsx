@@ -105,7 +105,7 @@ const Yojana = () => {
     >
       <div className="max-w-7xl mx-auto">
         
-        <style jsx>{`
+        <style>{`
           @keyframes dataFlow {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }

@@ -8,39 +8,9 @@ import Timelines from "./pages/timelines";
 import Yojana from "./pages/yojana";
 import Footer from "./pages/footer";
 import Level from "./pages/level";
+import LandingPage from "./groups/Landing_page";
 
 function App() {
-  const items = [
-    {
-      label: "option1",
-      bgColor: "#FACC15",
-      textColor: "#fff",
-      links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2" }
-      ]
-    },
-    {
-      label: "option2", 
-      bgColor: "#000000",
-      textColor: "#fff",
-      links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2" }
-      ]
-    },
-    {
-      label: "option3",
-      bgColor: "#FACC15", 
-      textColor: "#fff",
-      links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2" },
-        { label: "suboption3", ariaLabel: "suboption3" }
-      ]
-    }
-  ];
-
   return (
     <>
       <CardNav
@@ -75,6 +45,8 @@ function App() {
       <div style={{ backgroundColor: '#FFECC0' }}>
         <Footer />
       </div>
+
+      {/* <LandingPage /> */}
       
     </>
   );

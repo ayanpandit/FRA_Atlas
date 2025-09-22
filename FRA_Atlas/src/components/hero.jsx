@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import backImg from "../assets/back.jpg";
 const tagText = "AI-Powered";
 const h1Text = "FRA Atlas for Smarter Tribal Land Governance";
@@ -9,6 +10,7 @@ const TYPING_SPEED = 70; // ms per character (slower)
 const FADE_IN_DELAY = 400; // ms after typing ends
 
 const Hero = () => {
+  const navigate = useNavigate();
   const [typed, setTyped] = useState("");
   const [showSub, setShowSub] = useState(false);
   useEffect(() => {
@@ -77,7 +79,11 @@ const Hero = () => {
           {subText}
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <button className="px-6 py-3 text-black rounded-lg shadow-lg transition" style={{ backgroundColor: '#FACC15' }}>
+          <button 
+            onClick={() => navigate('/workflow')}
+            className="px-6 py-3 text-black rounded-lg shadow-lg transition" 
+            style={{ backgroundColor: '#FACC15' }}
+          >
             Dashboard
           </button>
           <button className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition">
