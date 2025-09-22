@@ -1,6 +1,7 @@
 import CardNav from "./components/navbar";
 import Hero from "./pages/hero";
 import About from "./pages/about";
+import States from "./pages/states";
 import logo from "./assets/react.svg";
 import Data_Availability from "./pages/data availability";
 import Timelines from "./pages/timelines"; 
@@ -55,6 +56,9 @@ function App() {
       <Hero />
   <div style={{ backgroundColor: '#FFECC0' }}>
         <About />
+      </div>
+      <div style={{ backgroundColor: '#FFECC0' }}>
+        <States />
       </div>
   <div style={{ backgroundColor: '#FFECC0' }}>
         <Timelines />
