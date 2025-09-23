@@ -84,7 +84,7 @@ const Hero = () => {
             className="px-6 py-3 text-black rounded-lg shadow-lg transition" 
             style={{ backgroundColor: '#FACC15' }}
           >
-            Dashboard
+            FRA Portal
           </button>
           <button className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition">
             FRA Documentation
