@@ -42,7 +42,6 @@ function LandingPage() {
   ];
 
   return (
-    <Router>
       <Routes>
         <Route path="/patta_management" element={<Workflow />} />
         <Route path="/workflow" element={<Workflow />} />
@@ -81,7 +80,6 @@ function LandingPage() {
         } />
         <Route path="/workflow" element={<Workflow />} />
       </Routes>
-    </Router>
   );
 }
 

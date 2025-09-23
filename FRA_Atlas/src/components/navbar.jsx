@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-// use your own icon import if react-icons is not available
 import { GoArrowUpRight } from 'react-icons/go';
+import { useAuth } from '../context/AuthContext';
+import LoginSignup from './login&signup';
 import logo from '../assets/logo.png';
 
 const CardNav = ({
@@ -14,11 +15,21 @@ const CardNav = ({
   buttonBgColor,
   buttonTextColor
 }) => {
+  const { user, logout } = useAuth();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const navRef = useRef(null);
   const cardsRef = useRef([]);
   const tlRef = useRef(null);
+
+  const handleLoginClick = () => {
+    if (user) {
+      logout();
+    } else {
+      setIsLoginOpen(true);
+    }
+  };
 
   const calculateHeight = () => {
     const navEl = navRef.current;
@@ -133,15 +144,16 @@ const CardNav = ({
   };
 
   return (
-    <div
-      className={`card-nav-container absolute left-1/2 -translate-x-1/2 w-[90%] max-w-[800px] z-[99] top-[1.2em] md:top-[2em] ${className}`}
-    >
-      <nav
-        ref={navRef}
-        className={`card-nav ${isExpanded ? 'open' : ''} block h-[60px] p-0 rounded-xl shadow-md relative overflow-hidden will-change-[height]`}
-        style={{ backgroundColor: baseColor }}
+    <div>
+      <div
+        className={`card-nav-container absolute left-1/2 -translate-x-1/2 w-[90%] max-w-[800px] z-[90] top-[1.2em] md:top-[2em] ${className}`}
       >
-        <div className="card-nav-top absolute inset-x-0 top-0 h-[60px] flex items-center justify-between p-2 pl-[1.1rem] z-[2]">
+        <nav
+          ref={navRef}
+          className={`card-nav ${isExpanded ? 'open' : ''} block h-[60px] p-0 rounded-xl shadow-md relative overflow-hidden will-change-[height]`}
+          style={{ backgroundColor: baseColor }}
+        >
+          <div className="card-nav-top absolute inset-x-0 top-0 h-[60px] flex items-center justify-between p-2 pl-[1.1rem] z-[2]">
           <div
             className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''} group h-full flex flex-col items-center justify-center cursor-pointer gap-[6px] order-2 md:order-none`}
             onClick={toggleMenu}
@@ -166,13 +178,28 @@ const CardNav = ({
             <img src={logo} alt={logoAlt} className="logo h-[48px] w-auto" />
           </div>
 
-          <button
-            type="button"
-            className="card-nav-cta-button hidden md:inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 h-full font-medium cursor-pointer transition-colors duration-300"
-            style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-          >
-            Get Started
-          </button>
+          {user ? (
+            <div className="hidden md:flex items-center gap-4">
+              <span className="text-gray-800">Hi, {user.name}</span>
+              <button
+                onClick={handleLoginClick}
+                type="button"
+                className="card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 h-full font-medium cursor-pointer transition-colors duration-300"
+                style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleLoginClick}
+              type="button"
+              className="card-nav-cta-button hidden md:inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 h-full font-medium cursor-pointer transition-colors duration-300"
+              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+            >
+              Get Started
+            </button>
+          )}
         </div>
 
         <div
@@ -206,8 +233,40 @@ const CardNav = ({
               </div>
             </div>
           ))}
+
+          {/* Mobile login/user section */}
+          <div className="md:hidden mt-4">
+            {user ? (
+              <div className="flex flex-col gap-2 p-[12px_16px] bg-white rounded-[calc(0.75rem-0.2rem)]">
+                <span className="text-gray-800 font-medium">Hi, {user.name}</span>
+                <button
+                  onClick={handleLoginClick}
+                  type="button"
+                  className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
+                  style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="p-[12px_16px]">
+                <button
+                  onClick={handleLoginClick}
+                  type="button"
+                  className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
+                  style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
+    </div>
+
+    {/* Login popup - Moved outside navbar container for consistent positioning */}
+    <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </div>
   );
 };

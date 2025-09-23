@@ -1,151 +1,141 @@
-# ----------------------------------------
-# FRA NDVI/NDWI Analyzer - PlanetScope Updated
-# ----------------------------------------
+# FRA NDVI/NDWI Analyzer - PlanetScope PSScene Updated Version
 import requests
 import json
 import os
+import time
 import rasterio
 import numpy as np
 import matplotlib.pyplot as plt
 
 # -------------------------------
-# Step 0: Configuration
+# Step 1: Settings
 # -------------------------------
 API_KEY = "PLAKafefd84bd24e4eec9a414a4a543062e8"  # Planet API Key
-headers = {"Authorization": f"api-key {API_KEY}"}
+OUTPUT_FOLDER = "FRA_Exports"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Ballia, UP coordinates (rectangle: min_lon, min_lat, max_lon, max_lat)
-coords = [83.5810, 25.7480, 83.6310, 25.7980]
+# Ballia, UP rectangle coordinates (lon/lat)
+coords = [83.5311, 25.5511, 83.5825, 25.5877]
 
-output_folder = "Planet_Exports"
-os.makedirs(output_folder, exist_ok=True)
+# Date range for PlanetScope imagery
+DATE_START = "2024-01-01T00:00:00Z"
+DATE_END = "2025-09-01T23:59:59Z"
 
 # -------------------------------
-# Step 1: Define search payload
+# Step 2: Create AOI polygon
 # -------------------------------
-search_payload = {
-    "item_types": ["PSScene"],
-    "filter": {
-        "type": "AndFilter",
-        "config": [
-            {
-                "type": "GeometryFilter",
-                "field_name": "geometry",
-                "config": {
-                    "type": "Polygon",
-                    "coordinates": [[
-                        [coords[0], coords[1]],
-                        [coords[0], coords[3]],
-                        [coords[2], coords[3]],
-                        [coords[2], coords[1]],
-                        [coords[0], coords[1]]
-                    ]]
-                }
-            },
-            {
-                "type": "DateRangeFilter",
-                "field_name": "acquired",
-                "config": {
-                    "gte": "2025-01-01T00:00:00.000Z",
-                    "lte": "2025-09-01T23:59:59.999Z"
-                }
-            }
-        ]
+def create_geojson_polygon(coords):
+    min_lon, min_lat, max_lon, max_lat = coords
+    return {
+        "type": "Polygon",
+        "coordinates": [[
+            [min_lon, min_lat],
+            [min_lon, max_lat],
+            [max_lon, max_lat],
+            [max_lon, min_lat],
+            [min_lon, min_lat]
+        ]]
     }
-}
+
+AOI = create_geojson_polygon(coords)
 
 # -------------------------------
-# Step 2: Search Planet images
+# Step 3: Planet API search (PSScene)
 # -------------------------------
 def search_planet_images():
-    search_url = "https://api.planet.com/data/v1/quick-search"
-    response = requests.post(search_url, headers=headers, json=search_payload)
+    url = "https://api.planet.com/data/v1/quick-search"
+    headers = {"Authorization": f"api-key {API_KEY}"}
+    
+    payload = {
+        "item_types": ["PSScene"],
+        "filter": {
+            "type": "AndFilter",
+            "config": [
+                {"type": "GeometryFilter", "field_name": "geometry", "config": AOI},
+                {"type": "DateRangeFilter", "field_name": "acquired",
+                 "config": {"gte": DATE_START, "lte": DATE_END}}
+            ]
+        }
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
     if response.status_code != 200:
-        print("❌ Error:", response.text)
+        print("❌ Error:", response.status_code, response.text)
         raise Exception("Planet API search failed. Check your query or API key.")
+    
     data = response.json()
-    features = data.get("features", [])
-    if not features:
-        raise Exception("❌ No PlanetScope images found for this area/date.")
-    print(f"✅ Found {len(features)} PlanetScope images")
-    return features
+    print(f"✅ Found {len(data['features'])} PlanetScope PSScene images")
+    return data['features']
 
 # -------------------------------
-# Step 3: Get first image's analytic URL
+# Step 4: Get first available analytic asset
 # -------------------------------
-def get_analytic_url(feature):
-    item_type = feature['properties']['item_type']
-    item_id = feature['id']
-    asset_url = f"https://api.planet.com/data/v1/item-types/{item_type}/items/{item_id}/assets"
-    asset_resp = requests.get(asset_url, headers=headers)
-    if asset_resp.status_code != 200:
-        raise Exception(f"❌ Could not fetch assets: {asset_resp.text}")
-    assets = asset_resp.json()
-
-    # Prefer 'analytic', fallback to 'analytic_8b'
-    if "analytic" in assets:
-        asset_link = assets["analytic"]["location"]
-    elif "analytic_8b" in assets:
-        asset_link = assets["analytic_8b"]["location"]
-    else:
-        raise Exception("❌ No suitable analytic asset available for this image.")
-    return asset_link
+def get_first_available_analytic(features):
+    headers = {"Authorization": f"api-key {API_KEY}"}
+    for f in features:
+        assets_url = f["_links"]["assets"]
+        resp = requests.get(assets_url, headers=headers).json()
+        if "analytic" in resp:
+            asset = resp["analytic"]
+            if asset["status"] != "active":
+                activate_url = asset["_links"]["activate"]
+                requests.post(activate_url, headers=headers)
+                print("⏳ Activating asset...")
+                time.sleep(5)
+            return asset["_links"]["self"]
+    raise Exception("❌ No PlanetScope PSScene image with analytic asset found.")
 
 # -------------------------------
-# Step 4: Download image
+# Step 5: Download image
 # -------------------------------
-def download_image(url, filename):
-    print(f"⏳ Downloading image to {filename} ...")
+def download_image(url, out_path):
+    headers = {"Authorization": f"api-key {API_KEY}"}
     r = requests.get(url, headers=headers, stream=True)
-    if r.status_code != 200:
-        raise Exception(f"❌ Failed to download image: {r.text}")
-    with open(filename, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=8192):
-            f.write(chunk)
-    print(f"✅ Image saved: {filename}")
+    if r.status_code == 200:
+        with open(out_path, 'wb') as f:
+            for chunk in r.iter_content(1024):
+                f.write(chunk)
+        print(f"✅ Downloaded: {out_path}")
+    else:
+        raise Exception("❌ Download failed", r.status_code, r.text)
 
 # -------------------------------
-# Step 5: Compute NDVI & NDWI
+# Step 6: NDVI & NDWI calculation
 # -------------------------------
-def compute_ndvi_ndwi(tif_file):
-    with rasterio.open(tif_file) as src:
-        b = src.read()
-        # PlanetScope PSScene: Band order usually B1=Blue, B2=Green, B3=Red, B4=NIR
-        blue = b[0].astype(float)
-        green = b[1].astype(float)
-        red = b[2].astype(float)
-        nir = b[3].astype(float)
+def compute_ndvi_ndwi(image_path, output_prefix):
+    with rasterio.open(image_path) as src:
+        img = src.read().astype(float)
+        # PlanetScope PSScene 4-band order: B1=B, B2=G, B3=R, B4=NIR
+        blue, green, red, nir = img
 
-    # NDVI = (NIR - RED) / (NIR + RED)
-    ndvi = np.where((nir+red)==0., 0, (nir-red)/(nir+red))
-    # NDWI = (GREEN - NIR) / (GREEN + NIR)
-    ndwi = np.where((green+nir)==0., 0, (green-nir)/(green+nir))
-    return ndvi, ndwi
+        ndvi = np.where((nir + red) == 0, 0, (nir - red)/(nir + red))
+        ndwi = np.where((green + nir) == 0, 0, (green - nir)/(green + nir))
 
-# -------------------------------
-# Step 6: Save arrays as PNG
-# -------------------------------
-def save_png(array, filename, cmap='viridis'):
-    plt.figure(figsize=(6,6))
-    plt.imshow(array, cmap=cmap)
-    plt.colorbar()
-    plt.axis('off')
-    plt.savefig(filename, bbox_inches='tight')
-    plt.close()
-    print(f"✅ PNG saved: {filename}")
+        meta = src.meta.copy()
+        meta.update(count=1, dtype=rasterio.float32)
+
+        ndvi_path = os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDVI.tif")
+        ndwi_path = os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDWI.tif")
+
+        with rasterio.open(ndvi_path, 'w', **meta) as dst:
+            dst.write(ndvi.astype(rasterio.float32), 1)
+        with rasterio.open(ndwi_path, 'w', **meta) as dst:
+            dst.write(ndwi.astype(rasterio.float32), 1)
+
+        plt.imsave(os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDVI.png"), ndvi, cmap='Greens')
+        plt.imsave(os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDWI.png"), ndwi, cmap='Blues')
+
+        print(f"✅ NDVI & NDWI computed for {output_prefix}")
 
 # -------------------------------
-# Step 7: Main workflow
+# Step 7: Main flow
 # -------------------------------
 features = search_planet_images()
-first_feature = features[0]
+analytic_url = get_first_available_analytic(features)
 
-asset_url = get_analytic_url(first_feature)
-tif_path = os.path.join(output_folder, "Planet_image.tif")
-download_image(asset_url, tif_path)
+image_file = os.path.join(OUTPUT_FOLDER, "Ballia_Planet_analytic.tif")
+download_image(analytic_url, image_file)
 
-ndvi, ndwi = compute_ndvi_ndwi(tif_path)
-save_png(ndvi, os.path.join(output_folder, "NDVI.png"), cmap='Greens')
-save_png(ndwi, os.path.join(output_folder, "NDWI.png"), cmap='Blues')
+compute_ndvi_ndwi(image_file, "Ballia")
 
-print("\n✅ Done! Check the Planet_Exports folder for TIFF and PNG outputs.")
+print("🎉 All done! Check the FRA_Exports folder.")

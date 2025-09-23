@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import LoginSignup from './login&signup';
 import { useNavigate } from "react-router-dom";
 import backImg from "../assets/back.jpg";
 const tagText = "AI-Powered";
@@ -10,6 +12,17 @@ const TYPING_SPEED = 70; // ms per character (slower)
 const FADE_IN_DELAY = 400; // ms after typing ends
 
 const Hero = () => {
+  const { user } = useAuth();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
+  const handlePortalClick = () => {
+    if (!user) {
+      setIsLoginOpen(true);
+    } else {
+      // Navigate to portal if logged in
+      navigate('/dashboard');
+    }
+  };
   const navigate = useNavigate();
   const [typed, setTyped] = useState("");
   const [showSub, setShowSub] = useState(false);
@@ -80,12 +93,13 @@ const Hero = () => {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <button 
-            onClick={() => navigate('/workflow')}
+            onClick={handlePortalClick}
             className="px-6 py-3 text-black rounded-lg shadow-lg transition" 
             style={{ backgroundColor: '#FACC15' }}
           >
             FRA Portal
           </button>
+          <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
           <button className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition">
             FRA Documentation
           </button>
