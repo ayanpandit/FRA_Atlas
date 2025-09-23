@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from "/logo.png";
+import { useAuth } from '../context/AuthContext';
+
 
 const Sidebar_Admin= ({ 
   activeComponent, 
@@ -9,6 +11,7 @@ const Sidebar_Admin= ({
   isCollapsed: externalCollapsed,
   setIsCollapsed: setExternalCollapsed 
 }) => {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -252,19 +255,25 @@ const Sidebar_Admin= ({
         </div>
         
         {/* User info when not collapsed */}
-        {!isCollapsed && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                A
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-gray-900 truncate">Admin User</div>
-                <div className="text-xs text-gray-500 truncate">Administrator</div>
-              </div>
-            </div>
-          </div>
-        )}
+        {!isCollapsed && user && (
+  <div className="mt-3 pt-3 border-t border-gray-200">
+    <div className="flex items-center space-x-2">
+      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full 
+                      flex items-center justify-center text-white text-xs font-bold">
+        {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-gray-900 truncate">
+          {user.name || 'Admin'}
+        </div>
+        <div className="text-xs text-gray-500 truncate">
+          {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Administrator'}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Expand button when collapsed */}
         {isCollapsed && (

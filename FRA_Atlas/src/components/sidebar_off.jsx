@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from "/logo.png";
+import { useAuth } from '../context/AuthContext';
+
 
 const Sidebar_Off = ({ 
   activeComponent, 
@@ -9,6 +11,7 @@ const Sidebar_Off = ({
   isCollapsed: externalCollapsed,
   setIsCollapsed: setExternalCollapsed 
 }) => {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -119,17 +122,7 @@ const Sidebar_Off = ({
       description: 'Map visualization & land analysis tools',
       category: 'operations'
     },
-    {
-      id: 'user_management',
-      name: 'User Management',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-        </svg>
-      ),
-      description: 'Manage user accounts & permissions',
-      category: 'operations'
-    }
+    
   ];
 
   // Fixed render menu item function
@@ -253,19 +246,24 @@ const Sidebar_Off = ({
         </div>
         
         {/* User info when not collapsed */}
-        {!isCollapsed && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                A
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-gray-900 truncate">Admin User</div>
-                <div className="text-xs text-gray-500 truncate">Administrator</div>
-              </div>
-            </div>
-          </div>
-        )}
+        {!isCollapsed && user && (
+  <div className="mt-3 pt-3 border-t border-gray-200">
+    <div className="flex items-center space-x-2">
+      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        {user.name ? user.name.charAt(0).toUpperCase() : 'O'}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-gray-900 truncate">
+          {user.name || 'Officer'}
+        </div>
+        <div className="text-xs text-gray-500 truncate">
+          {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Officer'}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Expand button when collapsed */}
         {isCollapsed && (

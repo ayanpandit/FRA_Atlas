@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from "/logo.png";
+import { useAuth } from '../context/AuthContext';
+
+
 
 const Sidebar_User = ({ 
   activeComponent, 
@@ -9,6 +12,7 @@ const Sidebar_User = ({
   isCollapsed: externalCollapsed,
   setIsCollapsed: setExternalCollapsed 
 }) => {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -85,50 +89,6 @@ const Sidebar_User = ({
       ),
       description: 'Main dashboard overview',
       category: 'main'
-    },
-    {
-      id: 'patta_management',
-      name: 'Patta Management',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      description: 'Manage patta records & documents',
-      category: 'operations'
-    },
-    {
-      id: 'beneficiary_schemes',
-      name: 'Beneficiary Schemes',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      description: 'Manage beneficiary schemes & applications',
-      category: 'operations'
-    },
-    {
-      id: 'map_land_analysis',
-      name: 'Map & Land Analysis',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-      ),
-      description: 'Map visualization & land analysis tools',
-      category: 'operations'
-    },
-    {
-      id: 'user_management',
-      name: 'User Management',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-        </svg>
-      ),
-      description: 'Manage user accounts & permissions',
-      category: 'operations'
     }
   ];
 
@@ -252,19 +212,24 @@ const Sidebar_User = ({
         </div>
         
         {/* User info when not collapsed */}
-        {!isCollapsed && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                A
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-gray-900 truncate">Admin User</div>
-                <div className="text-xs text-gray-500 truncate">Administrator</div>
-              </div>
-            </div>
-          </div>
-        )}
+        {!isCollapsed && user && (
+  <div className="mt-3 pt-3 border-t border-gray-200">
+    <div className="flex items-center space-x-2">
+      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-gray-900 truncate">
+          {user.name || 'Guest'}
+        </div>
+        <div className="text-xs text-gray-500 truncate">
+          {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Expand button when collapsed */}
         {isCollapsed && (
