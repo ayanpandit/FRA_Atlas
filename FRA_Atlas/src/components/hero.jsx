@@ -12,15 +12,14 @@ const TYPING_SPEED = 70; // ms per character (slower)
 const FADE_IN_DELAY = 400; // ms after typing ends
 
 const Hero = () => {
-  const { user } = useAuth();
+  const { user, getWorkflowPath } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const handlePortalClick = () => {
     if (!user) {
       setIsLoginOpen(true);
     } else {
-      // Navigate to portal if logged in
-      navigate('/dashboard');
+      navigate(getWorkflowPath());
     }
   };
   const navigate = useNavigate();

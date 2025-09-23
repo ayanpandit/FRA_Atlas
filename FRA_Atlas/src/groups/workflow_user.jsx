@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Sidebar from '../components/sidebar';
+import Sidebar_User from '../components/sidebar_user';
 import Dashboard from '../pages/dashboard';
 import PattaManagement from '../pages/patta_management';
 import BeneficiarySchemes from '../pages/beneficiary_schemes';
 import Map_Land_Analysis from '../pages/map_land_analysis';
-import UserManagement from '../pages/user_management'; 
+import UserManagement from '../pages/user_management';
 
-const Workflow = () => {
+const Workflow_User = () => {
   const [activeComponent, setActiveComponent] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -96,13 +96,13 @@ const Workflow = () => {
           transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
         }}
       >
-        <Sidebar 
+        <Sidebar_User 
           activeComponent={activeComponent} 
           setActiveComponent={setActiveComponent}
-          isCollapsed={sidebarCollapsed}
-          setIsCollapsed={setSidebarCollapsed}
           sidebarWidth={sidebarWidth}
           setSidebarWidth={setSidebarWidth}
+          isCollapsed={sidebarCollapsed}
+          setIsCollapsed={setSidebarCollapsed}
         />
 
         {/* Resize Handle */}
@@ -160,4 +160,4 @@ const Workflow = () => {
   );
 };
 
-export default Workflow;
+export default Workflow_User;

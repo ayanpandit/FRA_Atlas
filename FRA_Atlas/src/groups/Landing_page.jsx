@@ -1,5 +1,5 @@
 import logo from "../assets/react.svg";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import CardNav from "../components/navbar";
 import Hero from "../components/hero";
 import About from "../components/about";
@@ -8,7 +8,9 @@ import Level from "../components/level";
 import Yojana from "../components/yojana";
 import Data_Availability from "../components/data availability";
 import Footer from "../components/footer";
-import Workflow from "./workflow";
+import WorkflowAdmin from "./workflow_admin";
+import WorkflowOff from "./workflow_off";
+import WorkflowUser from "./workflow_user";
 function LandingPage() {
   const items = [
     {
@@ -43,8 +45,11 @@ function LandingPage() {
 
   return (
       <Routes>
-        <Route path="/patta_management" element={<Workflow />} />
-        <Route path="/workflow" element={<Workflow />} />
+        <Route path="/dashboard" element={<Navigate to="/workflow_off" />} />
+        <Route path="/workflow_admin/*" element={<WorkflowAdmin />} />
+        <Route path="/workflow_off/*" element={<WorkflowOff />} />
+        <Route path="/workflow_user/*" element={<WorkflowUser />} />
+        <Route path="/patta_management" element={<WorkflowAdmin />} />
         <Route path="/" element={
           <>
             <CardNav
@@ -78,7 +83,6 @@ function LandingPage() {
             </div>
           </>
         } />
-        <Route path="/workflow" element={<Workflow />} />
       </Routes>
   );
 }

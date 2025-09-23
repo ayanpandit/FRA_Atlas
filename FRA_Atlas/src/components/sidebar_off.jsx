@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from "/logo.png";
 
-const Sidebar = ({ 
+const Sidebar_Off = ({ 
   activeComponent, 
   setActiveComponent, 
   sidebarWidth = 280, 
@@ -184,14 +184,15 @@ const Sidebar = ({
                 className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg object-cover border-2 border-blue-200`}
                 onError={(e) => {
                   e.target.style.display = 'none';
-                  const fallback = e.target.nextSibling;
+                  const fallback = e.target.parentElement.querySelector('[data-fallback="true"]');
                   if (fallback) fallback.style.display = 'flex';
                 }}
               />
-              {/* Fallback logo */}
               <div 
+                data-fallback="true"
                 className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold border-2 border-blue-200 hidden`}
               >
+                {/* Fallback logo */}
                 <span className={isCollapsed ? 'text-sm' : 'text-base'}>FRA</span>
               </div>
             </div>
@@ -287,4 +288,4 @@ const Sidebar = ({
   );
 };
 
-export default Sidebar;
+export default Sidebar_Off;

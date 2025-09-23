@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, MapPin, TrendingUp, Users, Globe, Shield } from 'lucide-react';
 import mapImage from '../assets/states-map.jpg';
 import impactImage from '../assets/back3.jpg';
+import './data-availability.css';
 
 const Data_Availability = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -379,20 +380,11 @@ const Data_Availability = () => {
         </div>
       </section>
 
-      <style jsx>{`
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
+
+// Import animation styles
+import './data-availability.css';
 
 export default Data_Availability;
