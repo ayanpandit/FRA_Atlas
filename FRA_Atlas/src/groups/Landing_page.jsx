@@ -12,31 +12,31 @@ import Workflow from "./workflow";
 function LandingPage() {
   const items = [
     {
-      label: "option1",
+      label: "DashBoard",
       bgColor: "#FACC15",
       textColor: "#fff",
       links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
+        { label: "suboption1",  ariaLabel: "suboption1" },
         { label: "suboption2", ariaLabel: "suboption2" }
       ]
     },
     {
-      label: "option2", 
+      label: "Resources", 
       bgColor: "#000000",
       textColor: "#fff",
       links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2" }
+        { label: "Tribal Welfare Programmes", ariaLabel: "suboption1" },
+        { label: "Mo Jungle Jami Yojana", ariaLabel: "suboption2" }
       ]
     },
     {
-      label: "option3",
+      label: "About Us",
       bgColor: "#FACC15", 
       textColor: "#fff",
       links: [
-        { label: "suboption1", ariaLabel: "suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2" },
-        { label: "suboption3", ariaLabel: "suboption3" }
+        { label: "Contact Us", ariaLabel: "suboption1" },
+        { label: "Know More", ariaLabel: "suboption2" },
+        { label: "Our Team", ariaLabel: "suboption3" }
       ]
     }
   ];

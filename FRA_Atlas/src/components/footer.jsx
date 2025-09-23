@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Globe, FileText, Shield, Users, TrendingUp, ExternalLink } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from '/logo.png';
 
 const Footer = () => {
   const quickLinks = [
