@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { GoArrowUpRight } from 'react-icons/go';
+import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from '../context/AuthContext';
 import LoginSignup from './login&signup';
 import logo from '../assets/logo.png';
@@ -19,17 +20,43 @@ const CardNav = ({
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoginDropdown, setIsLoginDropdown] = useState(false);
   const navRef = useRef(null);
   const cardsRef = useRef([]);
+  const loginDropdownRef = useRef(null);
   const tlRef = useRef(null);
+  const loginTlRef = useRef(null);
 
+  // Hamburger menu logic unchanged
+
+  // Login button toggles dropdown with animation
   const handleLoginClick = () => {
     if (user) {
       logout();
     } else {
-      setIsLoginOpen(true);
+      if (!isLoginDropdown) {
+        setIsLoginDropdown(true);
+        setIsExpanded(false); // close menu if open
+      } else {
+        setIsLoginDropdown(false);
+      }
     }
   };
+  // Animate login dropdown
+  useLayoutEffect(() => {
+    if (!isLoginDropdown) return;
+    const el = loginDropdownRef.current;
+    if (!el) return;
+    gsap.set(el, { height: 0, opacity: 0, display: 'block' });
+    const tl = gsap.timeline({ paused: true });
+    tl.to(el, { height: 'auto', opacity: 1, duration: 0.4, ease: 'power3.out', onReverseComplete: () => setIsLoginDropdown(false) });
+    tl.play(0);
+    loginTlRef.current = tl;
+    return () => {
+      tl.kill();
+      loginTlRef.current = null;
+    };
+  }, [isLoginDropdown]);
 
   const calculateHeight = () => {
     const navEl = navRef.current;
@@ -126,16 +153,19 @@ const CardNav = ({
   }, [isExpanded]);
 
   const toggleMenu = () => {
-    const tl = tlRef.current;
-    if (!tl) return;
     if (!isExpanded) {
       setIsHamburgerOpen(true);
       setIsExpanded(true);
-      tl.play(0);
+      setIsLoginDropdown(false); // close login if open
+      if (tlRef.current) tlRef.current.play(0);
     } else {
       setIsHamburgerOpen(false);
-      tl.eventCallback('onReverseComplete', () => setIsExpanded(false));
-      tl.reverse();
+      if (tlRef.current) {
+        tlRef.current.eventCallback('onReverseComplete', () => setIsExpanded(false));
+        tlRef.current.reverse();
+      } else {
+        setIsExpanded(false);
+      }
     }
   };
 
@@ -146,12 +176,11 @@ const CardNav = ({
   return (
     <div>
       <div
-        className={`card-nav-container absolute left-1/2 -translate-x-1/2 w-[90%] max-w-[800px] z-[90] top-[1.2em] md:top-[2em] ${className}`}
+        className={`card-nav-container fixed left-1/2 -translate-x-1/2 w-[90%] max-w-[800px] z-[90] top-[1.2em] md:top-[2em] ${className}`}
       >
         <nav
           ref={navRef}
-          className={`card-nav ${isExpanded ? 'open' : ''} block h-[60px] p-0 rounded-xl shadow-md relative overflow-hidden will-change-[height]`}
-          style={{ backgroundColor: baseColor }}
+          className={`card-nav block h-[60px] p-0 shadow-md relative overflow-hidden will-change-[height] backdrop-blur-md bg-white/40 transition-all duration-500 ${(!isExpanded && !isLoginDropdown) ? 'rounded-full' : 'rounded-xl'}`}
         >
           <div className="card-nav-top absolute inset-x-0 top-0 h-[60px] flex items-center justify-between p-2 pl-[1.1rem] z-[2]">
           <div
@@ -191,24 +220,27 @@ const CardNav = ({
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleLoginClick}
-              type="button"
-              className="card-nav-cta-button hidden md:inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 h-full font-medium cursor-pointer transition-colors duration-300"
-              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-            >
-              Get Started
-            </button>
+            <div className="relative hidden md:inline-flex items-center">
+              <button
+                onClick={handleLoginClick}
+                type="button"
+                className="card-nav-cta-button flex items-center justify-center border-0 px-1 rounded-full cursor-pointer"
+                aria-haspopup="true"
+                aria-expanded={isLoginDropdown}
+              >
+                <FaUserCircle className='text-3xl' />
+              </button>
+            </div>
           )}
         </div>
 
         <div
           className={`card-nav-content absolute left-0 right-0 top-[60px] bottom-0 p-2 flex flex-col items-stretch gap-2 justify-start z-[1] ${
-            isExpanded ? 'visible pointer-events-auto' : 'invisible pointer-events-none'
+            (isExpanded || isLoginDropdown) ? 'visible pointer-events-auto' : 'invisible pointer-events-none'
           } md:flex-row md:items-end md:gap-[12px]`}
-          aria-hidden={!isExpanded}
+          aria-hidden={!(isExpanded || isLoginDropdown)}
         >
-          {(items || []).slice(0, 3).map((item, idx) => (
+          {isExpanded && (items || []).slice(0, 3).map((item, idx) => (
             <div
               key={`${item.label}-${idx}`}
               className="nav-card select-none relative flex flex-col gap-2 p-[12px_16px] rounded-[calc(0.75rem-0.2rem)] min-w-0 flex-[1_1_auto] h-auto min-h-[60px] md:h-full md:min-h-0 md:flex-[1_1_0%]"
@@ -234,33 +266,41 @@ const CardNav = ({
             </div>
           ))}
 
+          {isLoginDropdown && (
+            <div className="nav-card select-none relative flex flex-col gap-2 p-[12px_16px] rounded-[calc(0.75rem-0.2rem)] min-w-0 flex-[1_1_auto] h-auto min-h-[60px] md:h-full md:min-h-0 md:flex-[1_1_0%] bg-white" style={{ color: '#222' }}>
+              <LoginSignup isOpen={isLoginDropdown} onClose={() => setIsLoginDropdown(false)} />
+            </div>
+          )}
+
           {/* Mobile login/user section */}
-          <div className="md:hidden mt-4">
-            {user ? (
-              <div className="flex flex-col gap-2 p-[12px_16px] bg-white rounded-[calc(0.75rem-0.2rem)]">
-                <span className="text-gray-800 font-medium">Hi, {user.name}</span>
-                <button
-                  onClick={handleLoginClick}
-                  type="button"
-                  className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
-                  style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="p-[12px_16px]">
-                <button
-                  onClick={handleLoginClick}
-                  type="button"
-                  className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
-                  style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-                >
-                  Get Started
-                </button>
-              </div>
-            )}
-          </div>
+          {!isLoginDropdown && (
+            <div className="md:hidden mt-4">
+              {user ? (
+                <div className="flex flex-col gap-2 p-[12px_16px] bg-white rounded-[calc(0.75rem-0.2rem)]">
+                  <span className="text-gray-800 font-medium">Hi, {user.name}</span>
+                  <button
+                    onClick={handleLoginClick}
+                    type="button"
+                    className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
+                    style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="p-[12px_16px]">
+                  <button
+                    onClick={handleLoginClick}
+                    type="button"
+                    className="w-full card-nav-cta-button inline-flex items-center justify-center border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-3 font-medium cursor-pointer transition-colors duration-300"
+                    style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </nav>
     </div>
