@@ -1,9 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
+
 import { useAuth } from '../context/AuthContext';
 import LoginSignup from './login&signup';
 import { useNavigate } from "react-router-dom";
-import backImg from "../assets/back.jpg";
+
+import bg1 from "/bg1.jpg";
+import bg2 from "/bg2.jpg";
+import bg3 from "/bg3.jpg";
+import bg4 from "/bg4.webp";
+import bg5 from "/bg5.png";
+
 const tagText = "AI-Powered";
 const h1Text = "FRA Atlas for Smarter Tribal Land Governance";
 const subText = "Digitizing forest rights, mapping assets with AI & Remote Sensing, and enabling data-driven decisions through WebGIS & DSS.";
@@ -43,14 +49,36 @@ const Hero = () => {
     return () => setTyped("");
   }, []);
 
+  // Sliding background logic
+  const images = [bg1, bg2, bg3, bg4, bg5];
+  const [bgIndex, setBgIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setBgIndex((prev) => (prev + 1) % images.length);
+        setFade(true);
+      }, 600); // fade out duration
+    }, 3500); // show each image for 3.5s
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
     <section
-      className="relative w-full h-screen flex items-center justify-center text-center bg-cover bg-center"
-      style={{ backgroundImage: `url(${backImg})` }}
+      className="relative w-full h-screen flex items-center justify-center text-center bg-cover bg-center transition-all duration-700"
+      style={{
+        backgroundImage: `url(${images[bgIndex]})`,
+        transition: 'background-image 0.7s ease-in-out',
+      }}
     >
-      {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+      {/* Fade overlay for sliding effect */}
+      <div
+        className={`absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-700 pointer-events-none ${fade ? 'opacity-50' : 'opacity-80'}`}
+        style={{ zIndex: 1 }}
+      ></div>
 
       <div className="relative z-10 max-w-3xl px-6">
         {/* 1. The small, beautiful Tag (Above H1) */}
