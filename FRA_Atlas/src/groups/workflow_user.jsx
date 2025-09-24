@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar_User from '../components/sidebar_user';
-import Dashboard from '../pages/dashboard';
+// import Dashboard from '../pages/dashboard';
 import PattaManagement from '../pages/patta_management';
 import BeneficiarySchemes from '../pages/beneficiary_schemes';
 import Map_Land_Analysis from '../pages/map_land_analysis';
 import UserManagement from '../pages/user_management';
+import user_dashboard from '../pages/user_dashboard';
+import UserDashboard from '../pages/user_dashboard';
 
 const Workflow_User = () => {
   const [activeComponent, setActiveComponent] = useState('dashboard');
@@ -63,7 +65,7 @@ const Workflow_User = () => {
   const renderMainContent = () => {
     switch (activeComponent) {
       case 'dashboard':
-        return <Dashboard />;
+        return <UserDashboard />;
       case 'patta_management':
         return <PattaManagement />;
       case 'beneficiary_schemes':
@@ -73,7 +75,7 @@ const Workflow_User = () => {
         case 'user_management':
         return <UserManagement />;
       default:
-        return <Dashboard />;
+        return <UserDashboard/>;
     }
   };
 
