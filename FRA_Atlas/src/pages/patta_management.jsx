@@ -1,6 +1,96 @@
 import React, { useState, useRef } from 'react';
+import { useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const PattaManagement = () => {
+  // File input ref for upload
+  const fileInputRef = useRef(null);
+
+  // Handler for file select (click on upload area)
+  const handleFileSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  // Grid view renderer
+  const GridView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {paginatedPattas.map((patta) => (
+        <div key={patta.patta_id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 overflow-hidden group">
+          <div className="p-5">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <h3 className="font-semibold text-gray-900 text-lg">{patta.patta_id}</h3>
+                </div>
+                <p className="text-gray-800 font-medium text-base">{patta.holder_name}</p>
+              </div>
+            </div>
+            <div className="space-y-2.5 mb-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="text-gray-400">📅</span>
+                <span>Date: {patta.date_entered ? new Date(patta.date_entered).toLocaleString() : 'N/A'}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="text-gray-400">🔖</span>
+                <span>Status: {getStatusBadge(patta.status)}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="text-gray-400">📍</span>
+                <span>{patta.village}, {patta.district}, {patta.state}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="text-gray-400">📏</span>
+                <span>{patta.area_hectares} ha</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="text-gray-400">🌳</span>
+                <span>{patta.right_type}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleViewDetails(patta)}
+                  className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-all duration-200"
+                  title="View Details"
+                >
+                  <span className="text-sm">👁️ View</span>
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {patta.surveyNumber}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+  // Priority badge renderer
+  const getPriorityBadge = (priority) => {
+    const priorityStyles = {
+      high: 'bg-red-100 text-red-800 border-red-300',
+      normal: 'bg-blue-100 text-blue-800 border-blue-300',
+      low: 'bg-gray-100 text-gray-800 border-gray-300'
+    };
+    const priorityIcons = {
+      high: '🔴',
+      normal: '🔵',
+      low: '⚪'
+    };
+    return (
+      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${priorityStyles[priority]}`}>
+        <span className="mr-1">{priorityIcons[priority]}</span>
+        {priority ? priority.toUpperCase() : 'PRIORITY'}
+      </span>
+    );
+  };
+  // Show patta details modal
+  const handleViewDetails = (patta) => {
+    setSelectedPatta(patta);
+    setShowDetailsModal(true);
+  };
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -14,190 +104,42 @@ const PattaManagement = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [pattas, setPattas] = useState([]);
   const itemsPerPage = 10;
-  const fileInputRef = useRef(null);
 
-  // Enhanced dummy data with more realistic information
-  const dummyPattas = [
-    {
-      id: 'PTA-2024-001',
-      holderName: 'Rajesh Kumar Singh',
-      village: 'Rampur',
-      block: 'Saharsa',
-      district: 'Saharsa',
-      uploadDate: '2024-01-15',
-      status: 'verified',
-      landArea: '2.5 acres',
-      surveyNumber: 'SV-001/2024',
-      documentUrl: '#',
-      remarks: 'All documents verified successfully',
-      verifiedBy: 'Inspector A.K. Sharma',
-      verifiedDate: '2024-01-20',
-      priority: 'normal',
-      contact: '+91 9876543210',
-      email: 'rajesh.singh@example.com'
-    },
-    {
-      id: 'PTA-2024-002',
-      holderName: 'Sunita Devi',
-      village: 'Madhubani',
-      block: 'Madhubani',
-      district: 'Madhubani',
-      uploadDate: '2024-01-18',
-      status: 'pending',
-      landArea: '1.8 acres',
-      surveyNumber: 'SV-002/2024',
-      documentUrl: '#',
-      remarks: 'Under review process',
-      verifiedBy: null,
-      verifiedDate: null,
-      priority: 'high',
-      contact: '+91 9876543211',
-      email: 'sunita.devi@example.com'
-    },
-    {
-      id: 'PTA-2024-003',
-      holderName: 'Mohammad Ali Khan',
-      village: 'Darbhanga',
-      block: 'Darbhanga',
-      district: 'Darbhanga',
-      uploadDate: '2024-01-20',
-      status: 'rejected',
-      landArea: '3.2 acres',
-      surveyNumber: 'SV-003/2024',
-      documentUrl: '#',
-      remarks: 'Incomplete documentation',
-      verifiedBy: 'Inspector R.K. Singh',
-      verifiedDate: '2024-01-22',
-      priority: 'low',
-      contact: '+91 9876543212',
-      email: 'mohammad.khan@example.com'
-    },
-    {
-      id: 'PTA-2024-004',
-      holderName: 'Priya Sharma',
-      village: 'Begusarai',
-      block: 'Begusarai',
-      district: 'Begusarai',
-      uploadDate: '2024-01-22',
-      status: 'verified',
-      landArea: '4.1 acres',
-      surveyNumber: 'SV-004/2024',
-      documentUrl: '#',
-      remarks: 'Documents approved',
-      verifiedBy: 'Inspector M.K. Jha',
-      verifiedDate: '2024-01-25',
-      priority: 'normal',
-      contact: '+91 9876543213',
-      email: 'priya.sharma@example.com'
-    },
-    {
-      id: 'PTA-2024-005',
-      holderName: 'Ram Bahadur Yadav',
-      village: 'Muzaffarpur',
-      block: 'Muzaffarpur',
-      district: 'Muzaffarpur',
-      uploadDate: '2024-01-25',
-      status: 'pending',
-      landArea: '2.8 acres',
-      surveyNumber: 'SV-005/2024',
-      documentUrl: '#',
-      remarks: 'Awaiting field verification',
-      verifiedBy: null,
-      verifiedDate: null,
-      priority: 'high',
-      contact: '+91 9876543214',
-      email: 'ram.yadav@example.com'
-    },
-    {
-      id: 'PTA-2024-006',
-      holderName: 'Anjali Kumari',
-      village: 'Patna',
-      block: 'Patna Sadar',
-      district: 'Patna',
-      uploadDate: '2024-01-28',
-      status: 'verified',
-      landArea: '1.5 acres',
-      surveyNumber: 'SV-006/2024',
-      documentUrl: '#',
-      remarks: 'All requirements satisfied',
-      verifiedBy: 'Inspector S.N. Mishra',
-      verifiedDate: '2024-01-30',
-      priority: 'normal',
-      contact: '+91 9876543215',
-      email: 'anjali.kumari@example.com'
-    },
-    {
-      id: 'PTA-2024-007',
-      holderName: 'Vikash Kumar',
-      village: 'Gaya',
-      block: 'Gaya',
-      district: 'Gaya',
-      uploadDate: '2024-02-01',
-      status: 'pending',
-      landArea: '3.5 acres',
-      surveyNumber: 'SV-007/2024',
-      documentUrl: '#',
-      remarks: 'Documents under scrutiny',
-      verifiedBy: null,
-      verifiedDate: null,
-      priority: 'normal',
-      contact: '+91 9876543216',
-      email: 'vikash.kumar@example.com'
-    },
-    {
-      id: 'PTA-2024-008',
-      holderName: 'Meera Singh',
-      village: 'Bhagalpur',
-      block: 'Bhagalpur',
-      district: 'Bhagalpur',
-      uploadDate: '2024-02-03',
-      status: 'rejected',
-      landArea: '2.2 acres',
-      surveyNumber: 'SV-008/2024',
-      documentUrl: '#',
-      remarks: 'Boundary dispute identified',
-      verifiedBy: 'Inspector D.K. Singh',
-      verifiedDate: '2024-02-05',
-      priority: 'high',
-      contact: '+91 9876543217',
-      email: 'meera.singh@example.com'
+  useEffect(() => {
+    async function fetchPattas() {
+      const { data, error } = await supabase.from('pattas').select('*');
+      if (!error) setPattas(data || []);
     }
-  ];
+    fetchPattas();
+  }, []);
 
   // Filter pattas based on active tab and filters
   const getFilteredPattas = () => {
-    let filtered = dummyPattas;
-
-    // Filter by tab
-    if (activeTab === 'pending') {
-      filtered = filtered.filter(patta => patta.status === 'pending');
-    } else if (activeTab === 'verified') {
-      filtered = filtered.filter(patta => patta.status === 'verified');
+    let filtered = pattas;
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(patta => patta.status === activeTab);
     }
-
-    // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(patta => 
-        patta.holderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patta.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patta.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patta.surveyNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(patta =>
+        patta.holder_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        patta.patta_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        patta.village?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(patta => patta.status === statusFilter);
-    }
-
-    // Filter by district
     if (districtFilter !== 'all') {
       filtered = filtered.filter(patta => patta.district === districtFilter);
     }
-
     return filtered;
   };
+  const districts = ['All Districts', 'Saharsa', 'Madhubani', 'Darbhanga', 'Begusarai', 'Muzaffarpur', 'Patna', 'Gaya', 'Bhagalpur'];
+  const tabs = [
+    { id: 'all', label: 'All Pattas', count: pattas.length, icon: '📋' },
+    { id: 'pending', label: 'Pending Review', count: pattas.filter(p => p.status === 'pending').length, icon: '⏳' },
+    { id: 'verified', label: 'Verified', count: pattas.filter(p => p.status === 'verified').length, icon: '✅' },
+    { id: 'cancelled', label: 'Cancelled', count: pattas.filter(p => p.status === 'cancelled' || p.status === 'rejected').length, icon: '❌' }
+  ];
 
   const filteredPattas = getFilteredPattas();
   const totalPages = Math.ceil(filteredPattas.length / itemsPerPage);
@@ -210,161 +152,25 @@ const PattaManagement = () => {
     const statusStyles = {
       pending: 'bg-amber-50 text-amber-800 border-amber-200',
       verified: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-      rejected: 'bg-red-50 text-red-800 border-red-200'
+      cancelled: 'bg-red-50 text-red-800 border-red-200'
     };
-
     const statusText = {
       pending: 'Pending Review',
       verified: 'Verified & Approved',
-      rejected: 'Rejected'
+      cancelled: 'Cancelled'
     };
-
     const statusIcons = {
       pending: '⏳',
       verified: '✅',
-      rejected: '❌'
+      cancelled: '❌'
     };
-
     return (
       <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${statusStyles[status]}`}>
         <span className="mr-1.5">{statusIcons[status]}</span>
-        {statusText[status]}
+        {statusText[status] || status}
       </span>
     );
   };
-
-  const getPriorityBadge = (priority) => {
-    const priorityStyles = {
-      high: 'bg-red-100 text-red-800 border-red-300',
-      normal: 'bg-blue-100 text-blue-800 border-blue-300',
-      low: 'bg-gray-100 text-gray-800 border-gray-300'
-    };
-
-    const priorityIcons = {
-      high: '🔴',
-      normal: '🔵',
-      low: '⚪'
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${priorityStyles[priority]}`}>
-        <span className="mr-1">{priorityIcons[priority]}</span>
-        {priority.toUpperCase()} PRIORITY
-      </span>
-    );
-  };
-
-  const handleViewDetails = (patta) => {
-    setSelectedPatta(patta);
-    setShowDetailsModal(true);
-  };
-
-  const handleFileSelect = () => {
-    fileInputRef.current?.click();
-  };
-
-  const simulateUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setTimeout(() => {
-            setShowUploadModal(false);
-            setUploadProgress(0);
-          }, 1000);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-  };
-
-  const tabs = [
-    { 
-      id: 'all', 
-      label: 'All Pattas', 
-      count: dummyPattas.length,
-      icon: '📋'
-    },
-    { 
-      id: 'pending', 
-      label: 'Pending Review', 
-      count: dummyPattas.filter(p => p.status === 'pending').length,
-      icon: '⏳'
-    },
-    { 
-      id: 'verified', 
-      label: 'Verified', 
-      count: dummyPattas.filter(p => p.status === 'verified').length,
-      icon: '✅'
-    }
-  ];
-
-  const districts = ['All Districts', 'Saharsa', 'Madhubani', 'Darbhanga', 'Begusarai', 'Muzaffarpur', 'Patna', 'Gaya', 'Bhagalpur'];
-
-  // Enhanced Grid View Component
-  const GridView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {paginatedPattas.map((patta) => (
-        <div key={patta.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 overflow-hidden group">
-          <div className="p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="font-semibold text-gray-900 text-lg">{patta.id}</h3>
-                  {patta.priority === 'high' && (
-                    <span className="text-red-500 text-sm">🔴</span>
-                  )}
-                </div>
-                <p className="text-gray-800 font-medium text-base">{patta.holderName}</p>
-              </div>
-              {getStatusBadge(patta.status)}
-            </div>
-            
-            <div className="space-y-2.5 mb-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="text-gray-400">📍</span>
-                <span>{patta.village}, {patta.district}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="text-gray-400">📏</span>
-                <span>{patta.landArea}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="text-gray-400">📅</span>
-                <span>{new Date(patta.uploadDate).toLocaleDateString('en-IN')}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleViewDetails(patta)}
-                  className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-all duration-200"
-                  title="View Details"
-                >
-                  <span className="text-sm">👁️ View</span>
-                </button>
-                <button
-                  className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 transition-all duration-200"
-                  title="Download"
-                >
-                  <span className="text-sm">📥 Download</span>
-                </button>
-              </div>
-              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                {patta.surveyNumber}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20 p-4 lg:p-6">
@@ -394,28 +200,28 @@ const PattaManagement = () => {
             {[
               {
                 label: 'Total Pattas',
-                value: dummyPattas.length,
+                value: pattas.length,
                 color: 'blue',
                 icon: '📋',
                 change: '+12%'
               },
               {
                 label: 'Pending Review',
-                value: dummyPattas.filter(p => p.status === 'pending').length,
+                value: pattas.filter(p => p.status === 'pending').length,
                 color: 'amber',
                 icon: '⏳',
                 change: '+5%'
               },
               {
                 label: 'Verified',
-                value: dummyPattas.filter(p => p.status === 'verified').length,
+                value: pattas.filter(p => p.status === 'verified').length,
                 color: 'emerald',
                 icon: '✅',
                 change: '+8%'
               },
               {
                 label: 'Rejected',
-                value: dummyPattas.filter(p => p.status === 'rejected').length,
+                value: pattas.filter(p => p.status === 'rejected').length,
                 color: 'red',
                 icon: '❌',
                 change: '-2%'
@@ -561,7 +367,7 @@ const PattaManagement = () => {
               {(searchQuery || statusFilter !== 'all' || districtFilter !== 'all') && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
                   <p className="text-sm text-slate-600">
-                    {filteredPattas.length} of {dummyPattas.length} pattas match your filters
+                    {filteredPattas.length} of {pattas.length} pattas match your filters
                   </p>
                   <button
                     onClick={() => {
@@ -602,33 +408,30 @@ const PattaManagement = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedPattas.map((patta) => (
-                      <tr key={patta.id} className="hover:bg-slate-50 transition-colors duration-150">
+                      <tr key={patta.patta_id} className="hover:bg-slate-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
                             <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm">
-                              {patta.id.split('-')[2]}
+                              {patta.patta_id}
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-slate-900">{patta.id}</div>
-                              <div className="text-sm text-slate-600">{patta.holderName}</div>
-                              <div className="text-xs text-slate-500">{patta.landArea} • {patta.surveyNumber}</div>
+                              <div className="text-sm font-semibold text-slate-900">{patta.patta_id}</div>
+                              <div className="text-sm text-slate-600">{patta.holder_name}</div>
+                              <div className="text-xs text-slate-500">{patta.area_hectares} ha • {patta.right_type}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-slate-900 font-medium">{patta.village}</div>
-                          <div className="text-sm text-slate-500">{patta.block}, {patta.district}</div>
+                          <div className="text-sm text-slate-500">{patta.district}, {patta.state}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-2">
                             <div className="text-sm text-slate-900 font-medium">
-                              {new Date(patta.uploadDate).toLocaleDateString('en-IN')}
+                              {patta.date_entered ? new Date(patta.date_entered).toLocaleString() : 'N/A'}
                             </div>
                             <div className="flex items-center space-x-2">
                               {getStatusBadge(patta.status)}
-                              {patta.priority === 'high' && (
-                                <span className="text-xs text-red-600 font-medium">High Priority</span>
-                              )}
                             </div>
                           </div>
                         </td>
@@ -737,11 +540,11 @@ const PattaManagement = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg">
-                    {selectedPatta.id.split('-')[2]}
+                    {selectedPatta.patta_id}
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-slate-900">Patta Details</h3>
-                    <p className="text-slate-600">{selectedPatta.id}</p>
+                    <p className="text-slate-600">{selectedPatta.patta_id}</p>
                   </div>
                 </div>
                 <button
@@ -781,22 +584,64 @@ const PattaManagement = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h4 className="text-lg font-bold text-slate-900 border-b border-gray-200 pb-2">Basic Information</h4>
-                  {[
-                    { label: 'Holder Name', value: selectedPatta.holderName, icon: '👤' },
-                    { label: 'Contact', value: selectedPatta.contact, icon: '📞' },
-                    { label: 'Email', value: selectedPatta.email, icon: '📧' },
-                    { label: 'Village', value: selectedPatta.village, icon: '🏘️' },
-                    { label: 'Block', value: selectedPatta.block, icon: '🏛️' },
-                    { label: 'District', value: selectedPatta.district, icon: '📍' }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                      <div className="text-lg">{item.icon}</div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">{item.label}</label>
-                        <p className="text-slate-900 font-medium">{item.value}</p>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Patta ID</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.patta_id}</span>
                     </div>
-                  ))}
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Holder Name</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.holder_name}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Category</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.category}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Description</span>
+                      <span className="text-slate-900 font-medium">No description</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Village</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.village}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">District</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.district}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">State</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.state}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Coordinates</span>
+                      <span className="text-slate-900 font-medium">{Array.isArray(selectedPatta.coordinates) ? selectedPatta.coordinates.join(', ') : selectedPatta.coordinates}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Area (hectares)</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.area_hectares}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Right Type</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.right_type}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Status</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.status}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Recommended Schemes</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.recommended_schemes}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Date Entered</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.date_entered ? new Date(selectedPatta.date_entered).toLocaleString() : ''}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <span className="block text-xs font-semibold text-slate-700 mb-1">Rejected Message</span>
+                      <span className="text-slate-900 font-medium">{selectedPatta.rejected_message}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -995,6 +840,16 @@ const PattaManagement = () => {
                     onClick={handleFileSelect}
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors duration-300 cursor-pointer"
                   >
+                    {/* Hidden file input for upload */}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        // You can handle file upload logic here
+                        // Example: setSelectedFile(e.target.files[0]);
+                      }}
+                    />
                     <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 text-2xl">
                       📄
                     </div>

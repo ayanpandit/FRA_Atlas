@@ -1,10 +1,45 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+// ...existing code...
 import { 
   FileText, Users, Clock, CheckCircle, XCircle, AlertTriangle,
   Filter, Search, Eye, Check, X, ChevronDown, Calendar,
   TrendingUp, TrendingDown, BarChart3, Activity, Download
 } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+
+const geoData = {
+  Jharkhand: [
+    { district: 'Gumla', netSown: 32, barren: 10, water: 1.5 },
+    { district: 'Latehar', netSown: 25, barren: 15, water: 1.0 },
+    { district: 'West Singhbhum', netSown: 28, barren: 12, water: 2.5 },
+    { district: 'Dumka', netSown: 40, barren: 5, water: 3.0 },
+    { district: 'Simdega', netSown: 22, barren: 18, water: 0.8 }
+  ],
+  Maharashtra: [
+    { district: 'Gadchiroli', netSown: 35, barren: 8, water: 4.0 },
+    { district: 'Nandurbar', netSown: 45, barren: 10, water: 1.2 },
+    { district: 'Chandrapur', netSown: 30, barren: 14, water: 2.5 },
+    { district: 'Pune (Rural Tribal Blocks)', netSown: 50, barren: 5, water: 1.8 },
+    { district: 'Amravati', netSown: 60, barren: 3, water: 1.5 }
+  ],
+  'Andhra Pradesh': [
+    { district: 'Alluri Sitharama Raju', netSown: 15, barren: 10, water: 1.2 },
+    { district: 'Parvathipuram Manyam', netSown: 25, barren: 15, water: 2.0 },
+    { district: 'Anakapalli', netSown: 50, barren: 2, water: 3.5 },
+    { district: 'Anantapur', netSown: 65, barren: 5, water: 0.5 },
+    { district: 'YSR Kadapa', netSown: 40, barren: 12, water: 1.0 }
+  ]
+};
+
+const featureOptions = [
+  { key: 'netSown', label: 'Net Sown Area (%)', color: '#3b82f6' },
+  { key: 'barren', label: 'Barren/Unculturable Land (%)', color: '#ef4444' },
+  { key: 'water', label: 'Water Body (%)', color: '#10b981' }
+];
+const districtColors = [
+  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#6366f1', '#eab308', '#a21caf', '#14b8a6', '#f43f5e', '#22d3ee'
+];
 
 const Dashboard = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -12,13 +47,27 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock data
+  // Live stats from Supabase
   const [stats, setStats] = useState({
-    total: 1247,
-    approved: 892,
-    pending: 255,
-    rejected: 100
+    total: 0,
+    approved: 0,
+    pending: 0,
+    rejected: 0
   });
+
+  useEffect(() => {
+    async function fetchStats() {
+      const { data, error } = await supabase.from('pattas').select('status');
+      if (!error && data) {
+        const total = data.length;
+  const approved = data.filter(p => p.status === 'approved' || p.status === 'verified').length;
+  const pending = data.filter(p => p.status === 'pending').length;
+  const rejected = data.filter(p => p.status === 'rejected' || p.status === 'cancelled').length;
+  setStats({ total, approved, pending, rejected });
+      }
+    }
+    fetchStats();
+  }, []);
 
   const monthlyData = [
     { month: 'Jan', uploaded: 120, approved: 95, rejected: 15, pending: 10 },
@@ -111,6 +160,10 @@ const Dashboard = () => {
       documents: 4
     }
   ]);
+
+  // Geographical Feature Distribution state
+  const [selectedGeoState, setSelectedGeoState] = useState('Jharkhand');
+  const [selectedGeoFeature, setSelectedGeoFeature] = useState('netSown');
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -240,9 +293,9 @@ const Dashboard = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Monthly Trends */}
-          <div className="xl:col-span-2 bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
             <div className="p-4 border-b border-gray-700">
               <h3 className="text-sm font-medium text-white">Application Trends</h3>
               <p className="text-xs text-gray-400">Monthly performance overview</p>
@@ -270,33 +323,60 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Status Distribution */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-sm font-medium text-white">Status Distribution</h3>
-              <p className="text-xs text-gray-400">Current breakdown</p>
+    {/* Status Distribution */}
+        {/* Geographical Feature Distribution */}
+    <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-medium text-white">Geographical Feature Distribution</h3>
+              <p className="text-xs text-gray-400">Current breakdown by district</p>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+            <div className="flex gap-2">
+              <select value={selectedGeoState} onChange={e => setSelectedGeoState(e.target.value)} className="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none">
+                {Object.keys(geoData).map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <select value={selectedGeoFeature} onChange={e => setSelectedGeoFeature(e.target.value)} className="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none">
+                {featureOptions.map(opt => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="py-10 flex flex-col items-center gap-8">
+            <div className="w-full flex justify-center max-w-3xl mx-auto">
+              <ResponsiveContainer width="100%" minWidth={400} minHeight={340} height={380} aspect={2}>
                 <RechartsPieChart>
-                  <RechartsPieChart data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Pie
+                    data={geoData[selectedGeoState].map(d => ({ name: d.district, value: d[selectedGeoFeature] }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={95}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  >
+                    {geoData[selectedGeoState].map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={featureOptions.find(f => f.key === selectedGeoFeature).color} />
                     ))}
-                  </RechartsPieChart>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '6px',
-                      color: '#ffffff'
-                    }} 
-                  />
-                  <Legend />
+                  </Pie>
                 </RechartsPieChart>
               </ResponsiveContainer>
             </div>
+            <div className="w-full">
+              <h4 className="text-xs font-semibold text-white mb-2">District Breakdown</h4>
+              <ul className="space-y-2">
+                {geoData[selectedGeoState].map((d, idx) => (
+                  <li key={d.district} className="flex items-center justify-between bg-gray-700 rounded px-3 py-2">
+                    <span className="text-sm text-white font-medium">{d.district}</span>
+                    <span className="text-xs text-gray-300">{featureOptions.find(f => f.key === selectedGeoFeature).label}: <span className="font-bold text-white">{d[selectedGeoFeature]}%</span></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
+        </div>
         </div>
 
         {/* Village Distribution Chart */}

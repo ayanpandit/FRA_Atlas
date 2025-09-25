@@ -25,8 +25,7 @@ import {
   Heart,
   Zap,
   ArrowRight,
-  Info,
-  Bell
+  Info
 } from 'lucide-react';
 
 const Schemes = ({ userData }) => {
