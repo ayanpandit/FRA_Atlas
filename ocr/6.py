@@ -1,141 +1,229 @@
-# FRA NDVI/NDWI Analyzer - PlanetScope PSScene Updated Version
-import requests
-import json
+import ee
 import os
-import time
-import rasterio
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
 
 # -------------------------------
-# Step 1: Settings
+# STEP 1: Initialize Earth Engine (Connect to Google's satellite data)
 # -------------------------------
-API_KEY = "PLAKafefd84bd24e4eec9a414a4a543062e8"  # Planet API Key
+EE_PROJECT_ID = "fra-a-472418"  # Your Google Earth Engine project ID
+ee.Initialize(project=EE_PROJECT_ID)
+print("✅ Earth Engine initialized.")
+
+# -------------------------------
+# STEP 2: Create output folder for saving images locally
+# -------------------------------
 OUTPUT_FOLDER = "FRA_Exports"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Ballia, UP rectangle coordinates (lon/lat)
-coords = [83.5311, 25.5511, 83.5825, 25.5877]
+# -------------------------------
+# STEP 3: Get coordinates from user input (ORIGINAL CODE - NOT CHANGED)
+# -------------------------------
+lat_lon = input("Enter latitude and longitude separated by comma (e.g., 25.76177,84.15032): ")
+lat, lon = [float(x.strip()) for x in lat_lon.split(",")]
+radius_m = max(10, float(input("Enter radius in meters (>=10 m): ")))
 
-# Date range for PlanetScope imagery
-DATE_START = "2024-01-01T00:00:00Z"
-DATE_END = "2025-09-01T23:59:59Z"
+# Convert radius in meters to degrees (approx.) - ORIGINAL CODE
+radius_deg = radius_m / 111320
+min_lat, max_lat = lat - radius_deg, lat + radius_deg
+min_lon, max_lon = lon - radius_deg, lon + radius_deg
+aoi = ee.Geometry.Rectangle([min_lon, min_lat, max_lon, max_lat])
+print(f"✅ AOI rectangle created: {[min_lon, min_lat, max_lon, max_lat]}")
+
+# Create ROI for local downloads only (separate from analysis AOI)
+point = ee.Geometry.Point([lon, lat])
+roi = point.buffer(radius_m).bounds()
 
 # -------------------------------
-# Step 2: Create AOI polygon
+# STEP 4: Load Sentinel-2 SR (cloud-masked) - ORIGINAL CODE UNCHANGED
 # -------------------------------
-def create_geojson_polygon(coords):
-    min_lon, min_lat, max_lon, max_lat = coords
-    return {
-        "type": "Polygon",
-        "coordinates": [[
-            [min_lon, min_lat],
-            [min_lon, max_lat],
-            [max_lon, max_lat],
-            [max_lon, min_lat],
-            [min_lon, min_lat]
-        ]]
+def mask_s2_clouds(img):
+    qa = img.select('MSK_CLDPRB')
+    return img.updateMask(qa.lt(5))  # only clear pixels
+
+collection = (
+    ee.ImageCollection("COPERNICUS/S2_SR")
+    .filterBounds(aoi)
+    .filterDate("2024-01-01", "2025-09-01")
+    .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
+    .map(mask_s2_clouds)
+    .sort("CLOUDY_PIXEL_PERCENTAGE")
+)
+
+image = collection.first()
+if image is None:
+    raise Exception("❌ No image found for this AOI and date range")
+print("✅ Sentinel-2 image loaded and cloud-masked.")
+
+# -------------------------------
+# STEP 5: Calculate indices - ORIGINAL CODE UNCHANGED
+# -------------------------------
+ndvi = image.normalizedDifference(["B8", "B4"])  # vegetation
+mndwi = image.normalizedDifference(["B3", "B11"])  # water (improved)
+
+# True color
+rgb = image.visualize(bands=["B4", "B3", "B2"], min=0, max=3000)
+
+# Overlays
+veg_overlay = rgb.blend(ndvi.visualize(min=0.2, max=0.8, palette=["000000", "00FF00"]))
+water_overlay = rgb.blend(mndwi.visualize(min=0.0, max=0.5, palette=["000000", "0000FF"]))
+combined_overlay = rgb.blend(ndvi.visualize(min=0.2, max=0.8, palette=["000000", "00FF00"])) \
+                    .blend(mndwi.visualize(min=0.0, max=0.5, palette=["000000", "0000FF"]))
+
+# -------------------------------
+# STEP 6: Export high-res 4K images to Google Drive - ORIGINAL CODE UNCHANGED
+# -------------------------------
+def export_to_drive(img, name):
+    # Replace invalid characters
+    valid_name = "".join(c if c.isalnum() or c in ".,:;_-" else "_" for c in name)
+    task = ee.batch.Export.image.toDrive(
+        image=img,
+        description=valid_name,
+        folder='FRA_Exports',
+        fileNamePrefix=valid_name,
+        region=aoi,
+        scale=2,        # ~2m resolution (high-res)
+        maxPixels=1e10
+    )
+    task.start()
+    print(f"🚀 Export task started for {valid_name}. Check Google Drive FRA_Exports folder when finished.")
+
+export_to_drive(rgb, "RGB_")
+export_to_drive(veg_overlay, "Vegetation")
+export_to_drive(water_overlay, "Water")
+export_to_drive(combined_overlay, "Vegetation_&_Water_")
+
+# -------------------------------
+# STEP 7: NEW FEATURE - Download images locally (from second code)
+# -------------------------------
+def download_image(url, filename):
+    """Download image from URL and save locally"""
+    try:
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            filepath = os.path.join(OUTPUT_FOLDER, filename)
+            with open(filepath, "wb") as f:
+                f.write(response.content)
+            print(f"✅ Downloaded locally: {filepath}")
+        else:
+            print(f"❌ Failed to download {filename}")
+    except Exception as e:
+        print(f"❌ Error downloading {filename}: {e}")
+
+# Create image with indices for local download
+ndvi_for_download = image.normalizedDifference(['B8', 'B4']).rename('NDVI')
+ndwi_for_download = image.normalizedDifference(['B3', 'B8']).rename('NDWI')
+image_with_indices = image.addBands(ndvi_for_download).addBands(mndwi.rename('MNDWI')).addBands(ndwi_for_download)
+
+# Different visualization styles for local download
+visualizations = {
+    "TrueColor": {
+        "bands": ['B4', 'B3', 'B2'],
+        "min": 0, "max": 3000, "gamma": 1.3
+    },
+    "FalseColor_Vegetation": {
+        "bands": ['B8', 'B4', 'B3'],
+        "min": 0, "max": 3000, "gamma": 1.3
+    },
+    "NDVI_Vegetation": {
+        "bands": ['NDVI'],
+        "min": 0, "max": 1, "palette": ['brown', 'yellow', 'green']
+    },
+    "MNDWI_Water": {
+        "bands": ['MNDWI'],
+        "min": -1, "max": 1, "palette": ['brown', 'blue']
+    },
+    "NDWI_Water_Alt": {
+        "bands": ['NDWI'],
+        "min": -1, "max": 1, "palette": ['brown', 'blue']
     }
+}
 
-AOI = create_geojson_polygon(coords)
+# Generate and download all visualization types
+print("\n🌍 Downloading satellite images locally...")
+for name, params in visualizations.items():
+    url = image_with_indices.getThumbURL({
+        "region": roi,
+        "scale": 10,
+        **params,
+        "format": "png"
+    })
+    filename = f"{name}_local.png"
+    download_image(url, filename)
 
 # -------------------------------
-# Step 3: Planet API search (PSScene)
+# STEP 8: Sample bands locally for stats
 # -------------------------------
-def search_planet_images():
-    url = "https://api.planet.com/data/v1/quick-search"
-    headers = {"Authorization": f"api-key {API_KEY}"}
+def sample_band(band, scale=10):
+    try:
+        arr = band.sample(region=aoi, scale=scale).aggregate_array("nd").getInfo()
+        return np.array(arr, dtype=float)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not sample band. Error: {e}")
+        return np.array([])
+
+ndvi_arr = sample_band(ndvi)
+mndwi_arr = sample_band(mndwi)
+
+# Stats calculation - ORIGINAL CODE UNCHANGED
+def stats(arr, name, threshold=0.2):
+    if arr.size == 0:
+        print(f"📊 {name} Stats - No data available in AOI")
+        return 0.0
+    mean_val = np.nanmean(arr)
+    max_val = np.nanmax(arr)
+    min_val = np.nanmin(arr)
+    percent = np.sum(arr > threshold) / len(arr) * 100
+    print(f"📊 {name} Stats - Mean: {mean_val:.3f}, Max: {max_val:.3f}, Min: {min_val:.3f}")
+    print(f"📊 {name} Area > {threshold} threshold: {percent:.2f}%")
+    return percent
+
+veg_percentage = stats(ndvi_arr, "NDVI", 0.2)
+water_percentage = stats(mndwi_arr, "MNDWI", 0.0)
+
+# -------------------------------
+# STEP 9: Land type classification - ORIGINAL CODE UNCHANGED
+# -------------------------------
+if veg_percentage > 50:
+    land_type = "Dense Vegetation / Forest"
+elif veg_percentage > 20:
+    land_type = "Cultivated / Sparse Vegetation"
+elif veg_percentage > 5:
+    land_type = "Some Vegetation / Mixed Land"
+else:
+    land_type = "Bare / Simple Land"
+
+print("\n🌿 Vegetation Analysis:")
+print(f"Vegetation covers approx {veg_percentage:.2f}% of the area → {land_type}")
+print(f"Water covers approx {water_percentage:.2f}% of the area")
+
+# -------------------------------
+# STEP 10: Optional: Preview locally in high-quality plots - ORIGINAL CODE UNCHANGED
+# -------------------------------
+def preview_band(arr, title, cmap='viridis'):
+    if arr.size == 0:
+        print(f"⚠️ No data to preview for {title}. Skipping preview.")
+        return
+    # Make it a 2D array safely
+    side_len = int(np.ceil(np.sqrt(len(arr))))
+    padded = np.full(side_len*side_len, np.nan)
+    padded[:len(arr)] = arr  # fill with data, rest NaN
+    img_2d = padded.reshape((side_len, side_len))
     
-    payload = {
-        "item_types": ["PSScene"],
-        "filter": {
-            "type": "AndFilter",
-            "config": [
-                {"type": "GeometryFilter", "field_name": "geometry", "config": AOI},
-                {"type": "DateRangeFilter", "field_name": "acquired",
-                 "config": {"gte": DATE_START, "lte": DATE_END}}
-            ]
-        }
-    }
+    plt.figure(figsize=(6,6))
+    plt.imshow(img_2d, cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
     
-    response = requests.post(url, headers=headers, json=payload)
-    if response.status_code != 200:
-        print("❌ Error:", response.status_code, response.text)
-        raise Exception("Planet API search failed. Check your query or API key.")
-    
-    data = response.json()
-    print(f"✅ Found {len(data['features'])} PlanetScope PSScene images")
-    return data['features']
+    # Save the preview plot to output folder
+    plot_path = os.path.join(OUTPUT_FOLDER, f"{title.replace(' ', '_')}.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+    plt.show()
+    print(f"✅ Preview saved: {plot_path}")
 
-# -------------------------------
-# Step 4: Get first available analytic asset
-# -------------------------------
-def get_first_available_analytic(features):
-    headers = {"Authorization": f"api-key {API_KEY}"}
-    for f in features:
-        assets_url = f["_links"]["assets"]
-        resp = requests.get(assets_url, headers=headers).json()
-        if "analytic" in resp:
-            asset = resp["analytic"]
-            if asset["status"] != "active":
-                activate_url = asset["_links"]["activate"]
-                requests.post(activate_url, headers=headers)
-                print("⏳ Activating asset...")
-                time.sleep(5)
-            return asset["_links"]["self"]
-    raise Exception("❌ No PlanetScope PSScene image with analytic asset found.")
+preview_band(ndvi_arr, "NDVI Preview", cmap='Greens')
+preview_band(mndwi_arr, "MNDWI Preview", cmap='Blues')
 
-# -------------------------------
-# Step 5: Download image
-# -------------------------------
-def download_image(url, out_path):
-    headers = {"Authorization": f"api-key {API_KEY}"}
-    r = requests.get(url, headers=headers, stream=True)
-    if r.status_code == 200:
-        with open(out_path, 'wb') as f:
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
-        print(f"✅ Downloaded: {out_path}")
-    else:
-        raise Exception("❌ Download failed", r.status_code, r.text)
-
-# -------------------------------
-# Step 6: NDVI & NDWI calculation
-# -------------------------------
-def compute_ndvi_ndwi(image_path, output_prefix):
-    with rasterio.open(image_path) as src:
-        img = src.read().astype(float)
-        # PlanetScope PSScene 4-band order: B1=B, B2=G, B3=R, B4=NIR
-        blue, green, red, nir = img
-
-        ndvi = np.where((nir + red) == 0, 0, (nir - red)/(nir + red))
-        ndwi = np.where((green + nir) == 0, 0, (green - nir)/(green + nir))
-
-        meta = src.meta.copy()
-        meta.update(count=1, dtype=rasterio.float32)
-
-        ndvi_path = os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDVI.tif")
-        ndwi_path = os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDWI.tif")
-
-        with rasterio.open(ndvi_path, 'w', **meta) as dst:
-            dst.write(ndvi.astype(rasterio.float32), 1)
-        with rasterio.open(ndwi_path, 'w', **meta) as dst:
-            dst.write(ndwi.astype(rasterio.float32), 1)
-
-        plt.imsave(os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDVI.png"), ndvi, cmap='Greens')
-        plt.imsave(os.path.join(OUTPUT_FOLDER, f"{output_prefix}_NDWI.png"), ndwi, cmap='Blues')
-
-        print(f"✅ NDVI & NDWI computed for {output_prefix}")
-
-# -------------------------------
-# Step 7: Main flow
-# -------------------------------
-features = search_planet_images()
-analytic_url = get_first_available_analytic(features)
-
-image_file = os.path.join(OUTPUT_FOLDER, "Ballia_Planet_analytic.tif")
-download_image(analytic_url, image_file)
-
-compute_ndvi_ndwi(image_file, "Ballia")
-
-print("🎉 All done! Check the FRA_Exports folder.")
+print(f"\n🎉 All done! High-res images are exporting to Google Drive and local images saved in: {os.path.abspath(OUTPUT_FOLDER)}")
+print("📂 Check the FRA_Exports folder for all local downloads and previews!")
