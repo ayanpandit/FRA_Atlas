@@ -10,9 +10,8 @@ import Footer from "../components/footer";
 import WorkflowAdmin from "./workflow_admin";
 import WorkflowOff from "./workflow_off";
 import WorkflowUser from "./workflow_user";
-import PillNav from '../components/PillNav';
+import Navbar from '../components/Navbar';
 import FRADocumentation from '../pages/FRA Documentation';
-
 
 function LandingPage() {
   const items = [
@@ -52,29 +51,11 @@ function LandingPage() {
       <Route path="/workflow_admin/*" element={<WorkflowAdmin />} />
       <Route path="/workflow_off/*" element={<WorkflowOff />} />
       <Route path="/workflow_user/*" element={<WorkflowUser />} />
-  <Route path="/patta_management" element={<WorkflowAdmin />} />
-  <Route path="/fra_documentation" element={<FRADocumentation />} />
+      <Route path="/patta_management" element={<WorkflowAdmin />} />
+      <Route path="/fra_documentation" element={<FRADocumentation />} />
       <Route path="/" element={
         <>
-          <div style={{ width: '100vw', height: '60px', background: 'rgba(255,255,255,0.1)', position: 'sticky', top: 0, left: 0, zIndex: 101, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(24px)', }}>
-            <PillNav
-              logo={logo}
-              logoAlt="Company Logo"
-              items={[
-                { label: 'Home', href: '/' },
-                { label: 'About', href: '/about' },
-                { label: 'Services', href: '/services' },
-                { label: 'Contact', href: '/contact' }
-              ]}
-              activeHref="/"
-              className="custom-nav"
-              ease="power2.easeOut"
-              baseColor="transparent"
-              pillColor="transparent"
-              hoveredPillTextColor="#ffffff"
-              pillTextColor="#000000"
-            />
-          </div>
+          <Navbar />
           <Hero />
           <div style={{ backgroundColor: '#FFECC0' }}>
             <About />
