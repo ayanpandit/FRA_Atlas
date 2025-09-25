@@ -1,1200 +1,592 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  FiUpload, FiDownload, FiMap, FiCheckCircle, FiClock, FiAlertCircle, 
-  FiFileText, FiUser, FiHome, FiLayers, FiEdit3, FiSave, FiX, FiEye,
-  FiRefreshCw, FiTrash2, FiFilter, FiSearch, FiBell, FiMapPin,
-  FiTrendingUp, FiTrendingDown, FiMoreVertical, FiZoomIn, FiZoomOut,
-  FiCornerUpRight, FiCheck, FiAlertTriangle, FiInfo, FiTarget,
-  FiAward, FiDollarSign, FiCalendar, FiGlobe, FiMenu, FiChevronDown,
-  FiChevronRight, FiMaximize2, FiMinimize2
-} from 'react-icons/fi';
+  FileText, Users, Clock, CheckCircle, XCircle, AlertTriangle,
+  Filter, Search, Eye, Check, X, ChevronDown, Calendar,
+  TrendingUp, TrendingDown, BarChart3, Activity, Download
+} from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const Dashboard = () => {
-  // Enhanced state management
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [selectedPatta, setSelectedPatta] = useState(null);
-  const [extractedData, setExtractedData] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedVillage, setSelectedVillage] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dragActive, setDragActive] = useState(false);
-  const [editingField, setEditingField] = useState(null);
-  const [tempValues, setTempValues] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [mapView, setMapView] = useState('satellite');
-  const [showOCRText, setShowOCRText] = useState(false);
-  const [confidenceScores, setConfidenceScores] = useState({});
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null);
-  const [viewMode, setViewMode] = useState('split'); // 'split', 'list', 'detail'
-  
-  const fileInputRef = useRef(null);
-  const mapRef = useRef(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Enhanced stats data with trends
-  const stats = [
-    { 
-      id: 1, 
-      title: 'Total Pattas', 
-      count: 1247, 
-      trend: 8.2,
-      trendDirection: 'up',
-      icon: <FiFileText className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: '#0B6FA4',
-      bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
-      textColor: 'text-blue-600',
-      description: 'Documents processed'
-    },
-    { 
-      id: 2, 
-      title: 'Pending', 
-      count: 355, 
-      trend: -12.1,
-      trendDirection: 'down',
-      icon: <FiClock className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: '#F2A900',
-      bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
-      textColor: 'text-amber-600',
-      description: 'Awaiting review'
-    },
-    { 
-      id: 3, 
-      title: 'Verified', 
-      count: 892, 
-      trend: 15.3,
-      trendDirection: 'up',
-      icon: <FiCheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: '#2E8B57',
-      bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-      textColor: 'text-emerald-600',
-      description: 'Quality approved'
-    },
-    { 
-      id: 4, 
-      title: 'Eligible', 
-      count: 756, 
-      trend: 23.7,
-      trendDirection: 'up',
-      icon: <FiAward className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: '#2E8B57',
-      bgColor: 'bg-gradient-to-br from-green-50 to-green-100',
-      textColor: 'text-green-600',
-      description: 'Scheme qualified'
-    },
-  ];
-
-  // Enhanced recent pattas data
-  const recentPattas = [
-    { 
-      id: 'FRA-2024-001', 
-      holder: 'Ramesh Kumar Singh', 
-      fatherName: 'Late Govind Singh',
-      village: 'Chandpur', 
-      district: 'Nainital',
-      state: 'Uttarakhand',
-      area: '1.52', 
-      unit: 'hectares',
-      status: 'Approved', 
-      eligibility: 'Eligible',
-      confidence: 94,
-      uploadDate: '2024-01-15',
-      lastModified: '2024-01-18',
-      schemes: ['PM-KISAN', 'Van Dhan Yojana'],
-      coordinates: { lat: 29.3803, lng: 79.4636 },
-      ocrText: 'Sample OCR text for Ramesh Kumar Singh...',
-      thumbnail: '/api/placeholder/100/80'
-    },
-    { 
-      id: 'FRA-2024-002', 
-      holder: 'Sunita Devi Rawat', 
-      fatherName: 'Ram Singh Rawat',
-      village: 'Bhimtal', 
-      district: 'Nainital',
-      state: 'Uttarakhand',
-      area: '0.87', 
-      unit: 'hectares',
-      status: 'Processing', 
-      eligibility: 'Under Review',
-      confidence: 78,
-      uploadDate: '2024-01-16',
-      lastModified: '2024-01-16',
-      schemes: ['MGNREGA'],
-      coordinates: { lat: 29.3403, lng: 79.5636 },
-      ocrText: 'Sample OCR text for Sunita Devi...',
-      thumbnail: '/api/placeholder/100/80'
-    },
-    { 
-      id: 'FRA-2024-003', 
-      holder: 'Mohan Singh Bisht', 
-      fatherName: 'Chandra Singh',
-      village: 'Ramnagar', 
-      district: 'Nainital',
-      state: 'Uttarakhand',
-      area: '2.34', 
-      unit: 'hectares',
-      status: 'Verified', 
-      eligibility: 'Eligible',
-      confidence: 91,
-      uploadDate: '2024-01-14',
-      lastModified: '2024-01-17',
-      schemes: ['PM-KISAN', 'Van Dhan Yojana', 'MGNREGA'],
-      coordinates: { lat: 29.3203, lng: 79.5836 },
-      ocrText: 'Sample OCR text for Mohan Singh...',
-      thumbnail: '/api/placeholder/100/80'
-    },
-    { 
-      id: 'FRA-2024-004', 
-      holder: 'Priya Sharma Negi', 
-      fatherName: 'Bhim Singh Negi',
-      village: 'Haldwani', 
-      district: 'Nainital',
-      state: 'Uttarakhand',
-      area: '1.23', 
-      unit: 'hectares',
-      status: 'Rejected', 
-      eligibility: 'Not Eligible',
-      confidence: 65,
-      uploadDate: '2024-01-13',
-      lastModified: '2024-01-15',
-      schemes: [],
-      coordinates: { lat: 29.2203, lng: 79.5136 },
-      ocrText: 'Sample OCR text for Priya Sharma...',
-      thumbnail: '/api/placeholder/100/80'
-    },
-  ];
-
-  // Available government schemes
-  const availableSchemes = [
-    {
-      id: 'pm-kisan',
-      name: 'PM-KISAN',
-      description: 'Direct income support to farmers',
-      amount: '₹6,000/year',
-      criteria: ['Land ownership', 'Agricultural land', 'Below 2 hectares'],
-      confidence: 92
-    },
-    {
-      id: 'van-dhan',
-      name: 'Van Dhan Yojana',
-      description: 'Tribal forest produce scheme',
-      amount: 'Variable',
-      criteria: ['Tribal area', 'Forest produce collection', 'Community participation'],
-      confidence: 87
-    },
-    {
-      id: 'mgnrega',
-      name: 'MGNREGA',
-      description: 'Employment guarantee scheme',
-      amount: '₹309/day',
-      criteria: ['Rural household', 'Manual work capability', 'Job card holder'],
-      confidence: 78
-    }
-  ];
-
-  // Responsive breakpoint hook
-  const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
-
-  useEffect(() => {
-    const checkViewport = () => {
-      setIsMobile(window.innerWidth < 640);
-      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
-    };
-
-    checkViewport();
-    window.addEventListener('resize', checkViewport);
-    return () => window.removeEventListener('resize', checkViewport);
-  }, []);
-
-  // Notification system
-  useEffect(() => {
-    const sampleNotifications = [
-      { id: 1, type: 'success', message: 'FRA-2024-001 approved successfully', time: '2 minutes ago' },
-      { id: 2, type: 'warning', message: 'Low confidence OCR for FRA-2024-005', time: '5 minutes ago' },
-      { id: 3, type: 'info', message: 'New scheme eligibility rules updated', time: '1 hour ago' },
-    ];
-    setNotifications(sampleNotifications);
-  }, []);
-
-  // Enhanced file upload handling
-  const handleFileUpload = async (files) => {
-    const newFiles = Array.from(files).map(file => ({
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file,
-      name: file.name,
-      size: file.size,
-      status: 'uploading',
-      progress: 0,
-      uploadTime: new Date().toISOString(),
-      extractedData: null
-    }));
-
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-
-    // Simulate upload and processing
-    for (const fileObj of newFiles) {
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setUploadedFiles(prev => 
-          prev.map(f => f.id === fileObj.id ? { ...f, progress } : f)
-        );
-      }
-
-      setUploadedFiles(prev => 
-        prev.map(f => f.id === fileObj.id ? { ...f, status: 'processing' } : f)
-      );
-
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const mockData = {
-        pattaNumber: `FRA-2024-${String(uploadedFiles.length + 1).padStart(3, '0')}`,
-        holderName: 'Extracted Holder Name',
-        fatherName: 'Extracted Father Name',
-        village: 'Extracted Village',
-        district: 'Extracted District',
-        state: 'Uttarakhand',
-        landSize: (Math.random() * 3 + 0.5).toFixed(2),
-        landType: 'Agricultural',
-        issueDate: new Date().toISOString().split('T')[0],
-        coordinates: { 
-          lat: 29.3803 + (Math.random() - 0.5) * 0.1, 
-          lng: 79.4636 + (Math.random() - 0.5) * 0.1 
-        },
-        ocrText: 'Sample extracted OCR text...',
-        confidence: Math.floor(Math.random() * 30 + 70)
-      };
-
-      setUploadedFiles(prev => 
-        prev.map(f => f.id === fileObj.id ? { 
-          ...f, 
-          status: 'completed', 
-          extractedData: mockData 
-        } : f)
-      );
-
-      setConfidenceScores(prev => ({
-        ...prev,
-        [fileObj.id]: {
-          holderName: Math.floor(Math.random() * 20 + 80),
-          fatherName: Math.floor(Math.random() * 20 + 75),
-          village: Math.floor(Math.random() * 15 + 85),
-          district: Math.floor(Math.random() * 10 + 90),
-          landSize: Math.floor(Math.random() * 25 + 70)
-        }
-      }));
-
-      setNotifications(prev => [{
-        id: Date.now(),
-        type: 'success',
-        message: `${fileObj.name} processed successfully`,
-        time: 'Just now'
-      }, ...prev.slice(0, 4)]);
-    }
-  };
-
-  // Drag and drop handlers
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFileUpload(files);
-    }
-  };
-
-  // Field editing handlers
-  const startEditing = (field, currentValue) => {
-    setEditingField(field);
-    setTempValues({ [field]: currentValue });
-  };
-
-  const saveEdit = (field) => {
-    if (selectedPatta) {
-      setSelectedPatta(prev => ({
-        ...prev,
-        [field]: tempValues[field]
-      }));
-    }
-    setEditingField(null);
-    setTempValues({});
-    
-    setNotifications(prev => [{
-      id: Date.now(),
-      type: 'success',
-      message: `${field} updated successfully`,
-      time: 'Just now'
-    }, ...prev.slice(0, 4)]);
-  };
-
-  const cancelEdit = () => {
-    setEditingField(null);
-    setTempValues({});
-  };
-
-  // Filter and search
-  const filteredPattas = recentPattas.filter(patta => {
-    const matchesSearch = patta.holder.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patta.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patta.village.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || patta.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    return matchesSearch && matchesStatus;
+  // Mock data
+  const [stats, setStats] = useState({
+    total: 1247,
+    approved: 892,
+    pending: 255,
+    rejected: 100
   });
 
-  // Status badge component
-  const StatusBadge = ({ status, size = 'sm' }) => {
-    const configs = {
-      'Approved': { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: <FiCheck className="w-3 h-3" /> },
-      'Verified': { bg: 'bg-blue-100', text: 'text-blue-800', icon: <FiEye className="w-3 h-3" /> },
-      'Processing': { bg: 'bg-amber-100', text: 'text-amber-800', icon: <FiRefreshCw className="w-3 h-3" /> },
-      'Rejected': { bg: 'bg-red-100', text: 'text-red-800', icon: <FiX className="w-3 h-3" /> },
-      'Pending': { bg: 'bg-gray-100', text: 'text-gray-800', icon: <FiClock className="w-3 h-3" /> }
-    };
-    
-    const config = configs[status] || configs['Pending'];
-    const sizeClass = size === 'lg' ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs';
-    
-    return (
-      <span className={`${config.bg} ${config.text} ${sizeClass} rounded-full font-medium flex items-center gap-1 w-fit`}>
-        {config.icon}
-        {status}
-      </span>
-    );
+  const monthlyData = [
+    { month: 'Jan', uploaded: 120, approved: 95, rejected: 15, pending: 10 },
+    { month: 'Feb', uploaded: 140, approved: 110, rejected: 18, pending: 12 },
+    { month: 'Mar', uploaded: 160, approved: 125, rejected: 22, pending: 13 },
+    { month: 'Apr', uploaded: 180, approved: 145, rejected: 20, pending: 15 },
+    { month: 'May', uploaded: 200, approved: 165, rejected: 25, pending: 10 },
+    { month: 'Jun', uploaded: 175, approved: 140, rejected: 18, pending: 17 }
+  ];
+
+  const villageData = [
+    { village: 'Rampur', pattas: 85, approved: 65, pending: 15, rejected: 5 },
+    { village: 'Kumhari', pattas: 92, approved: 70, pending: 18, rejected: 4 },
+    { village: 'Bastar', pattas: 78, approved: 58, pending: 12, rejected: 8 },
+    { village: 'Jagdalpur', pattas: 105, approved: 82, pending: 16, rejected: 7 },
+    { village: 'Kanker', pattas: 68, approved: 52, pending: 11, rejected: 5 }
+  ];
+
+  const statusData = [
+    { name: 'Approved', value: stats.approved, color: '#10b981' },
+    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
+    { name: 'Rejected', value: stats.rejected, color: '#ef4444' }
+  ];
+
+  const [pattaData, setPattaData] = useState([
+    {
+      id: 'FRA2024001',
+      holderName: 'Ramesh Kumar Singh',
+      village: 'Rampur',
+      district: 'Bastar',
+      uploadDate: '2024-09-20',
+      status: 'pending',
+      officer: 'Suresh Patel',
+      area: '2.5 acres',
+      documents: 4
+    },
+    {
+      id: 'FRA2024002',
+      holderName: 'Sunita Devi',
+      village: 'Kumhari',
+      district: 'Durg',
+      uploadDate: '2024-09-19',
+      status: 'approved',
+      officer: 'Priya Sharma',
+      area: '1.8 acres',
+      documents: 5
+    },
+    {
+      id: 'FRA2024003',
+      holderName: 'Mohan Lal Verma',
+      village: 'Bastar',
+      district: 'Bastar',
+      uploadDate: '2024-09-18',
+      status: 'rejected',
+      officer: 'Rajesh Gupta',
+      area: '3.2 acres',
+      documents: 3
+    },
+    {
+      id: 'FRA2024004',
+      holderName: 'Geeta Bai',
+      village: 'Jagdalpur',
+      district: 'Bastar',
+      uploadDate: '2024-09-17',
+      status: 'pending',
+      officer: 'Suresh Patel',
+      area: '2.1 acres',
+      documents: 4
+    },
+    {
+      id: 'FRA2024005',
+      holderName: 'Vishnu Prasad',
+      village: 'Kanker',
+      district: 'Kanker',
+      uploadDate: '2024-09-16',
+      status: 'approved',
+      officer: 'Priya Sharma',
+      area: '1.5 acres',
+      documents: 5
+    },
+    {
+      id: 'FRA2024006',
+      holderName: 'Kavita Sharma',
+      village: 'Rampur',
+      district: 'Bastar',
+      uploadDate: '2024-09-15',
+      status: 'pending',
+      officer: 'Rajesh Gupta',
+      area: '3.1 acres',
+      documents: 4
+    }
+  ]);
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved': return <CheckCircle className="w-4 h-4 text-green-400" />;
+      case 'pending': return <Clock className="w-4 h-4 text-yellow-400" />;
+      case 'rejected': return <XCircle className="w-4 h-4 text-red-400" />;
+      default: return <AlertTriangle className="w-4 h-4 text-gray-400" />;
+    }
   };
 
-  // Confidence indicator component
-  const ConfidenceIndicator = ({ score, field }) => {
-    const getColor = (score) => {
-      if (score >= 90) return 'text-emerald-600 bg-emerald-100';
-      if (score >= 70) return 'text-amber-600 bg-amber-100';
-      return 'text-red-600 bg-red-100';
+  const getStatusBadge = (status) => {
+    const styles = {
+      approved: 'bg-green-900/20 text-green-300 border border-green-700',
+      pending: 'bg-yellow-900/20 text-yellow-300 border border-yellow-700',
+      rejected: 'bg-red-900/20 text-red-300 border border-red-700'
     };
+    return styles[status] || 'bg-gray-900/20 text-gray-300 border border-gray-700';
+  };
 
-    const getIcon = (score) => {
-      if (score >= 90) return <FiCheck className="w-3 h-3" />;
-      if (score >= 70) return <FiAlertTriangle className="w-3 h-3" />;
-      return <FiAlertCircle className="w-3 h-3" />;
+  const handleAction = (pattaId, action) => {
+    setPattaData(prev => prev.map(patta => 
+      patta.id === pattaId 
+        ? { ...patta, status: action === 'approve' ? 'approved' : 'rejected' }
+        : patta
+    ));
+    
+    const updatedData = pattaData.map(patta => 
+      patta.id === pattaId 
+        ? { ...patta, status: action === 'approve' ? 'approved' : 'rejected' }
+        : patta
+    );
+    
+    const newStats = {
+      total: updatedData.length,
+      approved: updatedData.filter(p => p.status === 'approved').length,
+      pending: updatedData.filter(p => p.status === 'pending').length,
+      rejected: updatedData.filter(p => p.status === 'rejected').length
     };
+    
+    setStats(newStats);
+  };
 
-    return (
-      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getColor(score)}`}>
-        {getIcon(score)}
-        {score}%
+  const filteredData = pattaData.filter(patta => {
+    const matchesStatus = selectedStatus === 'all' || patta.status === selectedStatus;
+    const matchesVillage = selectedVillage === 'all' || patta.village === selectedVillage;
+    const matchesSearch = patta.holderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         patta.id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesVillage && matchesSearch;
+  });
+
+  const StatCard = ({ title, value, change, icon: Icon, trend }) => (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-sm text-gray-400 mb-1">{title}</p>
+          <p className="text-2xl font-semibold text-white mb-2">{value.toLocaleString()}</p>
+          <div className="flex items-center space-x-2">
+            {trend === 'up' ? (
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-red-400" />
+            )}
+            <span className={`text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+              {change}
+            </span>
+          </div>
+        </div>
+        <div className="p-3 bg-gray-700 rounded-lg">
+          <Icon className="w-6 h-6 text-gray-300" />
+        </div>
       </div>
-    );
-  };
-
-  // Mobile View Mode Selector
-  const ViewModeSelector = () => (
-    <div className="flex bg-gray-100 rounded-lg p-1 mb-4 lg:hidden">
-      <button
-        onClick={() => setViewMode('list')}
-        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-          viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-        }`}
-      >
-        List
-      </button>
-      <button
-        onClick={() => setViewMode('detail')}
-        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-          viewMode === 'detail' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-        }`}
-        disabled={!selectedPatta}
-      >
-        Details
-      </button>
     </div>
   );
 
-  // Editable field component
-  const EditableField = ({ label, value, field, confidence }) => {
-    const isEditing = editingField === field;
-    
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">{label}</label>
-          {confidence && <ConfidenceIndicator score={confidence} field={field} />}
-        </div>
-        <div className="flex items-center gap-2">
-          {isEditing ? (
-            <>
-              <input
-                type="text"
-                value={tempValues[field] || ''}
-                onChange={(e) => setTempValues(prev => ({ ...prev, [field]: e.target.value }))}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                autoFocus
-              />
-              <button
-                onClick={() => saveEdit(field)}
-                className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors touch-manipulation"
-              >
-                <FiSave className="w-4 h-4" />
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors touch-manipulation"
-              >
-                <FiX className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-gray-800 text-sm">
-                {value || 'Not extracted'}
-              </div>
-              <button
-                onClick={() => startEditing(field, value)}
-                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors touch-manipulation"
-              >
-                <FiEdit3 className="w-4 h-4" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Expandable Section Component for Mobile
-  const ExpandableSection = ({ title, children, id, icon }) => {
-    const isExpanded = expandedSection === id;
-    
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
-        <button
-          onClick={() => setExpandedSection(isExpanded ? null : id)}
-          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="text-blue-600">{icon}</div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          </div>
-          {isExpanded ? <FiChevronDown className="w-5 h-5 text-gray-500" /> : <FiChevronRight className="w-5 h-5 text-gray-500" />}
-        </button>
-        {isExpanded && (
-          <div className="p-4 pt-0 border-t border-gray-100">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <div className="w-full min-h-screen bg-gray-50">
-      {/* Enhanced Mobile-First Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                FRA Portal
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1 hidden sm:block">
-                Forest Rights Act Document Processing System
-              </p>
+    <div className="min-h-screen bg-gray-900 p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Page Header */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-semibold text-white mb-1">Forest Rights Act Dashboard</h1>
+              <p className="text-gray-400 text-sm">Gram Sabha Officer Management Portal</p>
             </div>
-            
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              <FiMenu className="w-6 h-6" />
-            </button>
-
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by holder name, ID, or village..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Status</option>
-                <option value="approved">Approved</option>
-                <option value="verified">Verified</option>
-                <option value="processing">Processing</option>
-                <option value="rejected">Rejected</option>
-              </select>
-
-              <div className="relative">
-                <button className="relative p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <FiBell className="w-5 h-5 text-gray-600" />
-                  {notifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {notifications.length}
-                    </span>
-                  )}
-                </button>
+            <div className="flex items-center space-x-3">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                Export Report
+              </button>
+              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                <span className="text-xs font-medium text-gray-300">GO</span>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Mobile Search - Collapsible */}
-          {mobileMenuOpen && (
-            <div className="mt-4 space-y-3 lg:hidden">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Applications"
+            value={stats.total}
+            change="+12.3%"
+            icon={FileText}
+            trend="up"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approved}
+            change="+8.1%"
+            icon={CheckCircle}
+            trend="up"
+          />
+          <StatCard
+            title="Under Review"
+            value={stats.pending}
+            change="-5.2%"
+            icon={Clock}
+            trend="down"
+          />
+          <StatCard
+            title="Rejected"
+            value={stats.rejected}
+            change="+3.4%"
+            icon={XCircle}
+            trend="up"
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Monthly Trends */}
+          <div className="xl:col-span-2 bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-sm font-medium text-white">Application Trends</h3>
+              <p className="text-xs text-gray-400">Monthly performance overview</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
+                  <YAxis stroke="#9ca3af" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '6px',
+                      color: '#ffffff'
+                    }} 
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="uploaded" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Status Distribution */}
+          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-sm font-medium text-white">Status Distribution</h3>
+              <p className="text-xs text-gray-400">Current breakdown</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPieChart>
+                  <RechartsPieChart data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </RechartsPieChart>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '6px',
+                      color: '#ffffff'
+                    }} 
+                  />
+                  <Legend />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Village Distribution Chart */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-700">
+            <h3 className="text-sm font-medium text-white">Regional Distribution</h3>
+            <p className="text-xs text-gray-400">Applications by village/district</p>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={villageData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="village" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '6px',
+                    color: '#ffffff'
+                  }} 
+                />
+                <Bar dataKey="pattas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Key Insights Panel */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <h4 className="text-sm font-medium text-white">Approval Rate</h4>
+            </div>
+            <p className="text-xl font-semibold text-white mb-1">{((stats.approved / stats.total) * 100).toFixed(1)}%</p>
+            <p className="text-xs text-gray-400">High success rate this month</p>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <Clock className="w-5 h-5 text-yellow-400" />
+              <h4 className="text-sm font-medium text-white">Avg. Processing</h4>
+            </div>
+            <p className="text-xl font-semibold text-white mb-1">4.2 days</p>
+            <p className="text-xs text-gray-400">Faster than target of 7 days</p>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <Users className="w-5 h-5 text-blue-400" />
+              <h4 className="text-sm font-medium text-white">Active Officers</h4>
+            </div>
+            <p className="text-xl font-semibold text-white mb-1">12</p>
+            <p className="text-xs text-gray-400">Processing applications</p>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <AlertTriangle className="w-5 h-5 text-orange-400" />
+              <h4 className="text-sm font-medium text-white">Priority Cases</h4>
+            </div>
+            <p className="text-xl font-semibold text-white mb-1">8</p>
+            <p className="text-xs text-gray-400">Require immediate attention</p>
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors text-sm"
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search applications..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
-              
-              <div className="flex space-x-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            </div>
+
+            {showFilters && (
+              <div className="flex flex-wrap gap-3">
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="all">All Status</option>
+                  <option value="pending">Pending Review</option>
                   <option value="approved">Approved</option>
-                  <option value="verified">Verified</option>
-                  <option value="processing">Processing</option>
                   <option value="rejected">Rejected</option>
                 </select>
                 
-                <button className="relative p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <FiBell className="w-5 h-5 text-gray-600" />
-                  {notifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {notifications.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-8 py-6">
-        {/* Enhanced Responsive Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-          {stats.map((stat) => (
-            <div key={stat.id} className={`${stat.bgColor} rounded-xl shadow-sm border border-white/20 p-3 sm:p-4 lg:p-6 hover:shadow-md transition-all duration-200`}>
-              <div className="flex items-start justify-between mb-2 lg:mb-4">
-                <div className={`${stat.textColor} p-2 lg:p-3 rounded-lg bg-white/50`}>
-                  {stat.icon}
-                </div>
-                <div className={`flex items-center text-xs font-medium ${stat.trendDirection === 'up' ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {stat.trendDirection === 'up' ? <FiTrendingUp className="w-3 h-3 mr-1" /> : <FiTrendingDown className="w-3 h-3 mr-1" />}
-                  {Math.abs(stat.trend)}%
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-gray-600 text-xs sm:text-sm font-medium leading-tight">{stat.title}</h3>
-                <p className="text-gray-900 text-lg sm:text-xl lg:text-2xl font-bold">{stat.count.toLocaleString()}</p>
-                <p className="text-gray-500 text-xs hidden sm:block">{stat.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile View Mode Selector */}
-        {isMobile && <ViewModeSelector />}
-
-        {/* Responsive Layout */}
-        <div className={`${isMobile ? 'block' : 'grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8'}`}>
-          {/* Left Column - Upload & List (Mobile: Conditional Rendering) */}
-          {(!isMobile || viewMode === 'list') && (
-            <div className={`${isMobile ? 'block' : 'xl:col-span-5'} space-y-6`}>
-              {/* Enhanced Upload Section */}
-              {isMobile ? (
-                <ExpandableSection 
-                  title="Upload Document" 
-                  id="upload"
-                  icon={<FiUpload className="w-5 h-5" />}
+                <select 
+                  value={selectedVillage}
+                  onChange={(e) => setSelectedVillage(e.target.value)}
+                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-blue-500"
                 >
-                  <UploadSection />
-                </ExpandableSection>
-              ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                      <FiUpload className="mr-3 text-blue-600" /> Upload Patta Document
-                    </h2>
-                    <div className="text-sm text-gray-500">
-                      Max 10MB • PDF, JPG, PNG
+                  <option value="all">All Villages</option>
+                  <option value="Rampur">Rampur</option>
+                  <option value="Kumhari">Kumhari</option>
+                  <option value="Bastar">Bastar</option>
+                  <option value="Jagdalpur">Jagdalpur</option>
+                  <option value="Kanker">Kanker</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Applications Table */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-white">Applications Management</h3>
+                <p className="text-xs text-gray-400">Total {filteredData.length} applications • {stats.pending} pending review</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-750 border-b border-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Application</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Applicant</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Officer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {filteredData.map((patta, index) => (
+                  <tr key={patta.id} className="hover:bg-gray-750 transition-colors">
+                    <td className="px-4 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-white">{patta.id}</div>
+                        <div className="text-xs text-gray-400">{patta.area} • {patta.documents} docs</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-gray-300">
+                            {patta.holderName.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-white">{patta.holderName}</div>
+                          <div className="text-xs text-gray-400">{patta.uploadDate}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-white">{patta.village}</div>
+                      <div className="text-xs text-gray-400">{patta.district}</div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(patta.status)}`}>
+                        {getStatusIcon(patta.status)}
+                        <span className="ml-1 capitalize">{patta.status}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-white">{patta.officer}</div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center space-x-2">
+                        <button className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded transition-all">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {patta.status === 'pending' && (
+                          <>
+                            <button 
+                              onClick={() => handleAction(patta.id, 'approve')}
+                              className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-700 rounded transition-all"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleAction(patta.id, 'reject')}
+                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden">
+            {filteredData.map((patta) => (
+              <div key={patta.id} className="p-4 border-b border-gray-700">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-300">
+                        {patta.holderName.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">{patta.holderName}</h4>
+                      <p className="text-xs text-gray-400">{patta.id}</p>
                     </div>
                   </div>
-                  <UploadSection />
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(patta.status)}`}>
+                    {getStatusIcon(patta.status)}
+                    <span className="ml-1 capitalize">{patta.status}</span>
+                  </span>
                 </div>
-              )}
-
-              {/* Recent Pattas List */}
-              {isMobile ? (
-                <ExpandableSection 
-                  title="Recent Submissions" 
-                  id="recent"
-                  icon={<FiFileText className="w-5 h-5" />}
-                >
-                  <PattasList />
-                </ExpandableSection>
-              ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                      <FiFileText className="mr-3 text-blue-600" /> Recent Submissions
-                    </h2>
-                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                      View All
-                    </button>
+                
+                <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+                  <div>
+                    <span className="text-gray-400">Location:</span>
+                    <p className="text-white">{patta.village}, {patta.district}</p>
                   </div>
-                  <PattasList />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Right Column - Detail View (Mobile: Conditional Rendering) */}
-          {(!isMobile || viewMode === 'detail') && (
-            <div className={`${isMobile ? 'block' : 'xl:col-span-7'} space-y-6`}>
-              {/* Document Detail Panel */}
-              {selectedPatta ? (
-                <DocumentDetail />
-              ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 lg:p-12">
-                  <div className="text-center">
-                    <FiFileText className="mx-auto w-12 lg:w-16 h-12 lg:h-16 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Document Selected</h3>
-                    <p className="text-gray-600 text-sm lg:text-base">Select a patta from the list or upload a new document to view details</p>
-                    {isMobile && (
-                      <button
-                        onClick={() => setViewMode('list')}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Browse Documents
-                      </button>
-                    )}
+                  <div>
+                    <span className="text-gray-400">Area:</span>
+                    <p className="text-white">{patta.area}</p>
                   </div>
-                </div>
-              )}
-
-              {/* Map and Scheme Eligibility - Mobile: Expandable */}
-              {!isMobile ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <MapSection />
-                  <SchemeEligibility />
-                </div>
-              ) : selectedPatta && (
-                <>
-                  <ExpandableSection 
-                    title="Land Location" 
-                    id="map"
-                    icon={<FiMap className="w-5 h-5" />}
-                  >
-                    <MapSection />
-                  </ExpandableSection>
-                  
-                  <ExpandableSection 
-                    title="Scheme Eligibility" 
-                    id="schemes"
-                    icon={<FiAward className="w-5 h-5" />}
-                  >
-                    <SchemeEligibility />
-                  </ExpandableSection>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Enhanced Mobile-Optimized Notifications */}
-      {notifications.length > 0 && (
-        <div className={`fixed ${isMobile ? 'bottom-4 left-4 right-4' : 'bottom-4 right-4'} space-y-2 z-50 max-w-sm`}>
-          {notifications.slice(0, isMobile ? 2 : 3).map((notification) => (
-            <div key={notification.id} className={`p-3 lg:p-4 rounded-lg shadow-lg border transform transition-all duration-300 ${
-              notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' :
-              notification.type === 'warning' ? 'bg-amber-50 border-amber-200' :
-              'bg-blue-50 border-blue-200'
-            }`}>
-              <div className="flex items-start space-x-3">
-                <div className={`flex-shrink-0 ${
-                  notification.type === 'success' ? 'text-emerald-600' :
-                  notification.type === 'warning' ? 'text-amber-600' :
-                  'text-blue-600'
-                }`}>
-                  {notification.type === 'success' ? <FiCheckCircle className="w-4 h-4 lg:w-5 lg:h-5" /> :
-                   notification.type === 'warning' ? <FiAlertTriangle className="w-4 h-4 lg:w-5 lg:h-5" /> :
-                   <FiInfo className="w-4 h-4 lg:w-5 lg:h-5" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{notification.message}</p>
-                  <p className="text-xs text-gray-600 mt-1">{notification.time}</p>
-                </div>
-                <button 
-                  onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 touch-manipulation"
-                >
-                  <FiX className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  // Component functions (extracted for readability)
-  function UploadSection() {
-    return (
-      <>
-        <div 
-          className={`border-2 border-dashed rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-200 cursor-pointer touch-manipulation
-            ${dragActive 
-              ? 'border-blue-400 bg-blue-50' 
-              : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-            }`}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input 
-            ref={fileInputRef}
-            type="file" 
-            className="hidden" 
-            accept=".pdf,.jpg,.jpeg,.png" 
-            multiple
-            onChange={(e) => handleFileUpload(e.target.files)}
-          />
-          
-          <div className={`mx-auto w-12 h-12 lg:w-16 lg:h-16 rounded-full flex items-center justify-center mb-3 lg:mb-4 ${dragActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
-            <FiUpload className={`w-6 h-6 lg:w-8 lg:h-8 ${dragActive ? 'text-blue-600' : 'text-gray-400'}`} />
-          </div>
-          
-          <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">
-            {dragActive ? 'Drop files here' : (isMobile ? 'Tap to upload' : 'Drag & drop your files here')}
-          </h3>
-          <p className="text-sm text-gray-600 mb-3 lg:mb-4">
-            {!isMobile && 'or'} <span className="text-blue-600 font-medium">browse files</span>
-          </p>
-          <div className="flex items-center justify-center gap-2 lg:gap-4 text-xs lg:text-sm text-gray-500">
-            <span className="flex items-center"><FiFileText className="w-3 h-3 lg:w-4 lg:h-4 mr-1" /> PDF</span>
-            <span className="flex items-center"><FiFileText className="w-3 h-3 lg:w-4 lg:h-4 mr-1" /> JPG</span>
-            <span className="flex items-center"><FiFileText className="w-3 h-3 lg:w-4 lg:h-4 mr-1" /> PNG</span>
-          </div>
-        </div>
-
-        {/* Upload Queue */}
-        {uploadedFiles.length > 0 && (
-          <div className="mt-4 lg:mt-6 space-y-3">
-            <h3 className="text-sm font-medium text-gray-900">Upload Queue</h3>
-            {uploadedFiles.slice(-3).map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <FiFileText className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <div>
+                    <span className="text-gray-400">Officer:</span>
+                    <p className="text-white">{patta.officer}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Documents:</span>
+                    <p className="text-white">{patta.documents}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  {file.status === 'uploading' && (
-                    <div className="w-16 lg:w-20 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${file.progress}%` }}
-                      ></div>
-                    </div>
-                  )}
-                  
-                  <StatusBadge status={file.status === 'uploading' ? 'Processing' : file.status === 'processing' ? 'Processing' : 'Approved'} />
-                  
-                  {file.status === 'completed' && (
-                    <button
-                      onClick={() => {
-                        setSelectedPatta(file.extractedData);
-                        if (isMobile) setViewMode('detail');
-                      }}
-                      className="p-1 text-blue-600 hover:bg-blue-100 rounded touch-manipulation"
-                    >
-                      <FiEye className="w-4 h-4" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Applied: {patta.uploadDate}</span>
+                  <div className="flex space-x-2">
+                    <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600 transition-colors">
+                      View
                     </button>
-                  )}
+                    {patta.status === 'pending' && (
+                      <>
+                        <button 
+                          onClick={() => handleAction(patta.id, 'approve')}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          onClick={() => handleAction(patta.id, 'reject')}
+                          className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </>
-    );
-  }
-
-  function PattasList() {
-    return (
-      <div className="space-y-3">
-        {filteredPattas.slice(0, isMobile ? 10 : 5).map((patta) => (
-          <div 
-            key={patta.id} 
-            className={`p-3 lg:p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md touch-manipulation
-              ${selectedPatta?.id === patta.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}
-            `}
-            onClick={() => {
-              setSelectedPatta(patta);
-              if (isMobile) setViewMode('detail');
-            }}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 lg:space-x-3 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-900 truncate">{patta.holder}</h3>
-                  <StatusBadge status={patta.status} />
-                </div>
-                <div className="grid grid-cols-2 gap-1 lg:gap-2 text-xs text-gray-600">
-                  <div><span className="font-medium">ID:</span> {patta.id}</div>
-                  <div><span className="font-medium">Village:</span> {patta.village}</div>
-                  <div><span className="font-medium">Area:</span> {patta.area} {patta.unit}</div>
-                  <div><span className="font-medium">Date:</span> {new Date(patta.uploadDate).toLocaleDateString()}</div>
-                </div>
-                <div className="flex items-center mt-2 space-x-2 flex-wrap gap-1">
-                  <ConfidenceIndicator score={patta.confidence} />
-                  {patta.schemes.length > 0 && (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      {patta.schemes.length} scheme{patta.schemes.length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded touch-manipulation">
-                <FiMoreVertical className="w-4 h-4" />
-              </button>
+          
+          {filteredData.length === 0 && (
+            <div className="p-8 text-center">
+              <FileText className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-sm font-medium text-white mb-2">No applications found</h3>
+              <p className="text-xs text-gray-400">Try adjusting your search criteria or filters.</p>
             </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  function DocumentDetail() {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center">
-            {isMobile && (
-              <button
-                onClick={() => setViewMode('list')}
-                className="mr-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <FiCornerUpRight className="w-5 h-5 transform rotate-180" />
-              </button>
-            )}
-            <h2 className="text-lg lg:text-xl font-semibold text-gray-900 flex items-center">
-              <FiFileText className="mr-2 lg:mr-3 text-blue-600" /> 
-              <span className="hidden sm:inline">Patta Details - </span>
-              {selectedPatta.id}
-            </h2>
-          </div>
-          <div className="flex items-center space-x-2 flex-wrap gap-2">
-            <StatusBadge status={selectedPatta.status} size={isMobile ? 'sm' : 'lg'} />
-            <button 
-              onClick={() => setShowOCRText(!showOCRText)}
-              className="px-2 lg:px-3 py-1 lg:py-1.5 text-xs lg:text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation"
-            >
-              {showOCRText ? 'Hide' : 'Show'} OCR
-            </button>
-          </div>
-        </div>
-
-        {/* OCR Text Panel */}
-        {showOCRText && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Raw OCR Text</h3>
-            <div className="max-h-32 overflow-y-auto text-sm text-gray-600 font-mono bg-white p-3 rounded border">
-              {selectedPatta.ocrText}
-            </div>
-          </div>
-        )}
-
-        {/* Extracted Fields */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
-          <div className="space-y-4">
-            <h3 className="text-base lg:text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-              Document Information
-            </h3>
-            <EditableField 
-              label="Patta Number" 
-              value={selectedPatta.id} 
-              field="pattaNumber"
-              confidence={confidenceScores[selectedPatta.id]?.pattaNumber || 95}
-            />
-            <EditableField 
-              label="Land Size" 
-              value={`${selectedPatta.area} ${selectedPatta.unit}`} 
-              field="landSize"
-              confidence={confidenceScores[selectedPatta.id]?.landSize || 87}
-            />
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Issue Date</label>
-              <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-800 text-sm">
-                {new Date(selectedPatta.uploadDate).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-base lg:text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-              Holder Information
-            </h3>
-            <EditableField 
-              label="Holder Name" 
-              value={selectedPatta.holder} 
-              field="holderName"
-              confidence={confidenceScores[selectedPatta.id]?.holderName || 92}
-            />
-            <EditableField 
-              label="Father's Name" 
-              value={selectedPatta.fatherName} 
-              field="fatherName"
-              confidence={confidenceScores[selectedPatta.id]?.fatherName || 89}
-            />
-            <EditableField 
-              label="Village" 
-              value={selectedPatta.village} 
-              field="village"
-              confidence={confidenceScores[selectedPatta.id]?.village || 94}
-            />
-            <EditableField 
-              label="District" 
-              value={selectedPatta.district} 
-              field="district"
-              confidence={confidenceScores[selectedPatta.id]?.district || 96}
-            />
-          </div>
-        </div>
-
-        {/* Status Stepper */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Processing Status</h3>
-          <div className="flex items-center justify-between overflow-x-auto">
-            <div className="flex items-center space-x-2 lg:space-x-4 min-w-max">
-              <div className={`flex items-center space-x-2 ${selectedPatta.status !== 'Rejected' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${selectedPatta.status !== 'Rejected' ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                  <FiUpload className="w-3 h-3 lg:w-4 lg:h-4" />
-                </div>
-                <span className="text-xs lg:text-sm font-medium hidden sm:inline">Uploaded</span>
-              </div>
-              <div className={`w-4 lg:w-8 h-0.5 ${selectedPatta.status === 'Verified' || selectedPatta.status === 'Approved' ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center space-x-2 ${selectedPatta.status === 'Verified' || selectedPatta.status === 'Approved' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${selectedPatta.status === 'Verified' || selectedPatta.status === 'Approved' ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                  <FiEye className="w-3 h-3 lg:w-4 lg:h-4" />
-                </div>
-                <span className="text-xs lg:text-sm font-medium hidden sm:inline">Verified</span>
-              </div>
-              <div className={`w-4 lg:w-8 h-0.5 ${selectedPatta.status === 'Approved' ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center space-x-2 ${selectedPatta.status === 'Approved' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${selectedPatta.status === 'Approved' ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                  <FiCheckCircle className="w-3 h-3 lg:w-4 lg:h-4" />
-                </div>
-                <span className="text-xs lg:text-sm font-medium hidden sm:inline">Approved</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 ml-4">
-              {selectedPatta.status === 'Processing' && (
-                <button className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-manipulation">
-                  Verify
-                </button>
-              )}
-              {selectedPatta.status === 'Verified' && (
-                <button className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors touch-manipulation">
-                  Approve
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 lg:gap-3">
-          <button className="flex items-center px-3 lg:px-4 py-2 text-xs lg:text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors touch-manipulation">
-            <FiDownload className="mr-1 lg:mr-2 w-3 h-3 lg:w-4 lg:h-4" /> Export
-          </button>
-          <button className="flex items-center px-3 lg:px-4 py-2 text-xs lg:text-sm bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors touch-manipulation">
-            <FiMapPin className="mr-1 lg:mr-2 w-3 h-3 lg:w-4 lg:h-4" /> Map
-          </button>
-          <button className="flex items-center px-3 lg:px-4 py-2 text-xs lg:text-sm bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors touch-manipulation">
-            <FiEdit3 className="mr-1 lg:mr-2 w-3 h-3 lg:w-4 lg:h-4" /> Notes
-          </button>
+          )}
         </div>
       </div>
-    );
-  }
-
-  function MapSection() {
-    return (
-      <div className={`${isMobile ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 p-6'}`}>
-        {!isMobile && (
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <FiMap className="mr-2 text-blue-600" /> Land Location
-            </h3>
-            <div className="flex items-center space-x-2">
-              <select 
-                value={mapView} 
-                onChange={(e) => setMapView(e.target.value)}
-                className="text-xs border border-gray-300 rounded px-2 py-1"
-              >
-                <option value="satellite">Satellite</option>
-                <option value="street">Street</option>
-                <option value="terrain">Terrain</option>
-              </select>
-              <button className="p-1 hover:bg-gray-100 rounded">
-                <FiLayers className="w-4 h-4 text-gray-600" />
-              </button>
-            </div>
-          </div>
-        )}
-        
-        <div className={`relative ${isMobile ? 'h-48' : 'h-64'} bg-gray-100 rounded-lg overflow-hidden`}>
-          <div 
-            className="w-full h-full bg-cover bg-center relative"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%2393c5fd'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-family='Arial' font-size='14' fill='%23ffffff'%3EInteractive Map Area%3C/text%3E%3C/svg%3E")`
-            }}
-          >
-            {selectedPatta && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 w-4 h-4 rounded-full border-2 border-white shadow-lg animate-pulse">
-              </div>
-            )}
-            
-            <div className="absolute top-2 right-2 flex flex-col space-y-1">
-              <button className="p-1.5 lg:p-2 bg-white rounded shadow hover:bg-gray-50 touch-manipulation">
-                <FiZoomIn className="w-3 h-3 lg:w-4 lg:h-4" />
-              </button>
-              <button className="p-1.5 lg:p-2 bg-white rounded shadow hover:bg-gray-50 touch-manipulation">
-                <FiZoomOut className="w-3 h-3 lg:w-4 lg:h-4" />
-              </button>
-              <button className="p-1.5 lg:p-2 bg-white rounded shadow hover:bg-gray-50 touch-manipulation">
-                <FiTarget className="w-3 h-3 lg:w-4 lg:h-4" />
-              </button>
-            </div>
-
-            {selectedPatta && (
-              <div className="absolute bottom-2 left-2 bg-white rounded-lg shadow-lg p-2 lg:p-3 max-w-36 lg:max-w-48">
-                <div className="text-xs lg:text-sm font-medium text-gray-900">{selectedPatta.holder}</div>
-                <div className="text-xs text-gray-600">{selectedPatta.area} {selectedPatta.unit}</div>
-                <div className="text-xs text-gray-600">{selectedPatta.village}, {selectedPatta.district}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function SchemeEligibility() {
-    return (
-      <div className={`${isMobile ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 p-6'}`}>
-        {!isMobile && (
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-4">
-            <FiAward className="mr-2 text-emerald-600" /> Scheme Eligibility
-          </h3>
-        )}
-        
-        {selectedPatta ? (
-          <div className="space-y-4">
-            {availableSchemes.map((scheme) => {
-              const isEligible = selectedPatta.schemes.includes(scheme.name);
-              return (
-                <div key={scheme.id} className={`p-3 lg:p-4 rounded-lg border ${isEligible ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'}`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm lg:text-base font-medium ${isEligible ? 'text-emerald-900' : 'text-gray-700'}`}>
-                        {scheme.name}
-                      </h4>
-                      <p className={`text-xs lg:text-sm ${isEligible ? 'text-emerald-700' : 'text-gray-600'}`}>
-                        {scheme.description}
-                      </p>
-                      <div className={`text-xs font-medium mt-1 ${isEligible ? 'text-emerald-800' : 'text-gray-500'}`}>
-                        {scheme.amount}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      <ConfidenceIndicator score={scheme.confidence} />
-                      {isEligible ? (
-                        <FiCheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-600" />
-                      ) : (
-                        <FiAlertCircle className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {scheme.criteria.map((criterion, idx) => (
-                      <span key={idx} className={`text-xs px-2 py-1 rounded-full ${isEligible ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
-                        {criterion}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex space-x-2">
-                    {isEligible ? (
-                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 bg-emerald-600 text-white text-xs lg:text-sm rounded-lg hover:bg-emerald-700 transition-colors touch-manipulation">
-                        Approve
-                      </button>
-                    ) : (
-                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 bg-gray-600 text-white text-xs lg:text-sm rounded-lg hover:bg-gray-700 transition-colors touch-manipulation">
-                        Mark Eligible
-                      </button>
-                    )}
-                    <button className="px-2 lg:px-3 py-1 lg:py-1.5 border border-gray-300 text-gray-700 text-xs lg:text-sm rounded-lg hover:bg-gray-50 transition-colors touch-manipulation">
-                      Add Note
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-6 lg:py-8">
-            <FiAward className="mx-auto w-8 lg:w-12 h-8 lg:h-12 text-gray-300 mb-3" />
-            <p className="text-gray-600 text-sm lg:text-base">Select a patta to check scheme eligibility</p>
-          </div>
-        )}
-      </div>
-    );
-  }
+    </div>
+  );
 };
 
 export default Dashboard;

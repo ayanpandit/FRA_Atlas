@@ -7,6 +7,9 @@ import Map_Land_Analysis from '../pages/map_land_analysis';
 import UserManagement from '../pages/user_management';
 import user_dashboard from '../pages/user_dashboard';
 import UserDashboard from '../pages/user_dashboard';
+import Claimant_patta from '../pages/Claimant_patta';
+import Schemes from '../pages/Schemes_&_Benefits';  
+import FRAAtlas_user from '../pages/FRA_Atlas_user';
 
 const Workflow_User = () => {
   const [activeComponent, setActiveComponent] = useState('dashboard');
@@ -66,13 +69,13 @@ const Workflow_User = () => {
     switch (activeComponent) {
       case 'dashboard':
         return <UserDashboard />;
-      case 'patta_management':
-        return <PattaManagement />;
-      case 'beneficiary_schemes':
-        return <BeneficiarySchemes />;
-      case 'map_land_analysis':
-        return <Map_Land_Analysis />;
-        case 'user_management':
+      case 'patta':
+        return <Claimant_patta />;
+      case 'schemes':
+        return <Schemes />;
+      case 'fra_atlas':
+        return <FRAAtlas_user />;
+      case 'user_management':
         return <UserManagement />;
       default:
         return <UserDashboard/>;

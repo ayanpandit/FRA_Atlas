@@ -127,7 +127,10 @@ const Hero = () => {
             FRA Portal
           </button>
           <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-          <button className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition">
+          <button 
+            className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition"
+            onClick={() => navigate('/fra_documentation')}
+          >
             FRA Documentation
           </button>
         </div>
