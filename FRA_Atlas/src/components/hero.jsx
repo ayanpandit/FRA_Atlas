@@ -80,9 +80,11 @@ const Hero = () => {
         style={{ zIndex: 1 }}
       ></div>
 
-      <div className="relative z-10 max-w-3xl px-6">
-        {/* 1. The small, beautiful Tag (Above H1) */}
-        <p className="mb-2 text-xs font-semibold tracking-widest uppercase text-center" style={{ marginTop: '2em' }}>
+      {/* Description Box */}
+
+      {/* Bottom-left: Tag, H1, Subtext */}
+    <div className="absolute left-0 bottom-0 z-10 p-6 md:p-12 max-w-2xl text-left mb-24 md:mb-10 flex flex-col gap-4" style={{maxWidth: '750px'}}>
+        <p className="mb-2 text-xs tracking-widest uppercase">
           <span 
             className="inline-block px-4 py-1 rounded-full text-black shadow-xl transition duration-300 ease-in-out transform hover:scale-105" 
             style={{ backgroundColor: '#FACC15' }}
@@ -90,51 +92,39 @@ const Hero = () => {
             {tagText}
           </span>
         </p>
-
-        {/* 2. The Main H1 Title (Typing Animation) */}
-        <h1 className="text-3xl md:text-5xl font-bold text-white mb-2" style={{ minHeight: '2.5em', marginTop: '1em' }}>
-          {(() => {
-            const fraPart = "FRA";
-            const cursor = "__";
-            const isTyping = typed.endsWith(cursor);
-            const textToShow = isTyping ? typed.slice(0, -2) : typed;
-            const fraStartIndex = 0;
-            const fraEndIndex = fraPart.length;
-            const typedFraPart = textToShow.slice(fraStartIndex, fraEndIndex);
-            const typedRestPart = textToShow.slice(fraEndIndex);
-            return (
-              <>
-                <span style={{ color: '#FACC15' }}>{typedFraPart}</span>
-                {typedRestPart}
-                {isTyping && cursor}
-              </>
-            );
-          })()}
+          <h1 className="text-2xl md:text-6xl font-bold text-[#F6FFB2] mb-4" style={{ minHeight: '2.5em' }}>
+          <span style={{ color: '#FACC15' }}>FRA Atlas</span><br /> Mapping Rights, Powering Targeted Tribal Development
         </h1>
-        {/* Subtext and Buttons */}
-        <p
-          className={`text-lg md:text-xl text-gray-200 mb-4 transition-opacity duration-700 ${showSub ? 'opacity-100' : 'opacity-0'}`}
-          style={{ marginTop: showSub ? '0' : '-1em' }}
-        >
-          {subText}
+          <p
+            className={`text-lg tracking-tight leading-tight font-semibold text-white mb-2 transition-opacity duration-700 ${showSub ? 'opacity-100' : 'opacity-0'}`}
+            style={{ marginTop: showSub ? '0' : '-1em' }}
+          >
+            {subText}
+          </p>
+      </div>
+
+      {/* Bottom-right: Description + Buttons */}
+  <div className="absolute right-0 bottom-0 z-10 p-6 md:p-12 max-w-md text-right flex flex-col items-end mb-24 md:mb-32">
+        <p className="mb-4 text-base tracking-tighter leading-tight text-white font-semibold text-left rounded-lg px-4 py-2">
+          Access the FRA Portal and documentation for smarter, AI-powered tribal land governance and forest rights management.
         </p>
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-end gap-4">
           <button 
             onClick={handlePortalClick}
-            className="px-6 py-3 text-black rounded-lg shadow-lg transition" 
-            style={{ backgroundColor: '#FACC15' }}
+            className="px-6 py-3 text-black font-semibold bg-[#FACC15] hover:bg-[#FACC15]/80 rounded-full shadow-lg transition" 
           >
             FRA Portal
           </button>
           <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
           <button 
-            className="px-6 py-3 border border-gray-300 text-white hover:bg-white hover:text-black rounded-lg transition"
+            className="px-6 py-3 border font-semibold bg-white/50 border-gray-300 text-white hover:bg-white hover:text-black rounded-full transition"
             onClick={() => navigate('/fra_documentation')}
           >
             FRA Documentation
           </button>
         </div>
       </div>
+      
       {/* SVG Wave Pattern at Bottom for Smooth Transition */}
       <div className="absolute left-0 right-0 bottom-0 w-full overflow-hidden pointer-events-none" style={{ lineHeight: 0 }}>
         <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-[120px]">

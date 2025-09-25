@@ -5,17 +5,24 @@ import communityMapImg from "../assets/community-map.jpg";
 
 const Level = () => {
   return (
-  <section className="py-16 px-4" style={{ background: 'inherit' }}>
-      <div className="max-w-6xl mx-auto">
+  <section className="min-h-screen py-36 px-4 sm:px-6 lg:px-8 relative" style={{ background: 'inherit' }}>
+      <div className="max-w-full mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            AI that Thinks at Two Levels
-          </h2>
-          <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Our intelligent platform analyses data to provide tailored recommendations for
-            both individual landholders and entire communities.
-          </p>
+        
+        <div className="mb-16 px-2 md:px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-yellow-200 mb-4 md:mb-0 text-left">
+                <span className='text-2xl text-[#a8aa97]'>AI that Thinks</span>
+                <br className='hidden md:block' /> at Two Levels
+              </h2>
+            </div>
+            <div>
+              <p className="text-lg md:text-base text-gray-600 max-w-xl md:ml-auto text-right leading-relaxed">
+                Our intelligent platform analyses data to provide tailored recommendations for both individual landholders and entire communities.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Two Level Cards */}

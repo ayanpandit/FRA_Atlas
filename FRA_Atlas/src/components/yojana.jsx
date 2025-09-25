@@ -1,9 +1,9 @@
 // src/components/Yojana.jsx
 import React, { useState, useEffect, useRef } from "react";
-import img1 from "../assets/1.jpg";
-import img2 from "../assets/2.jpg";
-import img3 from "../assets/3.jpg";
-import img4 from "../assets/4.jpg";
+import img1 from "/pmsamman.jpg";
+import img2 from "/pmfasal.jpg";
+import img3 from "/pmkrishi.webp";
+import img4 from "/pmmatsya.jpg";
 import img5 from "../assets/5.jpg";
 import img6 from "../assets/6.jpg";
 
@@ -19,7 +19,7 @@ const Yojana = () => {
         }
       },
       {
-        threshold: 0.2, // Trigger when 20% of the component is visible
+        threshold: 0.2,
         rootMargin: '0px 0px -50px 0px'
       }
     );
@@ -38,70 +38,52 @@ const Yojana = () => {
   const yojanas = [
     {
       id: 1,
-      title: "PM Kisan Samman Nidhi",
-      description: "Financial support for small farmers",
-      image: img1,
-      status: "Eligible",
-      statusColor: "bg-green-500",
-      icon: "💰",
-      cardColor: "bg-white"
+      title: "PM KISAN SAMMAN NIDHI",
+      heading: "Direct income support for small farmers.",
+      description: "This scheme provides direct financial assistance to small and marginal farmers across India. Eligible farmers receive regular income support to help with agricultural expenses, improve their livelihoods, and ensure food security for their families. The scheme is designed to reduce rural poverty and empower farmers to invest in better farming practices. Timely payments and easy application make it accessible to millions.",
+      image: img1
     },
     {
       id: 2,
-      title: "PM Fasal Bima Yojana",
-      description: "Crop insurance against natural calamities",
-      image: img2,
-      status: "Needs Verification",
-      statusColor: "bg-yellow-500",
-      icon: "🌾",
-      cardColor: "bg-yellow-400"
+      title: "PM FASAL BIMA YOJANA",
+      heading: "Insurance for crops against natural disasters.",
+      description: "PM Fasal Bima Yojana offers comprehensive crop insurance to farmers, protecting them from losses due to natural calamities like drought, flood, and pests. The scheme covers a wide range of crops and ensures quick claim settlements. It aims to stabilize farmer incomes, encourage risk management, and promote sustainable agriculture. Affordable premiums and government support make it widely accessible.",
+      image: img2
     },
     {
       id: 3,
-      title: "PM Krishi Sinchai Yojana",
-      description: "Irrigation support for productivity",
-      image: img3,
-      status: "Eligible",
-      statusColor: "bg-green-500",
-      icon: "💧",
-      cardColor: "bg-white"
+      title: "PM KRISHI SINCHAI YOJANA",
+      heading: "Irrigation support to boost productivity.",
+      description: "This scheme focuses on improving irrigation infrastructure and water management for farmers. It provides financial and technical support for building canals, wells, and micro-irrigation systems. The goal is to increase crop yields, reduce water wastage, and promote efficient farming. Farmers benefit from better access to water resources and training in modern irrigation techniques.",
+      image: img3
     },
     {
       id: 4,
-      title: "PM Matsya Sampada Yojana",
-      description: "Support for fisheries and aquaculture",
-      image: img4,
-      status: "Needs Verification",
-      statusColor: "bg-yellow-500",
-      icon: "🐟",
-      cardColor: "bg-white"
+      title: "PM MATSYA SAMPADA YOJANA",
+      heading: "Support for fisheries and aquaculture.",
+      description: "PM Matsya Sampada Yojana is designed to boost fisheries and aquaculture in India. It offers financial aid for fish farmers, infrastructure development, and market access. The scheme aims to increase fish production, create jobs, and improve the income of fishing communities. Training and technology adoption are key components, making the sector more competitive and sustainable.",
+      image: img4
     },
     {
       id: 5,
-      title: "PM Kisan Maan Dhan Yojana",
-      description: "Pension scheme for small and marginal farmers",
-      image: img5,
-      status: "Eligible",
-      statusColor: "bg-green-500",
-      icon: "👨‍🌾",
-      cardColor: "bg-yellow-400"
+      title: "PM KISAN MAAN DHAN YOJANA",
+      heading: "Pension scheme for marginal farmers.",
+      description: "This pension scheme provides social security to small and marginal farmers after retirement. Eligible farmers receive a monthly pension, helping them maintain a stable income in old age. The scheme encourages long-term savings and financial planning, reducing vulnerability and improving the quality of life for rural families. Simple enrollment and government backing ensure wide coverage.",
+      image: img5
     },
     {
       id: 6,
-      title: "PM Matsya Sampada Yojana",
-      description: "Support for fisheries and aquaculture",
-      image: img6,
-      status: "Needs Verification",
-      statusColor: "bg-yellow-500",
-      icon: "🐟",
-      cardColor: "bg-white"
+      title: "PM MATSYA SAMPADA YOJANA",
+      heading: "Aquaculture and fisheries development.",
+      description: "This scheme supports the development of aquaculture and fisheries through financial grants, infrastructure upgrades, and training. It aims to increase fish production, improve market linkages, and enhance the livelihoods of fish farmers. The scheme also focuses on sustainable practices and environmental conservation, making fisheries a viable and profitable sector for rural communities.",
+      image: img6
     },  
   ];
 
   return (
     <section 
       ref={sectionRef}
-      className="py-16 px-4 overflow-hidden"
+      className="py-36 px-4 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto">
         
@@ -135,16 +117,19 @@ const Yojana = () => {
         
         {/* Header Section */}
         <div 
-          className={`text-center mb-16 transition-all duration-1000 ${
+          className={`text-center mb-24 transition-all duration-1000 ${
             isVisible 
               ? 'opacity-100 translate-y-0' 
               : 'opacity-0 translate-y-10'
           }`}
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Smart PM <span style={{ color: '#FACC15' }}>Yojana</span> Matching
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+            SMART <span
+              className="bg-gradient-to-r from-[#FF9933] via-blue-300 to-[#138808] bg-clip-text text-transparent"
+              style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >YOJANA</span> CONNECT
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Our AI analyses your land records to recommend government schemes tailored to your needs.
           </p>
         </div>
@@ -264,50 +249,43 @@ const Yojana = () => {
         </div>
 
         {/* Yojana Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {yojanas.map((yojana, index) => (
             <div 
               key={yojana.id}
-              className={`${yojana.cardColor} rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 ${
+              className={`bg-transparent rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 ${
                 isVisible 
                   ? 'opacity-100 translate-y-0' 
                   : 'opacity-0 translate-y-20'
               }`}
-              style={{
-                transitionDelay: `${700 + index * 200}ms`
-              }}
             >
               {/* Card Header */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">{yojana.icon}</span>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg leading-tight">
-                        {yojana.title}
-                      </h4>
-                      <p className="text-gray-600 text-sm mt-1">
-                        {yojana.description}
-                      </p>
-                    </div>
+              <div className="p-8">
+                <div className="mb-4">
+                  <h4 className="font-bold text-gray-900 text-xl leading-tight uppercase">
+                    {yojana.title}
+                  </h4>
+                  <div className="group">
+                    <p className="text-base text-gray-700 font-semibold mt-2 mb-2 relative">
+                      {yojana.heading}
+                      <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#FACC15] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+                    </p>
                   </div>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {yojana.description}
+                  </p>
                 </div>
 
                 {/* Image */}
-                <div className="rounded-lg overflow-hidden mb-4 shadow-md">
+                <div className="rounded-lg overflow-hidden mb-6 shadow-md">
                   <img 
                     src={yojana.image} 
                     alt={yojana.title}
-                    className="w-full h-32 object-cover hover:scale-110 transition-transform duration-300"
+                    className="w-full h-64 md:h-80 object-cover hover:scale-110 transition-transform duration-300"
                   />
                 </div>
 
-                {/* Status Badge */}
-                <div className="flex justify-start">
-                  <span className={`${yojana.statusColor} text-white px-3 py-1 rounded-full text-xs font-semibold`}>
-                    {yojana.status}
-                  </span>
-                </div>
+                {/* Status Badge removed */}
               </div>
             </div>
           ))}
