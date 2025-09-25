@@ -55,35 +55,52 @@ const Timelines = () => {
 
   const roadmapItems = [
     {
-      quarter: 'Q4 2024',
-      title: 'AI-Powered Verification',
+      quarter: 'PHASE 1',
+      title: 'DATA FOUNDATION AND CORE-AI SETUP',
+      description: 'This foundational phase converts paper records into digital assets. We use OCR and NER models to extract and structure data from historical FRA claims. Simultaneously, we gather initial geospatial layers, set up the database, and establish the core AI-processed digital archive and geocoded repository necessary for all subsequent mapping and decision-making processes.',
       status: 'current'
     },
     {
-      quarter: 'Q1 2025',
-      title: 'Blockchain Integration',
+      quarter: 'PHASE 2',
+      title: 'DSS-VALUE CHAIN AND MOBILE-FIRST INTEGRATION',
+      description: 'The focus shifts to economic empowerment and community transparency. We develop the advanced Value Chain DSS by integrating market and VDVK data to recommend profitable MFP strategies for CR holders. Concurrently, we launch the Mobile-First App, enabling Gram Sabha members to geotag boundaries and report grievances, ensuring data is validated from the bottom-up.',
       status: 'upcoming'
     },
     {
-      quarter: 'Q2 2025',
-      title: '3D Interactive Maps',
+      quarter: 'PHASE 3',
+      title: 'REAL-TIME MONITORING and STRATEGIC SCALABILITY',
+      description: 'This final phase achieves proactive governance and long-term sustainability. We integrate SAR and time-series analysis to build the Real-Time Encroachment Alert System for CFR areas. We also integrate strategic data like Soil Health and Topography to refine DAJGUA recommendations, completing the platform evolution into a robust, national-scale solution.',
       status: 'future'
     }
   ];
 
   return (
-  <div ref={containerRef} className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+  <div
+    ref={containerRef}
+    className="min-h-screen py-36 px-4 sm:px-6 lg:px-8 relative"
+    style={{
+      backgroundImage: 'url(/timeline-bg.webp)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}
+  >
+      <div className="max-w-full mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Shaping the Future of Land Data
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            The journey doesn't end here. We are constantly innovating to make land data more 
-            intelligent, interactive, and integrated. Explore our roadmap to see how we're planning to 
-            introduce new features that will further revolutionize land management.
-          </p>
+        <div className="mb-16 px-2 md:px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-yellow-200 mb-4 md:mb-0 text-left">
+                <span className='text-2xl text-[#a8aa97]'>SHAPING</span>
+                <br className='hidden md:block' /> THE FUTURE
+              </h1>
+            </div>
+            <div>
+              <p className="text-lg md:text-base text-gray-300 max-w-xl md:ml-auto text-left leading-relaxed">
+                The journey doesn't end here. We are constantly innovating to make land data more intelligent, interactive, and integrated. Explore our roadmap to see how we're planning to introduce new features that will further revolutionize land management.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Timeline Section */}
@@ -132,12 +149,18 @@ const Timelines = () => {
                       {/* Left Side Card (Even indices - 0, 2, 4...) */}
                       <div className="flex justify-end">
                         {index % 2 === 0 && (
-                          <div className="bg-white border-2 border-gray-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 max-w-sm w-full">
-                            <h3 className="text-2xl font-bold mb-3" style={{ color: '#FACC15' }}>
+                          <div className="border-2 group border-gray-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 max-w-xl w-full" style={{background: 'linear-gradient(135deg, #f6ffb2 0%, #ffffff 100%)'}}>
+                            <h3 className="text-2xl font-bold mb-3 text-[#4e5425]">
                               {item.quarter}
                             </h3>
-                            <p className="text-lg text-gray-700 font-medium">
-                              {item.title}
+                            <div>
+                              <p className="text-lg text-gray-700 font-medium mb-6 relative">
+                                {item.title}
+                                <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#3e4130] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+                              </p>
+                            </div>
+                            <p className="text-base leading-tight text-[#525e11]">
+                              {item.description}
                             </p>
                           </div>
                         )}
@@ -146,12 +169,18 @@ const Timelines = () => {
                       {/* Right Side Card (Odd indices - 1, 3, 5...) */}
                       <div className="flex justify-start">
                         {index % 2 !== 0 && (
-                          <div className="bg-white border-2 border-gray-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 max-w-sm w-full">
-                            <h3 className="text-2xl font-bold mb-3" style={{ color: '#FACC15' }}>
+                          <div className="border-2 group border-gray-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 max-w-xl w-full" style={{background: 'linear-gradient(135deg, #f6ffb2 0%, #ffffff 100%)'}}>
+                            <h3 className="text-2xl font-bold mb-3 text-[#4e5425]">
                               {item.quarter}
                             </h3>
-                            <p className="text-lg text-gray-700 font-medium">
-                              {item.title}
+                            <div>
+                              <p className="text-lg text-gray-700 font-medium mb-6 relative">
+                                {item.title}
+                                <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#313325] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+                              </p>
+                            </div>
+                            <p className="text-base leading-tight text-[#67770a]">
+                              {item.description}
                             </p>
                           </div>
                         )}
@@ -185,12 +214,18 @@ const Timelines = () => {
 
                     {/* Content */}
                     <div className="flex-1">
-                      <div className="bg-white border-2 border-gray-100 rounded-2xl p-6 shadow-lg">
+                      <div className="border-2 border-gray-100 rounded-2xl p-6 shadow-lg max-w-xl w-full" style={{background: 'linear-gradient(135deg, #f6ffb2 0%, #ffffff 100%)'}}>
                         <h3 className="text-xl font-bold mb-2" style={{ color: '#FACC15' }}>
                           {item.quarter}
                         </h3>
-                        <p className="text-base text-gray-700 font-medium">
-                          {item.title}
+                        <div className="group">
+                          <p className="text-base text-gray-700 font-medium mb-2 relative">
+                            {item.title}
+                            <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#FACC15] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {item.description}
                         </p>
                       </div>
                     </div>

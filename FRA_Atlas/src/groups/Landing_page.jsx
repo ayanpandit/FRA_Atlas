@@ -82,9 +82,9 @@ function LandingPage() {
           <div style={{ backgroundColor: '#FFECC0' }}>
             <Timelines />
           </div>
-          <div style={{ backgroundColor: '#FFECC0' }}>
+          {/* <div style={{ backgroundColor: '#FFECC0' }}>
             <Level />
-          </div>
+          </div> */}
           <div style={{ backgroundColor: '#FFECC0' }}>
             <Yojana />
           </div>
