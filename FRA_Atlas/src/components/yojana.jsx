@@ -4,8 +4,8 @@ import img1 from "/pmsamman.jpg";
 import img2 from "/pmfasal.jpg";
 import img3 from "/pmkrishi.webp";
 import img4 from "/pmmatsya.jpg";
-import img5 from "../assets/5.jpg";
-import img6 from "../assets/6.jpg";
+import img5 from "/pmsichai.webp";
+import img6 from "/pmsampda.jpg";
 
 const Yojana = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -39,42 +39,42 @@ const Yojana = () => {
     {
       id: 1,
       title: "PM KISAN SAMMAN NIDHI",
-      heading: "Direct income support for small farmers.",
+      heading: "Direct income support for small farmers",
       description: "This scheme provides direct financial assistance to small and marginal farmers across India. Eligible farmers receive regular income support to help with agricultural expenses, improve their livelihoods, and ensure food security for their families. The scheme is designed to reduce rural poverty and empower farmers to invest in better farming practices. Timely payments and easy application make it accessible to millions.",
       image: img1
     },
     {
       id: 2,
       title: "PM FASAL BIMA YOJANA",
-      heading: "Insurance for crops against natural disasters.",
+      heading: "Insurance for crops against natural disasters",
       description: "PM Fasal Bima Yojana offers comprehensive crop insurance to farmers, protecting them from losses due to natural calamities like drought, flood, and pests. The scheme covers a wide range of crops and ensures quick claim settlements. It aims to stabilize farmer incomes, encourage risk management, and promote sustainable agriculture. Affordable premiums and government support make it widely accessible.",
       image: img2
     },
     {
       id: 3,
       title: "PM KRISHI SINCHAI YOJANA",
-      heading: "Irrigation support to boost productivity.",
+      heading: "Irrigation support to boost productivity",
       description: "This scheme focuses on improving irrigation infrastructure and water management for farmers. It provides financial and technical support for building canals, wells, and micro-irrigation systems. The goal is to increase crop yields, reduce water wastage, and promote efficient farming. Farmers benefit from better access to water resources and training in modern irrigation techniques.",
       image: img3
     },
     {
       id: 4,
       title: "PM MATSYA SAMPADA YOJANA",
-      heading: "Support for fisheries and aquaculture.",
+      heading: "Support for fisheries and aquaculture",
       description: "PM Matsya Sampada Yojana is designed to boost fisheries and aquaculture in India. It offers financial aid for fish farmers, infrastructure development, and market access. The scheme aims to increase fish production, create jobs, and improve the income of fishing communities. Training and technology adoption are key components, making the sector more competitive and sustainable.",
       image: img4
     },
     {
       id: 5,
       title: "PM KISAN MAAN DHAN YOJANA",
-      heading: "Pension scheme for marginal farmers.",
+      heading: "Pension scheme for marginal farmers",
       description: "This pension scheme provides social security to small and marginal farmers after retirement. Eligible farmers receive a monthly pension, helping them maintain a stable income in old age. The scheme encourages long-term savings and financial planning, reducing vulnerability and improving the quality of life for rural families. Simple enrollment and government backing ensure wide coverage.",
       image: img5
     },
     {
       id: 6,
       title: "PM MATSYA SAMPADA YOJANA",
-      heading: "Aquaculture and fisheries development.",
+      heading: "Aquaculture and fisheries development",
       description: "This scheme supports the development of aquaculture and fisheries through financial grants, infrastructure upgrades, and training. It aims to increase fish production, improve market linkages, and enhance the livelihoods of fish farmers. The scheme also focuses on sustainable practices and environmental conservation, making fisheries a viable and profitable sector for rural communities.",
       image: img6
     },  
@@ -253,7 +253,7 @@ const Yojana = () => {
           {yojanas.map((yojana, index) => (
             <div 
               key={yojana.id}
-              className={`bg-transparent rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 ${
+              className={`bg-white/25 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 ${
                 isVisible 
                   ? 'opacity-100 translate-y-0' 
                   : 'opacity-0 translate-y-20'
@@ -261,14 +261,14 @@ const Yojana = () => {
             >
               {/* Card Header */}
               <div className="p-8">
-                <div className="mb-4">
-                  <h4 className="font-bold text-gray-900 text-xl leading-tight uppercase">
+                <div className="mb-4 group">
+                  <h4 className="font-bold text-[#607100] text-xl leading-tight uppercase">
                     {yojana.title}
                   </h4>
-                  <div className="group">
-                    <p className="text-base text-gray-700 font-semibold mt-2 mb-2 relative">
+                  <div>
+                    <p className="text-base text-[#4e5c02] font-semibold mt-2 mb-2 relative">
                       {yojana.heading}
-                      <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#FACC15] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+                      <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#b49f00] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
                     </p>
                   </div>
                   <p className="text-gray-600 text-sm mt-1">
