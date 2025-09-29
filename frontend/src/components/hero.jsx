@@ -72,6 +72,12 @@ const Hero = () => {
       style={{
         backgroundImage: `url(${images[bgIndex]})`,
         transition: 'background-image 0.7s ease-in-out',
+        /* Ensure background covers full screen on all devices */
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
+        width: '100vw'
       }}
     >
       {/* Fade overlay for sliding effect */}
@@ -80,44 +86,136 @@ const Hero = () => {
         style={{ zIndex: 1 }}
       ></div>
 
-      {/* Description Box */}
-
-      {/* Bottom-left: Tag, H1, Subtext */}
-    <div className="absolute left-0 bottom-0 z-10 p-6 md:p-12 max-w-2xl text-left mb-24 md:mb-10 flex flex-col gap-4" style={{maxWidth: '750px'}}>
-        <p className="mb-2 text-xs tracking-widest uppercase">
+      {/* Bottom-left: Tag, H1, Subtext - RESPONSIVE POSITIONING WITH OVERLAP PREVENTION */}
+      <div className="absolute left-0 bottom-0 z-10 
+                      /* Mobile: Full width, centered, top positioning */
+                      w-full text-center top-1/4 p-4
+                      /* Small mobile: Adjusted positioning */
+                      xs:top-1/3 xs:p-4
+                      /* Tablet: Left positioning starts, PREVENT OVERLAP */
+                      sm:w-auto sm:text-left sm:top-auto sm:bottom-0 sm:p-6 sm:mb-32 sm:max-w-[50%]
+                      /* Medium screens: Better spacing, prevent overlap */
+                      md:p-8 md:mb-24 md:max-w-[55%]
+                      /* Large screens: Original laptop layout */
+                      lg:p-12 lg:mb-10 lg:max-w-2xl
+                      flex flex-col gap-2 sm:gap-4"
+           style={{
+             /* Responsive max-width with overlap prevention */
+             maxWidth: window.innerWidth < 640 ? '95%' : window.innerWidth < 768 ? '50%' : window.innerWidth < 1024 ? '55%' : '750px'
+           }}>
+        
+        {/* AI-Powered Tag - Responsive sizing */}
+        <p className="mb-1 sm:mb-2 
+                      text-xs 
+                      tracking-widest uppercase">
           <span 
-            className="inline-block px-4 py-1 rounded-full text-black shadow-xl transition duration-300 ease-in-out transform hover:scale-105" 
+            className="inline-block 
+                       /* Responsive padding */
+                       px-2 py-1 xs:px-3 xs:py-1 sm:px-4 sm:py-1
+                       rounded-full text-black shadow-xl 
+                       transition duration-300 ease-in-out transform hover:scale-105
+                       /* Responsive text size */
+                       text-xs xs:text-xs sm:text-xs" 
             style={{ backgroundColor: '#FACC15' }}
           >
             {tagText}
           </span>
         </p>
-          <h1 className="text-2xl md:text-6xl font-bold text-[#F6FFB2] mb-4" style={{ minHeight: '2.5em' }}>
-          <span style={{ color: '#FACC15' }}>FRA Atlas</span><br /> Mapping Rights, Powering Targeted Tribal Development
+
+        {/* Main Heading - Responsive text sizes */}
+        <h1 className="/* Responsive text sizes */
+                       text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-6xl
+                       font-bold text-[#F6FFB2] 
+                       /* Responsive margin */
+                       mb-2 sm:mb-4
+                       /* Responsive min-height */
+                       leading-tight"
+            style={{ 
+              minHeight: window.innerWidth < 640 ? '1.5em' : window.innerWidth < 1024 ? '2em' : '2.5em'
+            }}>
+          <span style={{ color: '#FACC15' }}>FRA Atlas</span>
+          <br className="hidden xs:block" />
+          <span className="xs:hidden"> </span>
+          Mapping Rights, Powering Targeted Tribal Development
         </h1>
-          <p
-            className={`text-lg tracking-tight leading-tight font-semibold text-white mb-2 transition-opacity duration-700 ${showSub ? 'opacity-100' : 'opacity-0'}`}
-            style={{ marginTop: showSub ? '0' : '-1em' }}
-          >
-            {subText}
-          </p>
+
+        {/* Subtext - Responsive sizing and spacing */}
+        <p className={`/* Responsive text sizes */
+                       text-sm xs:text-base sm:text-lg
+                       tracking-tight leading-tight font-semibold text-white 
+                       /* Responsive margin */
+                       mb-1 sm:mb-2
+                       transition-opacity duration-700 
+                       ${showSub ? 'opacity-100' : 'opacity-0'}`}
+           style={{ marginTop: showSub ? '0' : '-1em' }}>
+          {subText}
+        </p>
       </div>
 
-      {/* Bottom-right: Description + Buttons */}
-  <div className="absolute right-0 bottom-0 z-10 p-6 md:p-12 max-w-md text-right flex flex-col items-end mb-24 md:mb-32">
-        <p className="mb-4 text-base tracking-tighter leading-tight text-white font-semibold text-left rounded-lg px-4 py-2">
+      {/* Bottom-right: Description + Buttons - RESPONSIVE POSITIONING WITH OVERLAP PREVENTION */}
+      <div className="absolute right-0 bottom-0 z-10 
+                      /* Mobile: Full width, centered, below main content */
+                      w-full text-center bottom-8 p-4
+                      /* Small mobile: Better spacing */
+                      xs:bottom-12 xs:p-4
+                      /* Tablet: Right positioning starts, PREVENT OVERLAP */
+                      sm:w-auto sm:text-right sm:bottom-0 sm:p-6 sm:mb-32 sm:max-w-[45%]
+                      /* Medium screens: Better spacing, prevent overlap */
+                      md:p-8 md:mb-24 md:max-w-[40%]
+                      /* Large screens: Original laptop layout */
+                      lg:p-12 lg:mb-32 lg:max-w-md
+                      flex flex-col 
+                      /* Responsive alignment */
+                      items-center sm:items-end">
+        
+        {/* Description text - Responsive sizing */}
+        <p className="mb-3 sm:mb-4 
+                      /* Responsive text sizes */
+                      text-sm xs:text-base sm:text-base
+                      tracking-tighter leading-tight text-white font-semibold 
+                      /* Responsive text alignment */
+                      text-center sm:text-left
+                      rounded-lg 
+                      /* Responsive padding */
+                      px-3 py-2 xs:px-4 xs:py-2 sm:px-4 sm:py-2">
           Access the FRA Portal and documentation for smarter, AI-powered tribal land governance and forest rights management.
         </p>
-        <div className="flex flex-wrap justify-end gap-4">
+
+        {/* Buttons - Responsive layout */}
+        <div className="flex 
+                        /* Mobile: Stack vertically */
+                        flex-col gap-3 w-full max-w-xs
+                        /* Small screens: Horizontal with wrap */
+                        xs:flex-row xs:flex-wrap xs:justify-center xs:gap-3 xs:max-w-none
+                        /* Tablet and up: Original horizontal layout */
+                        sm:flex-row sm:justify-end sm:gap-4 sm:max-w-none">
+          
+          {/* FRA Portal Button - Responsive sizing */}
           <button 
             onClick={handlePortalClick}
-            className="px-6 py-3 text-black font-semibold bg-[#FACC15] hover:bg-[#FACC15]/80 rounded-full shadow-lg transition" 
+            className="/* Responsive padding and text */
+                       px-4 py-2 xs:px-5 xs:py-2 sm:px-6 sm:py-3
+                       text-sm xs:text-base sm:text-base
+                       text-black font-semibold bg-[#FACC15] hover:bg-[#FACC15]/80 
+                       rounded-full shadow-lg transition
+                       /* Responsive width */
+                       w-full xs:w-auto" 
           >
             FRA Portal
           </button>
+          
           <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+          
+          {/* Documentation Button - Responsive sizing */}
           <button 
-            className="px-6 py-3 border font-semibold bg-white/50 border-gray-300 text-white hover:bg-white hover:text-black rounded-full transition"
+            className="/* Responsive padding and text */
+                       px-4 py-2 xs:px-5 xs:py-2 sm:px-6 sm:py-3
+                       text-sm xs:text-base sm:text-base
+                       border font-semibold bg-white/50 border-gray-300 
+                       text-white hover:bg-white hover:text-black 
+                       rounded-full transition
+                       /* Responsive width */
+                       w-full xs:w-auto"
             onClick={() => navigate('/fra_documentation')}
           >
             FRA Documentation
@@ -125,9 +223,15 @@ const Hero = () => {
         </div>
       </div>
       
-      {/* SVG Wave Pattern at Bottom for Smooth Transition */}
-      <div className="absolute left-0 right-0 bottom-0 w-full overflow-hidden pointer-events-none" style={{ lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-[120px]">
+      {/* SVG Wave Pattern at Bottom - Responsive height */}
+      <div className="absolute left-0 right-0 bottom-0 w-full overflow-hidden pointer-events-none" 
+           style={{ lineHeight: 0 }}>
+        <svg viewBox="0 0 1440 120" 
+             fill="none" 
+             xmlns="http://www.w3.org/2000/svg" 
+             className="w-full 
+                        /* Responsive wave height */
+                        h-[60px] xs:h-[80px] sm:h-[100px] lg:h-[120px]">
           <path fill="#F0F1C5" fillOpacity="1" d="M0,80 C480,160 960,0 1440,80 L1440,120 L0,120 Z" />
         </svg>
       </div>
