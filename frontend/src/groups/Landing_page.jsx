@@ -14,37 +14,6 @@ import Navbar from '../components/Navbar';
 import FRADocumentation from '../pages/FRA Documentation';
 
 function LandingPage() {
-  const items = [
-    {
-      label: "DashBoard",
-      bgColor: "#FACC15",
-      textColor: "#fff",
-      links: [
-        { label: "suboption1", ariaLabel: "suboption1", url: "https://example.com/dashboard/suboption1" },
-        { label: "suboption2", ariaLabel: "suboption2", url: "https://example.com/dashboard/suboption2" }
-      ]
-    },
-    {
-      label: "Resources",
-      bgColor: "#000000",
-      textColor: "#fff",
-      links: [
-        { label: "Tribal Welfare Programmes", ariaLabel: "suboption1", url: "https://example.com/resources/tribal" },
-        { label: "Mo Jungle Jami Yojana", ariaLabel: "suboption2", url: "https://example.com/resources/mojungle" }
-      ]
-    },
-    {
-      label: "About Us",
-      bgColor: "#FACC15",
-      textColor: "#fff",
-      links: [
-        { label: "Contact Us", ariaLabel: "suboption1", url: "https://example.com/about/contact" },
-        { label: "Know More", ariaLabel: "suboption2", url: "https://example.com/about/knowmore" },
-        { label: "Our Team", ariaLabel: "suboption3", url: "https://example.com/about/team" }
-      ]
-    }
-  ];
-
   return (
     <Routes>
       <Route path="/dashboard" element={<Navigate to="/workflow_off" />} />
