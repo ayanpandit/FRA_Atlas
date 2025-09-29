@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { useAuth } from '../context/AuthContext';
-import LoginSignup from './login&signup';
+// ...existing code...
 import { useNavigate } from "react-router-dom";
 
 import bg1 from "/bg1.jpg";
@@ -18,15 +17,12 @@ const TYPING_SPEED = 70; // ms per character (slower)
 const FADE_IN_DELAY = 400; // ms after typing ends
 
 const Hero = () => {
-  const { user, getWorkflowPath } = useAuth();
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-
+  // Remove auth and modal logic
   const handlePortalClick = () => {
-    if (!user) {
-      setIsLoginOpen(true);
-    } else {
-      navigate(getWorkflowPath());
-    }
+    // Placeholder: implement new auth logic here later
+    // For now, just navigate to a default page or show a message
+    // Example: navigate('/fra_portal');
+    alert('FRA Portal access will be available after new authentication is implemented.');
   };
   const navigate = useNavigate();
   const [typed, setTyped] = useState("");
@@ -203,8 +199,6 @@ const Hero = () => {
           >
             FRA Portal
           </button>
-          
-          <LoginSignup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
           
           {/* Documentation Button - Responsive sizing */}
           <button 

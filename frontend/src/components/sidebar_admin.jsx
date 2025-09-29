@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from "/logo.png";
-import { useAuth } from '../context/AuthContext';
+// ...existing code...
 
 
 const Sidebar_Admin= ({ 
@@ -11,7 +11,7 @@ const Sidebar_Admin= ({
   isCollapsed: externalCollapsed,
   setIsCollapsed: setExternalCollapsed 
 }) => {
-  const { user } = useAuth();
+  // ...existing code...
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
   const [expandedMenus, setExpandedMenus] = useState({});
