@@ -83,9 +83,9 @@ const Yojana = () => {
   return (
     <section 
       ref={sectionRef}
-      className="py-36 px-4 overflow-hidden"
+      className="py-12 xs:py-16 sm:py-20 md:py-28 lg:py-32 xl:py-36 px-3 xs:px-4 sm:px-6 md:px-8 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-4">
         
         <style>{`
           @keyframes dataFlow {
@@ -117,26 +117,26 @@ const Yojana = () => {
         
         {/* Header Section */}
         <div 
-          className={`text-center mb-24 transition-all duration-1000 ${
+          className={`text-center mb-12 xs:mb-14 sm:mb-16 md:mb-20 lg:mb-24 transition-all duration-1000 ${
             isVisible 
               ? 'opacity-100 translate-y-0' 
               : 'opacity-0 translate-y-10'
           }`}
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-3 xs:mb-4 px-2">
             SMART <span
               className="bg-gradient-to-r from-[#FF9933] via-blue-300 to-[#138808] bg-clip-text text-transparent"
               style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             >YOJANA</span> CONNECT
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-sm xs:text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
             Our AI analyses your land records to recommend government schemes tailored to your needs.
           </p>
         </div>
 
         {/* Process Steps */}
         <div 
-          className={`relative mb-16 transition-all duration-1000 delay-300 ${
+          className={`relative mb-10 xs:mb-12 sm:mb-14 md:mb-16 lg:mb-16 xl:mb-16 transition-all duration-1000 delay-300 ${
             isVisible 
               ? 'opacity-100 translate-y-0' 
               : 'opacity-0 translate-y-10'
@@ -196,44 +196,44 @@ const Yojana = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 xs:gap-7 sm:gap-8 relative z-10">
             {/* Step 1 */}
-            <div className="text-center">
-              <div className={`bg-yellow-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 ${
+            <div className="text-center px-2">
+              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 ${
                 isVisible ? 'animate-pulse' : ''
               }`}>
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Patta Upload</h3>
-              <p className="text-gray-600">Securely upload your land document.</p>
+              <h3 className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 mb-2">Patta Upload</h3>
+              <p className="text-sm xs:text-base text-gray-600">Securely upload your land document.</p>
             </div>
 
             {/* Step 2 */}
-            <div className="text-center">
-              <div className={`bg-yellow-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-1000 ${
+            <div className="text-center px-2">
+              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-1000 ${
                 isVisible ? 'animate-pulse' : ''
               }`}>
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">AI Analysis</h3>
-              <p className="text-gray-600">System analyses for key details.</p>
+              <h3 className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 mb-2">AI Analysis</h3>
+              <p className="text-sm xs:text-base text-gray-600">System analyses for key details.</p>
             </div>
 
             {/* Step 3 */}
-            <div className="text-center">
-              <div className={`bg-yellow-100 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-2000 ${
+            <div className="text-center px-2">
+              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-2000 ${
                 isVisible ? 'animate-pulse' : ''
               }`}>
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Scheme Recommendation</h3>
-              <p className="text-gray-600">Receive personalized scheme list.</p>
+              <h3 className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 mb-2">Scheme Recommendation</h3>
+              <p className="text-sm xs:text-base text-gray-600">Receive personalized scheme list.</p>
             </div>
           </div>
         </div>
@@ -249,7 +249,7 @@ const Yojana = () => {
         </div>
 
         {/* Yojana Cards Grid */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-5 xs:gap-6 sm:gap-7 md:gap-8">
           {yojanas.map((yojana, index) => (
             <div 
               key={yojana.id}
@@ -260,28 +260,28 @@ const Yojana = () => {
               }`}
             >
               {/* Card Header */}
-              <div className="p-8">
-                <div className="mb-4 group">
-                  <h4 className="font-bold text-[#607100] text-xl leading-tight uppercase">
+              <div className="p-4 xs:p-5 sm:p-6 md:p-7 lg:p-8">
+                <div className="mb-3 xs:mb-4 group">
+                  <h4 className="font-bold text-[#607100] text-lg xs:text-xl sm:text-xl md:text-xl leading-tight uppercase">
                     {yojana.title}
                   </h4>
                   <div>
-                    <p className="text-base text-[#4e5c02] font-semibold mt-2 mb-2 relative">
+                    <p className="text-sm xs:text-base sm:text-base text-[#4e5c02] font-semibold mt-2 mb-2 relative">
                       {yojana.heading}
                       <span className="absolute left-0 -bottom-1 w-full h-[3px] bg-[#b49f00] rounded transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
                     </p>
                   </div>
-                  <p className="text-gray-600 text-sm mt-1">
+                  <p className="text-gray-600 text-xs xs:text-sm sm:text-sm mt-1 leading-relaxed">
                     {yojana.description}
                   </p>
                 </div>
 
                 {/* Image */}
-                <div className="rounded-lg overflow-hidden mb-6 shadow-md">
+                <div className="rounded-lg overflow-hidden mb-4 xs:mb-5 sm:mb-6 shadow-md">
                   <img 
                     src={yojana.image} 
                     alt={yojana.title}
-                    className="w-full h-64 md:h-80 object-cover hover:scale-110 transition-transform duration-300"
+                    className="w-full h-48 xs:h-56 sm:h-64 md:h-72 lg:h-80 object-cover hover:scale-110 transition-transform duration-300"
                   />
                 </div>
 

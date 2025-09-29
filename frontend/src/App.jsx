@@ -1,6 +1,5 @@
 import React, { Suspense } from 'react';
 import LandingPage from "./groups/Landing_page";
-import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter as Router } from 'react-router-dom';
 
 // Error Boundary Component
@@ -45,11 +44,9 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <AuthProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <LandingPage />
-          </Suspense>
-        </AuthProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+          <LandingPage />
+        </Suspense>
       </Router>
     </ErrorBoundary>
   );
