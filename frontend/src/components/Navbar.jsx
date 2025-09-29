@@ -34,7 +34,7 @@ const Navbar = () => {
             <nav className={
                 isAnalyzerPage
                     ? "relative rounded-2xl backdrop-blur-lg shadow-2xl border border-white/20 mt-4 mb-0 md:mt-6 md:mb-0 lg:mt-8 lg:mb-0 mx-12"
-                    : `fixed top-9 left-1/4 right-1/4 z-50 transition-all duration-500 rounded-2xl ${
+                    : `fixed top-9 left-12 right-12 z-50 transition-all duration-500 rounded-2xl ${
                         !visible
                             ? 'opacity-0 translate-y-[-100%] pointer-events-none'
                             : isScrolled
@@ -45,7 +45,7 @@ const Navbar = () => {
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className={`flex items-center justify-between ${isAnalyzerPage ? 'h-16 md:h-20' : 'h-16 md:h-20'}`}>
                         {/* Logo */}
-                        <div className="flex-shrink-0 cursor-pointer mr-12 md:mr-16">
+                        <div className="flex-shrink-0 cursor-pointer">
                             <h1 className="text-2xl md:text-3xl font-bold">
                                 <span className="text-yellow-400">
                                     FRA
@@ -55,7 +55,7 @@ const Navbar = () => {
                         </div>
 
                         {/* Desktop Navigation */}
-                        <div className="hidden md:flex space-x-12">
+                        <div className="hidden md:flex space-x-8">
                             {navItems.map((item) => (
                                 <div key={item.name} className="dropdown-container relative">
                                     <button 
@@ -85,7 +85,35 @@ const Navbar = () => {
                             ))}
                         </div>
 
-                        {/* CTA Button - Desktop removed as requested */}
+                        {/* CTA Button - Desktop */}
+                        <div className="hidden md:block">
+                            {currentUser ? (
+                                <div className="relative dropdown-container">
+                                    <button 
+                                        onClick={() => setShowUserDropdown(!showUserDropdown)}
+                                        className="flex items-center space-x-2 text-white hover:text-purple-400 transition-colors duration-200">
+                                        <span>Hi, User</span>
+                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {showUserDropdown && (
+                                        <div className="absolute top-full right-0 mt-2 py-2 w-48 bg-slate-800 rounded-xl shadow-xl border border-slate-700/50 z-50">
+                                            <button className="w-full px-4 py-2 text-left text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-2">
+                                                <User className="w-4 h-4" />
+                                                <span>Profile</span>
+                                            </button>
+                                            <button className="w-full px-4 py-2 text-left text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-2">
+                                                <LogOut className="w-4 h-4" />
+                                                <span>Logout</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <button className="px-6 py-2 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                                  Explore Now
+                                </button>
+                            )}
+                        </div>
 
                         {/* Mobile menu button */}
                         <div className="md:hidden">
@@ -157,6 +185,28 @@ const Navbar = () => {
                                     )}
                                 </div>
                             ))}
+                            <div className="pt-4 border-t border-white/10">
+                                {currentUser ? (
+                                    <div className="space-y-2">
+                                        <button className="group flex items-center w-full px-4 py-3 rounded-xl text-white hover:bg-white/10 transition-all duration-300">
+                                            <User className="w-5 h-5 mr-3 group-hover:text-purple-400 transition-colors" />
+                                            <span className="font-medium group-hover:text-purple-400 transition-colors flex-1 text-left">
+                                                Profile (Hi, User)
+                                            </span>
+                                        </button>
+                                        <button className="group flex items-center w-full px-4 py-3 rounded-xl text-white hover:bg-white/10 transition-all duration-300">
+                                            <LogOut className="w-5 h-5 mr-3 group-hover:text-purple-400 transition-colors" />
+                                            <span className="font-medium group-hover:text-purple-400 transition-colors flex-1 text-left">
+                                                Logout
+                                            </span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                            <button className="w-full px-4 py-3 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-500 transition-all duration-300">
+                                                Explore Now
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
