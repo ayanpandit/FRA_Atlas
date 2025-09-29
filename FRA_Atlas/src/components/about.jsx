@@ -1,4 +1,4 @@
-import aboutImage from '/dash-image.png';
+import aboutImage from '/dash-image2.png';
 
 const About = () => {
 		return (

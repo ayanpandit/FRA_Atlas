@@ -1,4 +1,3 @@
-import logo from "../assets/logo.png";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Hero from "../components/hero";
 import About from "../components/about";
@@ -10,7 +9,7 @@ import Footer from "../components/footer";
 import WorkflowAdmin from "./workflow_admin";
 import WorkflowOff from "./workflow_off";
 import WorkflowUser from "./workflow_user";
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import FRADocumentation from '../pages/FRA Documentation';
 
 function LandingPage() {

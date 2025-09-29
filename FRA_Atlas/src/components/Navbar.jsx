@@ -2,7 +2,7 @@ import React from 'react';
 import logo from '../assets/logo.png';
 
 const Navbar = () => {
-  const navItems = ['Home', 'About', 'Service', 'Contact'];
+  const navItems = ['HOME', 'ABOUT', 'SERVICE', 'CONTACT'];
 
   return (
     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-fit backdrop-blur-md bg-white/10 rounded-full border border-white/20">
