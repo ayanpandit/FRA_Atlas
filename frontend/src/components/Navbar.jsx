@@ -33,8 +33,8 @@ const Navbar = () => {
         <>
             <nav className={
                 isAnalyzerPage
-                    ? "relative rounded-2xl backdrop-blur-lg shadow-2xl border border-white/20 mt-4 mb-0 md:mt-6 md:mb-0 lg:mt-8 lg:mb-0 mx-12"
-                    : `fixed top-9 left-12 right-12 z-50 transition-all duration-500 rounded-2xl ${
+                    ? "relative rounded-full backdrop-blur-lg shadow-2xl border border-white/20 mt-4 mb-0 md:mt-6 md:mb-0 lg:mt-8 lg:mb-0 mx-12"
+                    : `fixed top-9 left-12 right-12 z-50 transition-all duration-500 rounded-full ${
                         !visible
                             ? 'opacity-0 translate-y-[-100%] pointer-events-none'
                             : isScrolled
