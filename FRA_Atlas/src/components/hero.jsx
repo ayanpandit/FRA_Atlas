@@ -76,7 +76,7 @@ const Hero = () => {
     >
       {/* Fade overlay for sliding effect */}
       <div
-        className={`absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-700 pointer-events-none ${fade ? 'opacity-50' : 'opacity-80'}`}
+        className={`absolute inset-0 bg-black bg-opacity-150 transition-opacity duration-700 pointer-events-none ${fade ? 'opacity-70' : 'opacity-90'}`}
         style={{ zIndex: 1 }}
       ></div>
 
