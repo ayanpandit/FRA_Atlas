@@ -184,6 +184,13 @@ function AdminEditModal({ pattaId, onClose, onSaved }) {
 
   const PattaCard = ({ patta }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+      {/* Show reject message if patta is rejected */}
+      {patta.status && patta.status.toLowerCase() === 'rejected' && patta.reject_message && (
+        <div className="p-4 bg-red-50 border-b border-red-200 text-red-700 text-sm font-medium">
+          <AlertCircle className="inline-block mr-2 h-4 w-4 text-red-500" />
+          Rejected: {patta.reject_message}
+        </div>
+      )}
       {/* Header */}
       <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
         <div className="flex items-start justify-between">
@@ -395,7 +402,8 @@ function AdminEditModal({ pattaId, onClose, onSaved }) {
       documents: r.documents || [],
       lastUpdated: r.updated_at ? new Date(r.updated_at).toLocaleString() : '',
       progress: status.toLowerCase() === 'verified' || status.toLowerCase() === 'approved' ? 100 : (status.toLowerCase() === 'pending' ? 30 : 0),
-      issues: r.issues || []
+      issues: r.issues || [],
+      reject_message: r.reject_message || ''
     };
   };
 

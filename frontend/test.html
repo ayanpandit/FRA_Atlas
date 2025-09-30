@@ -1,66 +1,278 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Free Google Maps Alternative</title>
-  <meta charset="utf-8"/>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- Photon (Autocomplete Search) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-  <script src="https://unpkg.com/leaflet.photon/leaflet.photon.min.js"></script>
-
+  <title>Satellite Map Viewer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    #map { height: 100vh; width: 100%; }
-    .photon-input {
-      width: 350px !important;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html { 
+      height: 100%; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+    #map { 
+      height: calc(100% - 80px); 
+      width: 100%; 
+    }
+    #controls {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      flex-wrap: wrap;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    label {
+      color: white;
+      font-weight: 600;
       font-size: 14px;
-      padding: 6px;
+    }
+    input[type="text"] { 
+      width: 120px; 
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s;
+    }
+    input[type="text"]:focus {
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+    }
+    button { 
+      padding: 8px 24px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .layer-selector {
+      position: absolute;
+      top: 100px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .layer-selector select {
+      padding: 6px 10px;
+      border: 2px solid #667eea;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+<div id="controls">
+  <div class="input-group">
+    <label>Latitude:</label>
+    <input type="text" id="lat" value="19.8222" placeholder="e.g., 19.8222">
+  </div>
+  <div class="input-group">
+    <label>Longitude:</label>
+    <input type="text" id="lng" value="82.5486" placeholder="e.g., 82.5486">
+  </div>
+  <button onclick="goToCoordinates()">🌍 Go to Location</button>
+  <button onclick="getCurrentLocation()">📍 My Location</button>
+</div>
+<div class="layer-selector">
+  <select id="layerSelect" onchange="changeLayer()">
+    <option value="satellite">Satellite</option>
+    <option value="street">Street Map</option>
+    <option value="terrain">Terrain</option>
+  </select>
+</div>
+<div id="map"></div>
 
-  <script>
-    // Create the map
-    var map = L.map('map').setView([20.5937, 78.9629], 5);
-
-    // Satellite layer (Esri World Imagery)
-    var satellite = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles © Esri & contributors', maxZoom: 20 }
-    ).addTo(map);
-
-    // Street map
-    var streets = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution: '&copy; OpenStreetMap contributors', maxZoom: 20 }
-    );
-
-    // Layer toggle
-    L.control.layers({"Satellite": satellite, "Streets": streets}).addTo(map);
-
-    // Add Photon search (with autocomplete)
-    var photonControl = L.control.photon({
-      placeholder: "Search location...",
-      position: "topleft",
-      url: "https://photon.komoot.io/api",
-      feedbackEmail: "your-email@example.com"
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Initialize map with higher zoom
+  let map = L.map('map').setView([19.8222, 82.5486], 18);
+  
+  // Define different tile layers
+  const layers = {
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      maxZoom: 19
+    }),
+    street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }),
+    terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap',
+      maxZoom: 17
+    })
+  };
+  
+  // Add default layer (satellite)
+  let currentLayer = layers.satellite.addTo(map);
+  
+  // Custom marker icon
+  const customIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+  
+  // Initialize marker
+  let marker = L.marker([19.8222, 82.5486], {icon: customIcon}).addTo(map)
+    .bindPopup('<b>Current Location</b><br>Lat: 19.8222<br>Lng: 82.5486')
+    .openPopup();
+  
+  // Store polygon
+  let polygon = null;
+  
+  // Function to create random polygon around a point
+  function createRandomPolygon(lat, lng) {
+    // Remove old polygon if exists
+    if (polygon) {
+      map.removeLayer(polygon);
+    }
+    
+    // Generate random polygon points around the center
+    const numPoints = Math.floor(Math.random() * 4) + 5; // 5-8 points
+    const points = [];
+    const radiusInMeters = Math.random() * 80 + 40; // 40-120 meters radius
+    
+    // Generate points in a circle with some randomness
+    for (let i = 0; i < numPoints; i++) {
+      const angle = (i / numPoints) * 2 * Math.PI;
+      const randomRadius = radiusInMeters * (0.7 + Math.random() * 0.6); // Vary radius 70-130%
+      const randomAngle = angle + (Math.random() - 0.5) * 0.5; // Add angle variation
+      
+      // Convert meters to lat/lng offset
+      const latOffset = (randomRadius / 111320) * Math.cos(randomAngle);
+      const lngOffset = (randomRadius / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(randomAngle);
+      
+      points.push([lat + latOffset, lng + lngOffset]);
+    }
+    
+    // Create polygon with random color
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    polygon = L.polygon(points, {
+      color: randomColor,
+      fillColor: randomColor,
+      fillOpacity: 0.35,
+      weight: 3,
+      opacity: 0.8
     }).addTo(map);
-
-    // Zoom to selected place
-    photonControl.on("selected", function (e) {
-      map.setView(e.feature.geometry.coordinates.reverse(), 14);
-      L.marker(e.feature.geometry.coordinates.reverse())
-        .addTo(map)
-        .bindPopup(e.feature.properties.name || "Location")
+    
+    // Add popup to polygon
+    polygon.bindPopup(`<b>Random Area</b><br>Center: ${lat.toFixed(4)}, ${lng.toFixed(4)}<br>Points: ${numPoints}`);
+  }
+  
+  // Change layer function
+  function changeLayer() {
+    const selected = document.getElementById('layerSelect').value;
+    map.removeLayer(currentLayer);
+    currentLayer = layers[selected].addTo(map);
+  }
+  
+  // Go to coordinates function
+  function goToCoordinates() {
+    const lat = parseFloat(document.getElementById('lat').value);
+    const lng = parseFloat(document.getElementById('lng').value);
+    
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      map.setView([lat, lng], 18); // Zoom level 18 for detailed view
+      marker.setLatLng([lat, lng])
+        .bindPopup(`<b>Selected Location</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`)
         .openPopup();
-    });
-  </script>
+      
+      // Create random polygon around the point
+      createRandomPolygon(lat, lng);
+    } else {
+      alert('Please enter valid coordinates!\nLatitude: -90 to 90\nLongitude: -180 to 180');
+    }
+  }
+  
+  // Get current location
+  function getCurrentLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          document.getElementById('lat').value = lat.toFixed(4);
+          document.getElementById('lng').value = lng.toFixed(4);
+          map.setView([lat, lng], 18);
+          marker.setLatLng([lat, lng])
+            .bindPopup(`<b>Your Current Location</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`)
+            .openPopup();
+          
+          // Create random polygon around the point
+          createRandomPolygon(lat, lng);
+        },
+        (error) => {
+          alert('Unable to get your location. Please check your browser permissions.');
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+    }
+  }
+  
+  // Allow Enter key to trigger search
+  document.getElementById('lat').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') goToCoordinates();
+  });
+  document.getElementById('lng').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') goToCoordinates();
+  });
+  
+  // Click on map to get coordinates
+  map.on('click', (e) => {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    document.getElementById('lat').value = lat.toFixed(4);
+    document.getElementById('lng').value = lng.toFixed(4);
+    marker.setLatLng([lat, lng])
+      .bindPopup(`<b>Clicked Location</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`)
+      .openPopup();
+    
+    // Create random polygon around the point
+    createRandomPolygon(lat, lng);
+  });
+  
+  // Create initial polygon
+  createRandomPolygon(19.8222, 82.5486);
+</script>
 </body>
 </html>
