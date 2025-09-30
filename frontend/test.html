@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Free Google Maps Alternative</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Photon (Autocomplete Search) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet.photon/leaflet.photon.min.js"></script>
+
+  <style>
+    #map { height: 100vh; width: 100%; }
+    .photon-input {
+      width: 350px !important;
+      font-size: 14px;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // Create the map
+    var map = L.map('map').setView([20.5937, 78.9629], 5);
+
+    // Satellite layer (Esri World Imagery)
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri & contributors', maxZoom: 20 }
+    ).addTo(map);
+
+    // Street map
+    var streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '&copy; OpenStreetMap contributors', maxZoom: 20 }
+    );
+
+    // Layer toggle
+    L.control.layers({"Satellite": satellite, "Streets": streets}).addTo(map);
+
+    // Add Photon search (with autocomplete)
+    var photonControl = L.control.photon({
+      placeholder: "Search location...",
+      position: "topleft",
+      url: "https://photon.komoot.io/api",
+      feedbackEmail: "your-email@example.com"
+    }).addTo(map);
+
+    // Zoom to selected place
+    photonControl.on("selected", function (e) {
+      map.setView(e.feature.geometry.coordinates.reverse(), 14);
+      L.marker(e.feature.geometry.coordinates.reverse())
+        .addTo(map)
+        .bindPopup(e.feature.properties.name || "Location")
+        .openPopup();
+    });
+  </script>
+</body>
+</html>

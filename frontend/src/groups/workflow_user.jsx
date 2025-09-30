@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar_User from '../components/sidebar_user';
 // import Dashboard from '../pages/dashboard';
-import PattaManagement from '../pages/patta_management';
-import BeneficiarySchemes from '../pages/beneficiary_schemes';
-import Map_Land_Analysis from '../pages/map_land_analysis';
 import UserManagement from '../pages/user_management';
-import user_dashboard from '../pages/user_dashboard';
 import UserDashboard from '../pages/user_dashboard';
 import Claimant_patta from '../pages/Claimant_patta';
 import Schemes from '../pages/Schemes_&_Benefits';  

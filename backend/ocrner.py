@@ -38,4 +38,4 @@ def ocr_image_to_text(image_path, output_txt="land_text.txt"):
 
 # ---------------- DEMO ----------------
 if __name__ == "__main__":
-    ocr_image_to_text("image.png", "land_text.txt")
+    ocr_image_to_text("Screenshot 2025-09-30 011547.png", "land_text.txt")

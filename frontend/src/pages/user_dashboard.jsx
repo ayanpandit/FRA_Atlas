@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { 
   FileText, 
   Clock, 
@@ -18,47 +19,35 @@ import {
 } from 'lucide-react';
 
 const Dashboard = ({ userData }) => {
-  const stats = [
-    {
-      title: "Active Pattas",
-      value: "2",
-      change: "+1 this month",
-      trend: "up",
-      icon: FileText,
-      color: "bg-emerald-500",
-      bgColor: "bg-emerald-50",
-      textColor: "text-emerald-600"
-    },
-    {
-      title: "Pending Reviews",
-      value: "1",
-      change: "Under verification",
-      trend: "neutral",
-      icon: Clock,
-      color: "bg-amber-500",
-      bgColor: "bg-amber-50",
-      textColor: "text-amber-600"
-    },
-    {
-      title: "Total Benefits Received",
-      value: "₹18,000",
-      change: "+₹2,000 this month",
-      trend: "up",
-      icon: Wallet,
-      color: "bg-blue-500",
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-600"
-    },
-    {
-      title: "Schemes Enrolled",
-      value: "4",
-      change: "2 more available",
-      trend: "up",
-      icon: Award,
-      color: "bg-purple-500",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-600"
+  // Live data states
+  const [pattas, setPattas] = useState([]);
+  const [schemes, setSchemes] = useState([]);
+  const [paymentsTotal, setPaymentsTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Derived values for the top stat cards
+  const activePattasCount = pattas.filter(p => (p.status || '').toString().toLowerCase() !== 'pending').length;
+  const pendingReviewsCount = pattas.filter(p => (p.status || '').toString().toLowerCase() === 'pending').length;
+  const totalBenefitsReceived = paymentsTotal || 0;
+  // Schemes enrolled: collect recommended/enrolled schemes from non-pending pattas
+  const schemesEnrolledSet = new Set();
+  pattas.forEach(p => {
+    try {
+      const rec = p.recommended_schemes ? (typeof p.recommended_schemes === 'string' ? JSON.parse(p.recommended_schemes) : p.recommended_schemes) : [];
+      if ((p.status || '').toString().toLowerCase() !== 'pending') {
+        (rec || []).forEach(s => schemesEnrolledSet.add(s));
+      }
+    } catch (e) {
+      // ignore parse errors
     }
+  });
+  const schemesEnrolled = schemesEnrolledSet.size;
+
+  const stats = [
+    { title: 'Active Pattas', value: String(activePattasCount), change: '', trend: activePattasCount > 0 ? 'up' : 'neutral', icon: FileText, bgColor: 'bg-emerald-50', textColor: 'text-emerald-600' },
+    { title: 'Pending Reviews', value: String(pendingReviewsCount), change: '', trend: pendingReviewsCount > 0 ? 'neutral' : 'up', icon: Clock, bgColor: 'bg-amber-50', textColor: 'text-amber-600' },
+    { title: 'Total Benefits Received', value: `₹${totalBenefitsReceived.toLocaleString()}`, change: '', trend: 'up', icon: Wallet, bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
+    { title: 'Schemes Enrolled', value: String(schemesEnrolled), change: '', trend: schemesEnrolled > 0 ? 'up' : 'neutral', icon: Award, bgColor: 'bg-purple-50', textColor: 'text-purple-600' }
   ];
 
   const recentActivity = [
@@ -136,6 +125,50 @@ const Dashboard = ({ userData }) => {
     { name: "View Payment History", icon: Wallet, color: "bg-purple-500" },
     { name: "Submit Feedback", icon: Bell, color: "bg-orange-500" }
   ];
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      const ownerId = userData && userData.id ? userData.id : 'guest';
+      try {
+        // Fetch pattas for user
+        const { data: pData, error: pErr } = await supabase.from('pattas').select('*').eq('owner_id', ownerId).order('date_applied', { ascending: false });
+        if (pErr) {
+          console.warn('Failed to fetch pattas', pErr.message || pErr);
+        }
+        if (mounted) setPattas(pData || []);
+
+        // Fetch schemes table if exists
+        try {
+          const { data: sData, error: sErr } = await supabase.from('schemes').select('*').order('name', { ascending: true });
+          if (sErr) {
+            console.warn('Schemes table not available or failed to fetch', sErr.message || sErr);
+          } else if (mounted) setSchemes(sData || []);
+        } catch (e) {
+          console.warn('Error fetching schemes', e);
+        }
+
+        // Fetch payments total if payments table exists
+        try {
+          const { data: payData, error: payErr } = await supabase.from('payments').select('amount').eq('user_id', ownerId);
+          if (payErr) {
+            console.warn('Payments table missing or failed to fetch', payErr.message || payErr);
+          } else {
+            const total = (payData || []).reduce((s, row) => s + (parseFloat(row.amount) || 0), 0);
+            if (mounted) setPaymentsTotal(total);
+          }
+        } catch (e) {
+          console.warn('Error fetching payments', e);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+      }
+      setLoading(false);
+    };
+    load();
+    return () => { mounted = false; };
+  }, [userData]);
 
   return (
     <div className="space-y-8">

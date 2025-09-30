@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const PattaManagement = () => {
@@ -27,9 +26,9 @@ const PattaManagement = () => {
               </div>
             </div>
             <div className="space-y-2.5 mb-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <span className="text-gray-400">📅</span>
-                <span>Date: {patta.date_entered ? new Date(patta.date_entered).toLocaleString() : 'N/A'}</span>
+                <span>Date: {patta.date_applied ? new Date(patta.date_applied).toLocaleString() : 'N/A'}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <span className="text-gray-400">🔖</span>
@@ -86,9 +85,18 @@ const PattaManagement = () => {
       </span>
     );
   };
+  // Small labeled info card used in the details modal
+  const InfoCard = ({ label, value }) => (
+    <div className="bg-slate-50 rounded-lg p-3">
+      <span className="block text-xs font-semibold text-slate-700 mb-1">{label}</span>
+      <span className="text-slate-900 font-medium">{value ?? '—'}</span>
+    </div>
+  );
   // Show patta details modal
   const handleViewDetails = (patta) => {
     setSelectedPatta(patta);
+    // create a shallow editable copy so inputs in the modal can be changed
+    setEditablePatta({ ...patta });
     setShowDetailsModal(true);
   };
   const [activeTab, setActiveTab] = useState('all');
@@ -99,20 +107,89 @@ const PattaManagement = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedPatta, setSelectedPatta] = useState(null);
+  const [editablePatta, setEditablePatta] = useState(null);
+  const [showRaw, setShowRaw] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState('table');
   const [showFilters, setShowFilters] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [pattas, setPattas] = useState([]);
+  const [loadingPattas, setLoadingPattas] = useState(true);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    async function fetchPattas() {
-      const { data, error } = await supabase.from('pattas').select('*');
-      if (!error) setPattas(data || []);
-    }
-    fetchPattas();
+    let mounted = true;
+    const fetchAllPattasWithOwners = async () => {
+      setLoadingPattas(true);
+      try {
+        // fetch all pattas using the Supabase anon client
+        // fetch all pattas without assuming a specific order column (some installs may not have date_entered)
+        const { data: pattasData, error: pattasErr } = await supabase.from('pattas').select('*');
+        console.debug('Supabase pattas fetch', { pattasData, pattasErr });
+        if (pattasErr) {
+          console.warn('Failed to fetch pattas:', pattasErr.message || pattasErr);
+          if (mounted) {
+            setPattas([]);
+            setLoadingPattas(false);
+          }
+          return;
+        }
+
+        const rows = pattasData || [];
+
+        // collect unique owner ids
+        const ownerIdsRaw = Array.from(new Set(rows.map(r => r.owner_id).filter(Boolean)));
+        let profilesById = {};
+
+        // Only attempt to fetch profiles/users when owner ids look like UUIDs to avoid 404s for values like 'guest'
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        const ownerIds = ownerIdsRaw.filter(id => uuidRegex.test(String(id)));
+
+        if (ownerIds.length > 0) {
+          // try profiles table first, fallback to users
+          try {
+            const { data: profiles, error: profErr } = await supabase.from('profiles').select('id, full_name, email').in('id', ownerIds);
+            if (!profErr && profiles && profiles.length > 0) {
+              profilesById = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+            } else {
+              const { data: users, error: usersErr } = await supabase.from('users').select('id, full_name, email').in('id', ownerIds);
+              if (!usersErr && users && users.length > 0) profilesById = users.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+            }
+          } catch (e) {
+            console.warn('Error fetching owner profiles:', e.message || e);
+          }
+        }
+
+        // attach owner info to pattas for UI
+        const enriched = rows.map(r => ({
+          ...r,
+          owner_full_name: (profilesById[r.owner_id] && (profilesById[r.owner_id].full_name || profilesById[r.owner_id].name)) || r.owner_name || r.owner_id || 'Unknown',
+          owner_email: (profilesById[r.owner_id] && profilesById[r.owner_id].email) || r.owner_email || ''
+        }));
+
+        // Sort client-side by available date fields (newest first)
+        enriched.sort((a, b) => {
+          const aDate = new Date(a.date_applied || a.created_at || 0).getTime();
+          const bDate = new Date(b.date_applied || b.created_at || 0).getTime();
+          return bDate - aDate;
+        });
+
+        if (mounted) {
+          setPattas(enriched);
+          setLoadingPattas(false);
+        }
+      } catch (err) {
+        console.error('Failed to load pattas for management', err);
+        if (mounted) {
+          setPattas([]);
+          setLoadingPattas(false);
+        }
+      }
+    };
+    fetchAllPattasWithOwners();
+    return () => { mounted = false };
   }, []);
 
   // Filter pattas based on active tab and filters
@@ -182,6 +259,38 @@ const PattaManagement = () => {
               <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
                 Patta Management System
               </h1>
+              <div className="text-sm text-slate-500">
+                <span className="mr-4">Loading: {String(loadingPattas)}</span>
+                <span>Patta count: <strong>{pattas.length}</strong></span>
+              </div>
+              {/* List preview (shows current page pattas as cards) */}
+              <div className="mt-4">
+                <div className="text-sm text-slate-600 mb-2">Showing {filteredPattas.length} pattas — page {currentPage}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {paginatedPattas.map(p => (
+                    <div key={p.patta_id || p.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-sm text-slate-500">{p.patta_id}</div>
+                          <div className="text-lg font-semibold text-slate-900">{p.holder_name || p.owner_full_name || 'Unknown Holder'}</div>
+                          <div className="text-xs text-slate-500">{p.village}{p.district ? ` · ${p.district}` : ''}{p.state ? ` · ${p.state}` : ''}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm">{p.area_hectares ? `${p.area_hectares} ha` : ''}</div>
+                          <div className="mt-2">{getStatusBadge(p.status)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="text-xs text-slate-600">Applied: {p.date_applied ? new Date(p.date_applied).toLocaleDateString() : 'N/A'}</div>
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => handleViewDetails(p)} className="text-blue-600 hover:underline text-sm">View</button>
+                          <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(p)); alert('Copied JSON to clipboard'); }} className="text-slate-600 text-sm">Copy</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <p className="text-slate-600 text-lg">Manage land records efficiently and securely</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -278,33 +387,6 @@ const PattaManagement = () => {
                   </button>
                 ))}
               </nav>
-              
-              {/* Controls */}
-              <div className="flex items-center space-x-3">
-                <div className="flex bg-slate-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('table')}
-                    className={`p-2 rounded-md transition-all duration-200 ${
-                      viewMode === 'table' 
-                        ? 'bg-white shadow-sm text-blue-600' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                    title="Table View"
-                  >
-                    <span className="text-sm">📊 Table</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-all duration-200 ${
-                      viewMode === 'grid' 
-                        ? 'bg-white shadow-sm text-blue-600' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                    title="Grid View"
-                  >
-                    <span className="text-sm">🔄 Grid</span>
-                  </button>
-                </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-2 rounded-lg transition-all duration-200 ${
@@ -357,114 +439,74 @@ const PattaManagement = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors duration-200 text-sm"
                   >
                     {districts.map(district => (
-                      <option key={district} value={district === 'All Districts' ? 'all' : district}>
-                        {district}
-                      </option>
+                        <option key={district} value={district === 'All Districts' ? 'all' : district}>
+                          {district}
+                        </option>
                     ))}
-                  </select>
+                </select>
+                  </div>
                 </div>
-              </div>
-              {(searchQuery || statusFilter !== 'all' || districtFilter !== 'all') && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-slate-600">
-                    {filteredPattas.length} of {pattas.length} pattas match your filters
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setStatusFilter('all');
-                      setDistrictFilter('all');
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Content Area */}
-          <div className="p-6">
-            {viewMode === 'table' ? (
-              /* Enhanced Table View */
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Patta Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Date & Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedPattas.map((patta) => (
-                      <tr key={patta.patta_id} className="hover:bg-slate-50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm">
-                              {patta.patta_id}
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-slate-900">{patta.patta_id}</div>
-                              <div className="text-sm text-slate-600">{patta.holder_name}</div>
-                              <div className="text-xs text-slate-500">{patta.area_hectares} ha • {patta.right_type}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-slate-900 font-medium">{patta.village}</div>
-                          <div className="text-sm text-slate-500">{patta.district}, {patta.state}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-2">
-                            <div className="text-sm text-slate-900 font-medium">
-                              {patta.date_entered ? new Date(patta.date_entered).toLocaleString() : 'N/A'}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {getStatusBadge(patta.status)}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleViewDetails(patta)}
-                              className="text-blue-600 hover:text-blue-800 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-all duration-200"
-                              title="View Details"
-                            >
-                              👁️ View
-                            </button>
-                            <button
-                              className="text-green-600 hover:text-green-800 px-3 py-1.5 rounded-md hover:bg-green-50 transition-all duration-200"
-                              title="Download"
-                            >
-                              📥 Download
-                            </button>
-                            <button
-                              className="text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-md hover:bg-slate-50 transition-all duration-200"
-                              title="More Options"
-                            >
-                              ⋮
-                            </button>
-                          </div>
-                        </td>
+                {viewMode === 'table' ? (
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                {loadingPattas ? (
+                  <div className="p-8 text-center">Loading pattas...</div>
+                ) : pattas.length === 0 ? (
+                  <div className="p-8 text-center text-slate-600">No pattas found. Ensure your Supabase project has a <code>pattas</code> table and the anon key has read access.</div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Patta Details</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date & Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedPattas.map((patta) => (
+                        <tr key={patta.patta_id} className="hover:bg-slate-50 transition-colors duration-150">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm">{patta.patta_id}</div>
+                              <div>
+                                <div className="text-sm font-semibold text-slate-900">{patta.patta_id}</div>
+                                <div className="text-sm text-slate-600">{patta.holder_name}</div>
+                                <div className="text-xs text-slate-500">{patta.area_hectares} ha • {patta.right_type}</div>
+                                <div className="text-xs text-slate-400">Owner: {patta.owner_full_name} {patta.owner_email ? `· ${patta.owner_email}` : ''}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-slate-900 font-medium">{patta.village}</div>
+                            <div className="text-sm text-slate-500">{patta.district}, {patta.state}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-2">
+                              <div className="text-sm text-slate-900 font-medium">{patta.date_applied ? new Date(patta.date_applied).toLocaleString() : 'N/A'}</div>
+                              <div className="flex items-center space-x-2">{getStatusBadge(patta.status)}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center space-x-2">
+                              <button onClick={() => handleViewDetails(patta)} className="text-blue-600 hover:text-blue-800 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-all duration-200" title="View Details">👁️ View</button>
+                              <button className="text-green-600 hover:text-green-800 px-3 py-1.5 rounded-md hover:bg-green-50 transition-all duration-200" title="Download">📥 Download</button>
+                              <button className="text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-md hover:bg-slate-50 transition-all duration-200" title="More Options">⋮</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             ) : (
-              <GridView />
+              loadingPattas ? (
+                <div className="p-8 text-center">Loading pattas...</div>
+              ) : pattas.length === 0 ? (
+                <div className="p-8 text-center text-slate-600">No pattas available.</div>
+              ) : (
+                <GridView />
+              )
             )}
 
             {/* Enhanced Pagination */}
@@ -570,103 +612,135 @@ const PattaManagement = () => {
                     {getStatusBadge(selectedPatta.status)}
                     {selectedPatta.priority === 'high' && getPriorityBadge(selectedPatta.priority)}
                   </div>
-                  {selectedPatta.verifiedBy && (
+                  {(selectedPatta.verified_by || selectedPatta.verifiedBy) && (
                     <div className="text-right">
                       <p className="text-sm font-medium text-slate-900">Verified by</p>
-                      <p className="text-sm text-slate-600">{selectedPatta.verifiedBy}</p>
-                      <p className="text-xs text-slate-500">{new Date(selectedPatta.verifiedDate).toLocaleDateString('en-IN')}</p>
+                      <p className="text-sm text-slate-600">{selectedPatta.verified_by || selectedPatta.verifiedBy}</p>
+                      <p className="text-xs text-slate-500">{selectedPatta.date_verified ? new Date(selectedPatta.date_verified).toLocaleDateString('en-IN') : (selectedPatta.verifiedDate ? new Date(selectedPatta.verifiedDate).toLocaleDateString('en-IN') : '')}</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Details Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-4">
                   <h4 className="text-lg font-bold text-slate-900 border-b border-gray-200 pb-2">Basic Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Patta ID</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.patta_id}</span>
+                    {/* Editable fields bound to editablePatta */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Patta ID</label>
+                      <input value={editablePatta?.patta_id || ''} onChange={e => setEditablePatta(prev => ({ ...prev, patta_id: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Holder Name</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.holder_name}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Holder Name</label>
+                      <input value={editablePatta?.holder_name || ''} onChange={e => setEditablePatta(prev => ({ ...prev, holder_name: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Category</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.category}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
+                      <input value={editablePatta?.category || ''} onChange={e => setEditablePatta(prev => ({ ...prev, category: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Description</span>
-                      <span className="text-slate-900 font-medium">No description</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Village</label>
+                      <input value={editablePatta?.village || ''} onChange={e => setEditablePatta(prev => ({ ...prev, village: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Village</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.village}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">District</label>
+                      <input value={editablePatta?.district || ''} onChange={e => setEditablePatta(prev => ({ ...prev, district: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">District</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.district}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
+                      <input value={editablePatta?.state || ''} onChange={e => setEditablePatta(prev => ({ ...prev, state: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">State</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.state}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Coordinates</label>
+                      <input value={Array.isArray(editablePatta?.coordinates) ? editablePatta.coordinates.join(', ') : (editablePatta?.coordinates || '')} onChange={e => setEditablePatta(prev => ({ ...prev, coordinates: e.target.value.includes(',') ? e.target.value.split(',').map(s=>s.trim()) : e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Coordinates</span>
-                      <span className="text-slate-900 font-medium">{Array.isArray(selectedPatta.coordinates) ? selectedPatta.coordinates.join(', ') : selectedPatta.coordinates}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Area (hectares)</label>
+                      <input type="number" step="0.01" value={editablePatta?.area_hectares || ''} onChange={e => setEditablePatta(prev => ({ ...prev, area_hectares: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Area (hectares)</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.area_hectares}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Right Type</label>
+                      <input value={editablePatta?.right_type || ''} onChange={e => setEditablePatta(prev => ({ ...prev, right_type: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Right Type</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.right_type}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                      <select value={editablePatta?.status || 'pending'} onChange={e => setEditablePatta(prev => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 border rounded-lg">
+                        <option value="pending">pending</option>
+                        <option value="verified">verified</option>
+                        <option value="rejected">rejected</option>
+                        <option value="cancelled">cancelled</option>
+                      </select>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Status</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.status}</span>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Date Entered</label>
+                      <input type="datetime-local" value={editablePatta?.date_applied ? new Date(editablePatta.date_applied).toISOString().slice(0,16) : ''} onChange={e => setEditablePatta(prev => ({ ...prev, date_applied: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Recommended Schemes</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.recommended_schemes}</span>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Rejected Message</label>
+                      <input value={editablePatta?.rejected_message || editablePatta?.reject_message || ''} onChange={e => setEditablePatta(prev => ({ ...prev, rejected_message: e.target.value, reject_message: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Date Entered</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.date_entered ? new Date(selectedPatta.date_entered).toLocaleString() : ''}</span>
+                  </div>
+
+                  <div>
+                    <h5 className="text-md font-semibold text-slate-900 mt-2 mb-2">Recommended Schemes</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        try {
+                          const val = editablePatta?.recommended_schemes ?? selectedPatta.recommended_schemes;
+                          const arr = val ? (typeof val === 'string' ? JSON.parse(val) : val) : [];
+                          if (!arr || arr.length === 0) return <span className="text-sm text-slate-600">No schemes allotted</span>;
+                          return arr.map((s, i) => <span key={i} className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{s}</span>);
+                        } catch (e) {
+                          return <span className="text-sm text-slate-600">{String(editablePatta?.recommended_schemes || selectedPatta.recommended_schemes || '')}</span>;
+                        }
+                      })()}
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <span className="block text-xs font-semibold text-slate-700 mb-1">Rejected Message</span>
-                      <span className="text-slate-900 font-medium">{selectedPatta.rejected_message}</span>
+                    <div className="mt-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Recommended Schemes (CSV)</label>
+                      <input value={Array.isArray(editablePatta?.recommended_schemes) ? editablePatta.recommended_schemes.join(', ') : (editablePatta?.recommended_schemes || '')} onChange={e => setEditablePatta(prev => ({ ...prev, recommended_schemes: e.target.value.includes(',') ? e.target.value.split(',').map(s=>s.trim()) : e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-lg font-bold text-slate-900 border-b border-gray-200 pb-2">Land Details</h4>
-                  {[
-                    { label: 'Land Area', value: selectedPatta.landArea, icon: '📏' },
-                    { label: 'Survey Number', value: selectedPatta.surveyNumber, icon: '📋' },
-                    { label: 'Upload Date', value: new Date(selectedPatta.uploadDate).toLocaleDateString('en-IN'), icon: '📅' },
-                    { label: 'Status', value: selectedPatta.status, icon: '🔄' },
-                    { label: 'Priority', value: selectedPatta.priority, icon: '⚡' }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                      <div className="text-lg">{item.icon}</div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">{item.label}</label>
-                        {item.label === 'Status' ? (
-                          <div>{getStatusBadge(selectedPatta.status)}</div>
-                        ) : item.label === 'Priority' ? (
-                          <div>{getPriorityBadge(selectedPatta.priority)}</div>
-                        ) : (
-                          <p className="text-slate-900 font-medium">{item.value}</p>
-                        )}
+                  <h4 className="text-lg font-bold text-slate-900 border-b border-gray-200 pb-2">Document</h4>
+                  {/* Image preview + download */}
+                  {selectedPatta.patta_doc_url ? (
+                    <div className="space-y-3">
+                      <div className="w-full bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <img src={selectedPatta.patta_doc_url} alt={`${selectedPatta.patta_id} document`} className="w-full h-56 object-contain rounded-md" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-slate-700">Uploaded file: <span className="font-medium">{selectedPatta.patta_doc_filename || selectedPatta.patta_doc_name || 'document'}</span></div>
+                        <div className="flex items-center space-x-2">
+                          <a href={selectedPatta.patta_doc_url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">Open</a>
+                          <a href={selectedPatta.patta_doc_url} download className="text-sm text-green-600 hover:underline">Download</a>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="text-sm text-slate-600">No document uploaded for this patta.</div>
+                  )}
+
+                  <div className="mt-4">
+                    <h5 className="text-md font-semibold text-slate-900">Owner</h5>
+                    <p className="text-sm text-slate-700">{selectedPatta.owner_full_name}{selectedPatta.owner_email ? ` · ${selectedPatta.owner_email}` : ''}</p>
+                    {selectedPatta.owner_phone && <p className="text-sm text-slate-500">{selectedPatta.owner_phone}</p>}
+                  </div>
+                  {/* Raw JSON / All fields */}
+                  <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-md font-semibold text-slate-900">All Patta Fields</h5>
+                      <button onClick={() => setShowRaw(!showRaw)} className="text-sm text-blue-600 hover:underline">{showRaw ? 'Hide' : 'Show'} raw</button>
+                    </div>
+                    {showRaw ? (
+                      <pre className="text-xs overflow-auto max-h-64 bg-white p-3 rounded border border-gray-100">{JSON.stringify(selectedPatta, null, 2)}</pre>
+                    ) : (
+                      <div className="text-sm text-slate-600">Click "Show raw" to view every field stored for this patta.</div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -689,6 +763,7 @@ const PattaManagement = () => {
               </div>
             </div>
 
+            {/* action footer with Save / Approve / Reject */}
             <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-end space-x-4">
               <button
                 onClick={() => setShowDetailsModal(false)}
@@ -696,8 +771,133 @@ const PattaManagement = () => {
               >
                 Close
               </button>
-              <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg">
-                📥 Download PDF
+              <button
+                onClick={async () => {
+                  // save changes
+                  if (!editablePatta) return;
+                  setIsUpdating(true);
+                  try {
+                    const toUpdate = { ...editablePatta };
+                    // ensure recommended_schemes is stored as JSON array if it's an array-like
+                    if (Array.isArray(toUpdate.recommended_schemes)) {
+                      toUpdate.recommended_schemes = toUpdate.recommended_schemes;
+                    }
+                    // prefer primary key id if present, otherwise fall back to patta_id
+                    const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
+                    console.debug('Updating patta using filter', filter);
+                    const { data, error } = await supabase.from('pattas').update(toUpdate).eq(filter.column, filter.value).select().maybeSingle();
+                    if (error) throw error;
+                    console.debug('Update result', data);
+                    const row = Array.isArray(data) ? data[0] : data;
+                    if (!row) {
+                      // diagnostic: try to SELECT the row using same filter to see if it exists or if RLS blocked the update
+                      try {
+                        const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
+                        console.debug('Diagnostic select after failed update', { selData, selErr });
+                        alert('Update returned no row. Diagnostic select result in console.\nSelect error: ' + (selErr ? (selErr.message || String(selErr)) : 'none') + '\nSelect data: ' + JSON.stringify(selData));
+                      } catch (diagE) {
+                        console.error('Diagnostic select failed', diagE);
+                        alert('Update returned no row and diagnostic select failed: ' + diagE.message || String(diagE));
+                      }
+                      setIsUpdating(false);
+                      return;
+                    }
+                    // update local list
+                    setPattas(prev => prev.map(p => p.patta_id === row.patta_id ? ({ ...p, ...row }) : p));
+                    setSelectedPatta(row);
+                    setEditablePatta({ ...row });
+                  } catch (e) {
+                    console.error('Failed to save patta', e.message || e);
+                    alert('Failed to save changes: ' + (e.message || e));
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
+                disabled={isUpdating}
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg disabled:opacity-60"
+              >
+                {isUpdating ? 'Saving...' : 'Save'}
+              </button>
+
+              <button
+                onClick={async () => {
+                  // Approve flow: set status to verified
+                  if (!editablePatta) return;
+                  if (!confirm('Approve this patta and mark as verified?')) return;
+                  setIsUpdating(true);
+                  try {
+                    const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
+                    console.debug('Approving patta using filter', filter);
+                    const { data, error } = await supabase.from('pattas').update({ status: 'verified', date_verified: new Date().toISOString() }).eq(filter.column, filter.value).select().maybeSingle();
+                    if (error) throw error;
+                    console.debug('Approve result', data);
+                    const row = Array.isArray(data) ? data[0] : data;
+                    if (!row) {
+                      try {
+                        const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
+                        console.debug('Diagnostic select after failed approve', { selData, selErr });
+                        alert('Approve returned no row. Diagnostic select result in console.\nSelect error: ' + (selErr ? (selErr.message || String(selErr)) : 'none') + '\nSelect data: ' + JSON.stringify(selData));
+                      } catch (diagE) {
+                        console.error('Diagnostic select failed', diagE);
+                        alert('Approve returned no row and diagnostic select failed: ' + diagE.message || String(diagE));
+                      }
+                      setIsUpdating(false);
+                      return;
+                    }
+                    setPattas(prev => prev.map(p => p.patta_id === row.patta_id ? ({ ...p, ...row }) : p));
+                    setSelectedPatta(row);
+                    setEditablePatta({ ...row });
+                  } catch (e) {
+                    console.error('Failed to approve patta', e.message || e);
+                    alert('Failed to approve: ' + (e.message || e));
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg"
+              >
+                ✅ Approve
+              </button>
+
+              <button
+                onClick={async () => {
+                  // Reject flow: set status to rejected and save reject message
+                  if (!editablePatta) return;
+                  const msg = prompt('Enter rejection message (optional)', editablePatta.rejected_message || editablePatta.reject_message || '');
+                  if (msg === null) return; // cancelled
+                  setIsUpdating(true);
+                  try {
+                    const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
+                    console.debug('Rejecting patta using filter', filter);
+                    const { data, error } = await supabase.from('pattas').update({ status: 'rejected', rejected_message: msg, reject_message: msg }).eq(filter.column, filter.value).select().maybeSingle();
+                    if (error) throw error;
+                    console.debug('Reject result', data);
+                    const row = Array.isArray(data) ? data[0] : data;
+                    if (!row) {
+                      try {
+                        const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
+                        console.debug('Diagnostic select after failed reject', { selData, selErr });
+                        alert('Reject returned no row. Diagnostic select result in console.\nSelect error: ' + (selErr ? (selErr.message || String(selErr)) : 'none') + '\nSelect data: ' + JSON.stringify(selData));
+                      } catch (diagE) {
+                        console.error('Diagnostic select failed', diagE);
+                        alert('Reject returned no row and diagnostic select failed: ' + diagE.message || String(diagE));
+                      }
+                      setIsUpdating(false);
+                      return;
+                    }
+                    setPattas(prev => prev.map(p => p.patta_id === row.patta_id ? ({ ...p, ...row }) : p));
+                    setSelectedPatta(row);
+                    setEditablePatta({ ...row });
+                  } catch (e) {
+                    console.error('Failed to reject patta', e.message || e);
+                    alert('Failed to reject: ' + (e.message || e));
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg"
+              >
+                ❌ Reject
               </button>
             </div>
           </div>

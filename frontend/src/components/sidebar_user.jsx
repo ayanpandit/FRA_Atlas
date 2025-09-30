@@ -10,7 +10,8 @@ const Sidebar_User = ({
   sidebarWidth = 280, 
   setSidebarWidth,
   isCollapsed: externalCollapsed,
-  setIsCollapsed: setExternalCollapsed 
+  setIsCollapsed: setExternalCollapsed,
+  user = { name: 'Guest', role: 'user' } // Default user object to prevent ReferenceError
 }) => {
   // ...existing code...
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

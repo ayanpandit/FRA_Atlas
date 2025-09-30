@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+// Import loader component from same directory
+import Loader from './loader';
 import { Menu, X, Home, User, Phone, Briefcase, ChevronDown, LogOut } from 'lucide-react';
 
 const Navbar = () => {
@@ -7,6 +10,44 @@ const Navbar = () => {
     const [openDropdown, setOpenDropdown] = useState('');
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showExploreDropdown, setShowExploreDropdown] = useState(false);
+
+    // Loader and navigation states for Explore Now dropdown
+    // showLoader: Controls visibility of the 3-second loader
+    // selectedPortal: Stores which portal user selected (for navigation after loader)
+    const [showLoader, setShowLoader] = useState(false);
+    const [selectedPortal, setSelectedPortal] = useState(null);
+    const navigate = useNavigate();
+
+    // Handler for portal selection from Explore Now dropdown
+    // Shows loader for 3 seconds, then navigates to the correct workflow
+    const handleExplorePortal = (portalType) => {
+        let route = '';
+        // Map portal type to corresponding route/component
+        // User Portal -> workflow_user.jsx in ../groups
+        // Gram Panchayat Portal -> workflow_off.jsx in ../groups
+        // Admin Portal -> Admin-workflow_admin.jsx in ../groups
+        switch(portalType) {
+            case 'user':
+                route = '/workflow_user';
+                break;
+            case 'gp':
+                route = '/workflow_off';
+                break;
+            case 'admin':
+                route = '/workflow_admin';
+                break;
+            default:
+                route = '/';
+        }
+        setSelectedPortal(route);
+        setShowLoader(true);
+        setShowExploreDropdown(false);
+        // Navigate after 3 second delay
+        setTimeout(() => {
+            setShowLoader(false);
+            navigate(route);
+        }, 3000);
+    };
     
     // Static states for UI demonstration
     const isScrolled = false;
@@ -32,6 +73,8 @@ const Navbar = () => {
 
     return (
         <>
+            {/* Show loader overlay when loading */}
+            {showLoader && <Loader />}
             <nav className={
                 isAnalyzerPage
                     ? "relative rounded-2xl backdrop-blur-lg shadow-2xl border border-white/20 mt-4 mb-0 md:mt-6 md:mb-0 lg:mt-8 lg:mb-0 mx-4 sm:mx-6 md:mx-12"
@@ -264,24 +307,33 @@ const Navbar = () => {
                     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-end">
                             <div className="py-2 w-56 bg-black/20 backdrop-blur-lg rounded-xl shadow-xl border border-white/20">
-                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group">
+                                {/* User Portal Option */}
+                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group"
+                                    onClick={() => handleExplorePortal('user')}
+                                >
                                     <User className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
                                     <div className="text-left">
-                                        <div className="font-medium text-sm lg:text-base">Explore User Side</div>
+                                        <div className="font-medium text-sm lg:text-base">User Portal</div>
                                         <div className="text-xs text-white/70">Citizen portal access</div>
                                     </div>
                                 </button>
-                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group">
+                                {/* Gram Panchayat Portal Option */}
+                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group"
+                                    onClick={() => handleExplorePortal('gp')}
+                                >
                                     <Home className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
                                     <div className="text-left">
-                                        <div className="font-medium text-sm lg:text-base">Explore Gramsabha Side</div>
+                                        <div className="font-medium text-sm lg:text-base">Gram Panchayat Portal</div>
                                         <div className="text-xs text-white/70">Local governance portal</div>
                                     </div>
                                 </button>
-                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group">
+                                {/* Admin Portal Option */}
+                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group"
+                                    onClick={() => handleExplorePortal('admin')}
+                                >
                                     <Briefcase className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
                                     <div className="text-left">
-                                        <div className="font-medium text-sm lg:text-base">Explore Administrator Side</div>
+                                        <div className="font-medium text-sm lg:text-base">Admin Portal</div>
                                         <div className="text-xs text-white/70">Admin management portal</div>
                                     </div>
                                 </button>

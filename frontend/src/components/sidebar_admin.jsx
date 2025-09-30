@@ -3,13 +3,14 @@ import logo from "/logo.png";
 // ...existing code...
 
 
-const Sidebar_Admin= ({ 
+const Sidebar_Admin = ({ 
   activeComponent, 
   setActiveComponent, 
   sidebarWidth = 280, 
   setSidebarWidth,
   isCollapsed: externalCollapsed,
-  setIsCollapsed: setExternalCollapsed 
+  setIsCollapsed: setExternalCollapsed,
+  user = { name: 'Admin', role: 'admin' } // Default user object to prevent ReferenceError
 }) => {
   // ...existing code...
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

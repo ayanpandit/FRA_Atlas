@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { 
   Award, 
   DollarSign, 
@@ -32,181 +33,31 @@ import {
 const Schemes = ({ userData }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [schemesState, setSchemesState] = useState([]);
 
-  const schemes = [
-    {
-      id: 'PM_KISAN',
-      name: 'PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)',
-      shortName: 'PM-KISAN',
-      description: 'Direct income support to small and marginal farmers',
-      category: 'Agricultural',
-      status: 'Active',
-      enrolledDate: 'Jan 15, 2023',
-      amount: '₹6,000',
-      frequency: 'Annual',
-      nextPayment: 'Mar 31, 2025',
-      lastPayment: 'Dec 31, 2024',
-      totalReceived: '₹12,000',
-      icon: Briefcase,
-      color: 'bg-green-500',
-      benefits: [
-        'Direct cash transfer of ₹6,000 annually',
-        'Paid in three equal installments',
-        'No intermediary involvement',
-        'Direct bank transfer'
-      ],
-      eligibility: 'Small and marginal farmers with cultivable land',
-      documents: ['Aadhaar Card', 'Bank Account Details', 'Land Records'],
-      applicationStatus: 'Approved',
-      paymentHistory: [
-        { date: 'Dec 31, 2024', amount: '₹2,000', status: 'Completed' },
-        { date: 'Aug 31, 2024', amount: '₹2,000', status: 'Completed' },
-        { date: 'Apr 30, 2024', amount: '₹2,000', status: 'Completed' }
-      ]
-    },
-    {
-      id: 'MGNREGA',
-      name: 'Mahatma Gandhi National Rural Employment Guarantee Act',
-      shortName: 'MGNREGA',
-      description: 'Guaranteed wage employment for rural households',
-      category: 'Employment',
-      status: 'Active',
-      enrolledDate: 'Mar 10, 2023',
-      amount: '₹2,500',
-      frequency: 'Monthly',
-      nextPayment: 'Mar 15, 2025',
-      lastPayment: 'Feb 15, 2025',
-      totalReceived: '₹28,000',
-      icon: Users,
-      color: 'bg-blue-500',
-      benefits: [
-        'Guaranteed 100 days of employment',
-        'Wage rate: ₹250 per day',
-        'Work close to home',
-        'Asset creation in rural areas'
-      ],
-      eligibility: 'Rural households seeking employment',
-      documents: ['Job Card', 'Aadhaar Card', 'Bank Account'],
-      applicationStatus: 'Active',
-      daysWorked: 45,
-      daysRemaining: 55,
-      paymentHistory: [
-        { date: 'Feb 15, 2025', amount: '₹2,500', status: 'Completed' },
-        { date: 'Jan 15, 2025', amount: '₹3,750', status: 'Completed' },
-        { date: 'Dec 15, 2024', amount: '₹2,000', status: 'Completed' }
-      ]
-    },
-    {
-      id: 'FOREST_CONSERVATION',
-      name: 'Forest Conservation & Biodiversity Scheme',
-      shortName: 'Forest Conservation',
-      description: 'Incentives for forest conservation and biodiversity protection',
-      category: 'Environmental',
-      status: 'Eligible',
-      enrolledDate: null,
-      amount: '₹5,000',
-      frequency: 'Annual',
-      nextPayment: null,
-      lastPayment: null,
-      totalReceived: '₹0',
-      icon: Leaf,
-      color: 'bg-emerald-500',
-      benefits: [
-        'Annual payment for forest conservation',
-        'Additional incentives for biodiversity protection',
-        'Training and capacity building',
-        'Equipment support'
-      ],
-      eligibility: 'Forest dwelling communities with conservation activities',
-      documents: ['Forest Rights Certificate', 'Conservation Plan', 'Community Resolution'],
-      applicationStatus: 'Not Applied',
-      requirements: [
-        'Must have active FRA certificate',
-        'Demonstrate conservation activities',
-        'Submit biodiversity assessment'
-      ]
-    },
-    {
-      id: 'TRIBAL_WELFARE',
-      name: 'Tribal Welfare Development Scheme',
-      shortName: 'Tribal Welfare',
-      description: 'Comprehensive welfare scheme for tribal communities',
-      category: 'Welfare',
-      status: 'Under Review',
-      enrolledDate: 'Jan 20, 2024',
-      amount: '₹3,000',
-      frequency: 'Quarterly',
-      nextPayment: 'Pending approval',
-      lastPayment: null,
-      totalReceived: '₹0',
-      icon: Heart,
-      color: 'bg-purple-500',
-      benefits: [
-        'Healthcare support',
-        'Educational assistance',
-        'Skill development programs',
-        'Infrastructure development'
-      ],
-      eligibility: 'Scheduled Tribe communities',
-      documents: ['Tribe Certificate', 'Income Certificate', 'Residence Proof'],
-      applicationStatus: 'Under Review',
-      reviewStage: 'Document Verification',
-      estimatedApproval: 'Apr 15, 2025'
-    },
-    {
-      id: 'SOLAR_SUBSIDY',
-      name: 'Solar Power Subsidy Scheme',
-      shortName: 'Solar Subsidy',
-      description: 'Subsidized solar power systems for rural households',
-      category: 'Energy',
-      status: 'Available',
-      enrolledDate: null,
-      amount: '₹15,000',
-      frequency: 'One-time',
-      nextPayment: null,
-      lastPayment: null,
-      totalReceived: '₹0',
-      icon: Zap,
-      color: 'bg-yellow-500',
-      benefits: [
-        'Up to 70% subsidy on solar panels',
-        'Free installation and maintenance',
-        '25-year warranty',
-        'Reduced electricity bills'
-      ],
-      eligibility: 'Rural households with electricity connection',
-      documents: ['Electricity Bill', 'House Ownership Proof', 'Income Certificate'],
-      applicationStatus: 'Not Applied',
-      subsidyPercentage: 70,
-      systemCapacity: '3 KW'
-    },
-    {
-      id: 'EDUCATION_SCHOLARSHIP',
-      name: 'Tribal Education Scholarship',
-      shortName: 'Education Scholarship',
-      description: 'Educational scholarships for tribal students',
-      category: 'Education',
-      status: 'Available',
-      enrolledDate: null,
-      amount: '₹12,000',
-      frequency: 'Annual',
-      nextPayment: null,
-      lastPayment: null,
-      totalReceived: '₹0',
-      icon: GraduationCap,
-      color: 'bg-indigo-500',
-      benefits: [
-        'Annual scholarship for students',
-        'Book and uniform allowance',
-        'Hostel facility support',
-        'Merit-based additional benefits'
-      ],
-      eligibility: 'Tribal students pursuing higher education',
-      documents: ['Student ID', 'Mark Sheets', 'Income Certificate', 'Caste Certificate'],
-      applicationStatus: 'Not Applied',
-      gradeLevel: 'Higher Secondary and above'
-    }
-  ];
+  // Load schemes from DB if present
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('schemes').select('*').order('name', { ascending: true });
+        if (error) {
+          // table might not exist; fallback to built-in list (leave as empty)
+          console.warn('Could not fetch schemes table from Supabase:', error.message || error);
+          if (mounted) setSchemesState([]);
+          return;
+        }
+        if (mounted) setSchemesState(data || []);
+      } catch (err) {
+        console.warn('Error loading schemes from supabase', err);
+        if (mounted) setSchemesState([]);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
+
+  // Provide a fallback: if DB empty, keep the original static list for presentation
+  const schemes = schemesState.length > 0 ? schemesState : [];
 
   const getStatusIcon = (status) => {
     switch (status) {
