@@ -483,46 +483,59 @@ const PattaManagement = () => {
 
             <div className="p-6 space-y-6">
               <div className={`p-4 rounded-lg border-2 ${
-                selectedPatta.status === 'verified' ? 'bg-emerald-50 border-emerald-200' :
-                selectedPatta.status === 'pending' ? 'bg-amber-50 border-amber-200' :
+                editablePatta.status === 'verified' ? 'bg-emerald-50 border-emerald-200' :
+                editablePatta.status === 'pending' ? 'bg-amber-50 border-amber-200' :
                 'bg-red-50 border-red-200'
               }`}>
-                {getStatusBadge(selectedPatta.status)}
+                {getStatusBadge(editablePatta.status)}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">Holder Name</label>
-                  <input
-                    value={editablePatta?.holder_name || ''}
-                    onChange={e => setEditablePatta(prev => ({ ...prev, holder_name: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">Village</label>
-                  <input
-                    value={editablePatta?.village || ''}
-                    onChange={e => setEditablePatta(prev => ({ ...prev, village: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">District</label>
-                  <input
-                    value={editablePatta?.district || ''}
-                    onChange={e => setEditablePatta(prev => ({ ...prev, district: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">State</label>
-                  <input
-                    value={editablePatta?.state || ''}
-                    onChange={e => setEditablePatta(prev => ({ ...prev, state: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
+                {[
+                  { label: 'ID', key: 'id', type: 'text', disabled: true },
+                  { label: 'Patta ID', key: 'patta_id', type: 'text', disabled: true },
+                  { label: 'Owner ID', key: 'owner_id', type: 'text' },
+                  { label: 'Holder Name', key: 'holder_name', type: 'text' },
+                  { label: 'Category', key: 'category', type: 'text' },
+                  { label: 'Right Type', key: 'right_type', type: 'text' },
+                  { label: 'Village', key: 'village', type: 'text' },
+                  { label: 'District', key: 'district', type: 'text' },
+                  { label: 'State', key: 'state', type: 'text' },
+                  { label: 'Coordinates', key: 'coordinates', type: 'textarea', render: v => JSON.stringify(v) },
+                  { label: 'Area (hectares)', key: 'area_hectares', type: 'number' },
+                  { label: 'Status', key: 'status', type: 'text' },
+                  { label: 'Recommended Schemes', key: 'recommended_schemes', type: 'textarea', render: v => JSON.stringify(v) },
+                  { label: 'Date Applied', key: 'date_applied', type: 'text' },
+                  { label: 'Time Applied', key: 'time_applied', type: 'text' },
+                  { label: 'Date Verified', key: 'date_verified', type: 'text' },
+                  { label: 'Reject Message', key: 'reject_message', type: 'textarea' },
+                  { label: 'Patta Doc Filename', key: 'patta_doc_filename', type: 'text' },
+                  { label: 'Patta Doc URL', key: 'patta_doc_url', type: 'text' },
+                  { label: 'Scheme Priority', key: 'scheme_priority', type: 'text' },
+                  { label: 'Created At', key: 'created_at', type: 'text', disabled: true },
+                  { label: 'Updated At', key: 'updated_at', type: 'text', disabled: true },
+                ].map(field => (
+                  <div className="space-y-1" key={field.key}>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">{field.label}</label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        value={field.render ? field.render(editablePatta?.[field.key]) : (editablePatta?.[field.key] ?? '')}
+                        onChange={e => setEditablePatta(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        disabled={field.disabled}
+                        rows={2}
+                      />
+                    ) : (
+                      <input
+                        type={field.type}
+                        value={field.render ? field.render(editablePatta?.[field.key]) : (editablePatta?.[field.key] ?? '')}
+                        onChange={e => setEditablePatta(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        disabled={field.disabled}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -548,7 +561,33 @@ const PattaManagement = () => {
                 Approve
               </button>
               <button
-                onClick={handleSave}
+                onClick={async () => {
+                  setIsUpdating(true);
+                  try {
+                    const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
+                    // Only include valid patta fields in payload
+                    const validFields = [
+                      'owner_id','holder_name','category','right_type','village','district','state','coordinates','area_hectares','status','recommended_schemes','date_applied','time_applied','date_verified','reject_message','patta_doc_filename','patta_doc_url','scheme_priority'
+                    ];
+                    const payload = {};
+                    validFields.forEach(key => {
+                      if (key in editablePatta) payload[key] = editablePatta[key];
+                    });
+                    const { error: upErr } = await supabase.from('pattas').update(payload).eq(filter.column, filter.value);
+                    if (upErr) throw upErr;
+                    // fetch the updated row explicitly
+                    const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
+                    if (selErr) throw selErr;
+                    setSelectedPatta(selData);
+                    setEditablePatta(selData);
+                    setPattas(prev => prev.map(p => (p[filter.column] === filter.value ? selData : p)));
+                    setShowDetailsModal(false);
+                  } catch (e) {
+                    alert('Failed to save: ' + (e.message || e));
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
                 className={`px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}
                 disabled={isUpdating}
               >

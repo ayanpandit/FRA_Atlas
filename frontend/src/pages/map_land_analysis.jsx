@@ -1,823 +1,1099 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Polygon, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { supabase } from '../lib/supabaseClient';
 
 const Map_Land_Analysis = () => {
-  const [selectedPlot, setSelectedPlot] = useState(null);
-  const [activeTab, setActiveTab] = useState('ndvi');
-  const [showLayers, setShowLayers] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(12);
-  const [mapCenter, setMapCenter] = useState([23.2599, 77.4126]);
-  const [activeLayers, setActiveLayers] = useState({
-    boundaries: true,
-    ndvi: false,
-    ndwi: false,
-    soil: false,
-    rainfall: false,
-    irrigation: false
-  });
-  const [isMobile, setIsMobile] = useState(false);
-  const [showBottomPanel, setShowBottomPanel] = useState(false);
-  const mapRef = useRef(null);
-
-  // Enhanced plot data with more realistic information
-  const plotData = [
-    {
-      id: 'FRA001',
-      coordinates: [23.2599, 77.4126],
-      holderName: 'Ramesh Kumar',
-      landSize: '2.5 acres',
-      cropType: 'Mixed Farming',
-      ndvi: 0.72,
-      ndwi: 0.34,
-      soilType: 'Red Soil',
-      lastUpdated: '2024-01-15',
-      healthScore: 8.2,
-      boundary: [[23.2590, 77.4120], [23.2608, 77.4120], [23.2608, 77.4132], [23.2590, 77.4132]],
-      elevation: '450m',
-      slope: '2°',
-      vegetation: 'Dense'
-    },
-    {
-      id: 'FRA002',
-      coordinates: [23.2650, 77.4200],
-      holderName: 'Sunita Devi',
-      landSize: '1.8 acres',
-      cropType: 'Vegetable Farming',
-      ndvi: 0.45,
-      ndwi: 0.12,
-      soilType: 'Black Soil',
-      lastUpdated: '2024-01-14',
-      healthScore: 5.8,
-      boundary: [[23.2642, 77.4192], [23.2658, 77.4192], [23.2658, 77.4208], [23.2642, 77.4208]],
-      elevation: '420m',
-      slope: '1°',
-      vegetation: 'Sparse'
-    },
-    {
-      id: 'FRA003',
-      coordinates: [23.2550, 77.4150],
-      holderName: 'Mohan Singh',
-      landSize: '3.2 acres',
-      cropType: 'Forest Plantation',
-      ndvi: 0.84,
-      ndwi: 0.56,
-      soilType: 'Alluvial Soil',
-      lastUpdated: '2024-01-16',
-      healthScore: 9.1,
-      boundary: [[23.2540, 77.4140], [23.2560, 77.4140], [23.2560, 77.4160], [23.2540, 77.4160]],
-      elevation: '480m',
-      slope: '3°',
-      vegetation: 'Very Dense'
-    },
-    {
-      id: 'FRA004',
-      coordinates: [23.2580, 77.4080],
-      holderName: 'Priya Sharma',
-      landSize: '1.5 acres',
-      cropType: 'Organic Farming',
-      ndvi: 0.68,
-      ndwi: 0.28,
-      soilType: 'Loamy Soil',
-      lastUpdated: '2024-01-17',
-      healthScore: 7.5,
-      boundary: [[23.2575, 77.4075], [23.2585, 77.4075], [23.2585, 77.4085], [23.2575, 77.4085]],
-      elevation: '430m',
-      slope: '1°',
-      vegetation: 'Moderate'
+  // Add missing patta search handler
+  const handlePattaSearch = async () => {
+    let query = supabase.from('pattas').select('*');
+    if (searchType === 'patta_id' && searchValue) {
+      query = query.ilike('patta_id', `%${searchValue}%`);
+    } else if (searchType === 'holder_name' && searchValue) {
+      query = query.ilike('holder_name', `%${searchValue}%`);
+    } else if (searchType === 'village' && searchValue) {
+      query = query.ilike('village', `%${searchValue}%`);
+    } else if (searchType === 'state' && searchValue) {
+      query = query.ilike('state', `%${searchValue}%`);
     }
-  ];
+    const { data, error } = await query;
+    if (error) {
+      setPattaResults([]);
+      setMapPoints([]);
+      return;
+    }
+    setPattaResults(data || []);
+    if ((searchType === 'village' || searchType === 'state') && data) {
+      setMapPoints(data.filter(p => p.coordinates).map(p => p.coordinates));
+    } else {
+      setMapPoints([]);
+    }
+  };
+  // Patta search states (required for search UI)
+  const [searchType, setSearchType] = useState('patta_id');
+  const [searchValue, setSearchValue] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [pattaResults, setPattaResults] = useState([]);
+  const [mapPoints, setMapPoints] = useState([]);
+  // ============================================
+  // STATE MANAGEMENT
+  // ============================================
+  
+  // User input states
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [radius, setRadius] = useState('100');
+  
+  // API and loading states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [analysisData, setAnalysisData] = useState(null);
+  
+  // UI states
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedImage, setSelectedImage] = useState('true_color');
+  const [isMobile, setIsMobile] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  
+  // API endpoint - change this to your backend URL
+  const API_BASE_URL = 'http://localhost:5000';
 
-  // Enhanced trend data
-  const ndviTrendData = [
-    { month: 'Jan', value: 0.65, year: 2024 },
-    { month: 'Feb', value: 0.68, year: 2024 },
-    { month: 'Mar', value: 0.72, year: 2024 },
-    { month: 'Apr', value: 0.69, year: 2024 },
-    { month: 'May', value: 0.58, year: 2024 },
-    { month: 'Jun', value: 0.45, year: 2024 }
-  ];
-
-  const ndwiSeasonalData = [
-    { season: 'Summer', current: 0.25, previous: 0.18 },
-    { season: 'Monsoon', current: 0.65, previous: 0.72 },
-    { season: 'Winter', current: 0.42, previous: 0.38 },
-    { season: 'Post-Monsoon', current: 0.35, previous: 0.41 }
-  ];
-
+  // ============================================
+  // RESPONSIVE DESIGN HANDLER
+  // ============================================
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handlePlotClick = (plot) => {
-    setSelectedPlot(plot);
-    if (isMobile) {
-      setShowBottomPanel(true);
+  // ============================================
+  // API INTEGRATION - FETCH ANALYSIS DATA
+  // ============================================
+  const fetchAnalysis = async () => {
+    // Validate inputs
+    if (!latitude || !longitude) {
+      setError('Please enter both latitude and longitude');
+      return;
+    }
+
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+    const rad = parseFloat(radius);
+
+    if (isNaN(lat) || isNaN(lon) || isNaN(rad)) {
+      setError('Please enter valid numbers');
+      return;
+    }
+
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      setError('Invalid coordinates. Lat: -90 to 90, Lon: -180 to 180');
+      return;
+    }
+
+    if (rad < 10) {
+      setError('Radius must be at least 10 meters');
+      return;
+    }
+
+    // Reset states
+    setLoading(true);
+    setError(null);
+    setAnalysisData(null);
+
+    try {
+      // Call Flask API
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lon,
+          radius: rad
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Analysis failed');
+      }
+
+      const data = await response.json();
+      setAnalysisData(data);
+      setActiveTab('overview');
+      
+    } catch (err) {
+      setError(err.message || 'Failed to fetch analysis. Make sure the Flask server is running.');
+      console.error('API Error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 1, 18));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 1, 5));
-  };
-
-  const toggleLayer = (layerName) => {
-    setActiveLayers(prev => ({
-      ...prev,
-      [layerName]: !prev[layerName]
-    }));
-  };
-
+  // ============================================
+  // HELPER FUNCTIONS - COLOR CODING
+  // ============================================
+  
   const getNDVIColor = (value) => {
-    if (value >= 0.7) return '#16a34a'; // Green
-    if (value >= 0.5) return '#ca8a04'; // Yellow
-    if (value >= 0.3) return '#ea580c'; // Orange
-    return '#dc2626'; // Red
+    if (value >= 0.7) return 'bg-green-500';
+    if (value >= 0.5) return 'bg-yellow-500';
+    if (value >= 0.3) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
-  const getNDWIColor = (value) => {
-    if (value >= 0.5) return '#2563eb'; // Blue
-    if (value >= 0.3) return '#0891b2'; // Cyan
-    if (value >= 0.1) return '#7c3aed'; // Purple
-    return '#6b7280'; // Gray
+  const getNDVILabel = (value) => {
+    if (value >= 0.7) return 'Excellent';
+    if (value >= 0.5) return 'Good';
+    if (value >= 0.3) return 'Fair';
+    return 'Poor';
   };
 
-  const getHealthScoreColor = (score) => {
-    if (score >= 8) return 'text-green-800 bg-green-100 border-green-200';
-    if (score >= 6) return 'text-yellow-800 bg-yellow-100 border-yellow-200';
-    return 'text-red-800 bg-red-100 border-red-200';
+  const getWaterColor = (value) => {
+    if (value >= 0.5) return 'bg-blue-500';
+    if (value >= 0.3) return 'bg-cyan-500';
+    if (value >= 0.1) return 'bg-purple-500';
+    return 'bg-gray-500';
   };
 
-  const getVegetationColor = (vegetation) => {
-    switch(vegetation) {
-      case 'Very Dense': return 'text-green-800 bg-green-50';
-      case 'Dense': return 'text-green-700 bg-green-50';
-      case 'Moderate': return 'text-yellow-700 bg-yellow-50';
-      case 'Sparse': return 'text-orange-700 bg-orange-50';
-      default: return 'text-gray-700 bg-gray-50';
-    }
+  const getWaterLabel = (value) => {
+    if (value >= 0.5) return 'High';
+    if (value >= 0.3) return 'Moderate';
+    if (value >= 0.1) return 'Low';
+    return 'Very Low';
   };
 
+  // ============================================
+  // IMAGE DISPLAY CONFIGURATION
+  // ============================================
+  const imageTypes = [
+    { id: 'true_color', label: 'True Color', description: 'Natural RGB view', icon: '🌍' },
+    { id: 'false_color_vegetation', label: 'False Color', description: 'Enhanced vegetation', icon: '🌿' },
+    { id: 'ndvi', label: 'NDVI', description: 'Vegetation health', icon: '🌱' },
+    { id: 'mndwi', label: 'MNDWI', description: 'Water bodies', icon: '💧' },
+    { id: 'ndwi', label: 'NDWI', description: 'Water content', icon: '💦' }
+  ];
+
+  // ============================================
+  // RENDER: MAIN COMPONENT
+  // ============================================
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Enhanced Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Map & Land Analysis</h1>
-              <p className="text-sm text-gray-600">GIS Integration with Satellite Data</p>
-            </div>
-          </div>
-          
-          {/* Enhanced Layer Toggle */}
-          {!isMobile && (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+      {/* ============================================ */}
+      {/* HEADER SECTION */}
+      {/* ============================================ */}
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
-                {selectedPlot ? `${selectedPlot.id} Selected` : 'No Plot Selected'}
-              </div>
-              <button
-                onClick={() => setShowLayers(!showLayers)}
-                className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center space-x-2 shadow-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Layers</span>
-              </button>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Satellite Land Analysis</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Real-time Earth Engine Integration</p>
+              </div>
             </div>
-          )}
+            {analysisData && (
+              <div className="hidden sm:flex items-center space-x-2 text-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-gray-600">Analysis Complete</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main Map Area */}
-        <div className={`${isMobile ? 'w-full' : selectedPlot ? 'w-2/3' : 'w-3/4'} relative`}>
-          {/* Map Container */}
-          <div ref={mapRef} className="w-full h-full bg-gradient-to-br from-blue-50 to-green-50 relative overflow-hidden">
-            {/* Professional Map Background */}
-            <div className="absolute inset-0 bg-blue-50">
-              {/* Subtle grid pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="grid grid-cols-20 grid-rows-20 h-full w-full">
-                  {[...Array(400)].map((_, i) => (
-                    <div key={i} className="border border-gray-200"></div>
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* ============================================ */}
+        {/* PATTA SEARCH SECTION */}
+        {/* ============================================ */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <select value={searchType} onChange={e => setSearchType(e.target.value)} className="border px-3 py-2 rounded-lg text-sm">
+              <option value="patta_id">Patta ID</option>
+              <option value="holder_name">Holder Name</option>
+              <option value="village">Village</option>
+              <option value="state">State</option>
+            </select>
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                placeholder={`Search by ${searchType.replace('_', ' ')}`}
+                className="border px-3 py-2 rounded-lg w-full text-sm"
+                autoComplete="off"
+              />
+              {suggestions && suggestions.length > 0 && (
+                <ul className="absolute left-0 right-0 bg-white border rounded-lg shadow z-10 mt-1">
+                  {suggestions.map(s => (
+                    <li key={s} className="px-3 py-2 hover:bg-blue-50 cursor-pointer" onClick={() => { setSearchValue(s); setSuggestions([]); }}>
+                      {s}
+                    </li>
                   ))}
-                </div>
-              </div>
-              
-              {/* Terrain features */}
-              <div className="absolute top-1/4 left-1/4 w-32 h-24 bg-blue-100 rounded-full opacity-30"></div>
-              <div className="absolute top-1/2 right-1/4 w-40 h-16 bg-green-100 rounded-lg opacity-20"></div>
-              <div className="absolute bottom-1/3 left-1/3 w-24 h-32 bg-amber-100 rounded-full opacity-15"></div>
+                </ul>
+              )}
             </div>
+            <button onClick={handlePattaSearch} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Search</button>
+          </div>
+        </div>
 
-            {/* Plot Boundaries and Markers */}
-            {plotData.map((plot) => (
-              <div key={plot.id}>
-                {/* Plot Boundary */}
-                {activeLayers.boundaries && (
-                  <div
-                    className={`absolute border-2 ${
-                      selectedPlot?.id === plot.id 
-                        ? 'border-blue-600 bg-blue-500/10 shadow-lg' 
-                        : 'border-green-500 bg-green-500/5'
-                    } hover:bg-blue-500/10 cursor-pointer transition-all duration-200 rounded-sm`}
-                    style={{
-                      left: `${((plot.coordinates[1] - 77.4000) / 0.03) * 100}%`,
-                      top: `${((23.2800 - plot.coordinates[0]) / 0.04) * 100}%`,
-                      width: '120px',
-                      height: '80px',
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                    onClick={() => handlePlotClick(plot)}
-                  />
-                )}
-                
-                {/* Enhanced Plot Marker */}
-                <div
-                  className={`absolute w-8 h-8 rounded-full cursor-pointer transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-white font-semibold text-sm transition-all duration-200 hover:scale-110 shadow-lg ${
-                    selectedPlot?.id === plot.id 
-                      ? 'bg-blue-600 ring-4 ring-blue-100 scale-110' 
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                  style={{
-                    left: `${((plot.coordinates[1] - 77.4000) / 0.03) * 100}%`,
-                    top: `${((23.2800 - plot.coordinates[0]) / 0.04) * 100}%`,
-                    zIndex: selectedPlot?.id === plot.id ? 20 : 10
-                  }}
-                  onClick={() => handlePlotClick(plot)}
-                  title={`${plot.holderName} - ${plot.id}`}
-                >
-                  {plot.id.slice(-2)}
+        {/* Patta Results Cards */}
+        {pattaResults && pattaResults.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {pattaResults.map((patta, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-lg font-bold text-blue-700">{patta.patta_id}</span>
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${patta.status === 'verified' ? 'bg-emerald-100 text-emerald-700' : patta.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{patta.status}</span>
                 </div>
+                <div className="mb-1 text-gray-700"><b>Holder:</b> {patta.holder_name}</div>
+                <div className="mb-1 text-gray-700"><b>Category:</b> {patta.category}</div>
+                <div className="mb-1 text-gray-700"><b>Village:</b> {patta.village}</div>
+                <div className="mb-1 text-gray-700"><b>State:</b> {patta.state}</div>
+                <div className="mb-1 text-gray-700"><b>Area:</b> {patta.area_hectares} ha</div>
+                <div className="mb-1 text-gray-700"><b>Coordinates:</b> {patta.coordinates ? JSON.stringify(patta.coordinates) : 'Not available'}</div>
+                <button
+                  className="mt-2 bg-green-600 text-white px-4 py-1 rounded-lg font-semibold hover:bg-green-700 transition"
+                  onClick={() => {
+                    // Autofill location analysis form and trigger analysis
+                    let lat, lon;
+                    if (patta.coordinates) {
+                      let coords = patta.coordinates;
+                      if (typeof coords === 'string') {
+                        try {
+                          const parsed = JSON.parse(coords);
+                          if (Array.isArray(parsed) && parsed.length === 2) {
+                            lat = parsed[0];
+                            lon = parsed[1];
+                          }
+                        } catch {}
+                      } else if (Array.isArray(coords) && coords.length === 2) {
+                        lat = coords[0];
+                        lon = coords[1];
+                      } else if (typeof coords === 'object') {
+                        lat = coords.latitude ?? coords.lat;
+                        lon = coords.longitude ?? coords.lon;
+                      }
+                    }
+                    if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+                      setLatitude(lat);
+                      setLongitude(lon);
+                      setRadius('1000');
+                      fetchAnalysis();
+                    } else {
+                      alert('Coordinates not available for this patta.');
+                    }
+                  }}
+                >Analyze</button>
               </div>
             ))}
+          </div>
+        )}
 
-            {/* Enhanced Overlays */}
-            {activeLayers.ndvi && (
-              <div className="absolute inset-0 pointer-events-none">
-                {plotData.map((plot) => (
-                  <div
-                    key={`ndvi-${plot.id}`}
-                    className="absolute rounded-sm opacity-70"
-                    style={{
-                      left: `${((plot.coordinates[1] - 77.4000) / 0.03) * 100}%`,
-                      top: `${((23.2800 - plot.coordinates[0]) / 0.04) * 100}%`,
-                      width: '120px',
-                      height: '80px',
-                      backgroundColor: getNDVIColor(plot.ndvi),
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-
-            {activeLayers.ndwi && (
-              <div className="absolute inset-0 pointer-events-none">
-                {plotData.map((plot) => (
-                  <div
-                    key={`ndwi-${plot.id}`}
-                    className="absolute rounded-sm opacity-70"
-                    style={{
-                      left: `${((plot.coordinates[1] - 77.4000) / 0.03) * 100}%`,
-                      top: `${((23.2800 - plot.coordinates[0]) / 0.04) * 100}%`,
-                      width: '120px',
-                      height: '80px',
-                      backgroundColor: getNDWIColor(plot.ndwi),
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Enhanced Map Controls */}
-            <div className="absolute top-6 right-6 flex flex-col space-y-3 z-30">
-              <button
-                onClick={handleZoomIn}
-                className="w-12 h-12 bg-white border border-gray-300 shadow-md rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors group"
-              >
-                <span className="text-xl font-semibold text-gray-700 group-hover:text-gray-900">+</span>
-              </button>
-              <button
-                onClick={handleZoomOut}
-                className="w-12 h-12 bg-white border border-gray-300 shadow-md rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors group"
-              >
-                <span className="text-xl font-semibold text-gray-700 group-hover:text-gray-900">−</span>
-              </button>
-              <div className="bg-white border border-gray-300 shadow-md rounded-lg px-3 py-2 text-sm font-medium text-gray-700 text-center">
-                {zoomLevel}x
-              </div>
+        {/* Map Visualization for village/state search */}
+        {(searchType === 'village' || searchType === 'state') && mapPoints && mapPoints.length > 0 && (() => {
+          // Find first valid coordinate for map center
+          const validCoords = mapPoints.filter(pt => {
+            let lat, lon;
+            if (Array.isArray(pt) && pt.length === 2) {
+              lat = pt[0];
+              lon = pt[1];
+            } else if (typeof pt === 'object') {
+              lat = pt.latitude ?? pt.lat;
+              lon = pt.longitude ?? pt.lon;
+            }
+            return typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon);
+          });
+          if (validCoords.length === 0) return null;
+          let center;
+          const first = validCoords[0];
+          if (Array.isArray(first) && first.length === 2) {
+            center = first;
+          } else if (typeof first === 'object') {
+            center = [first.latitude ?? first.lat, first.longitude ?? first.lon];
+          }
+          return (
+            <div className="bg-white rounded-xl shadow p-6 mb-8">
+              <h3 className="text-lg font-bold mb-2 text-blue-700">Patta Locations Map</h3>
+              <MapContainer center={center} zoom={13} style={{ height: '400px', width: '100%' }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {validCoords.map((pt, i) => {
+                  let lat, lon;
+                  if (Array.isArray(pt) && pt.length === 2) {
+                    lat = pt[0];
+                    lon = pt[1];
+                  } else if (typeof pt === 'object') {
+                    lat = pt.latitude ?? pt.lat;
+                    lon = pt.longitude ?? pt.lon;
+                  }
+                  if (typeof lat === 'number' && typeof lon === 'number') {
+                    // Random polygon near marker
+                    const poly = [
+                      [lat, lon],
+                      [lat + 0.01, lon],
+                      [lat + 0.01, lon + 0.01],
+                      [lat, lon + 0.01],
+                    ];
+                    return (
+                      <React.Fragment key={i}>
+                        <Marker position={[lat, lon]}>
+                          <Popup>Patta Location</Popup>
+                        </Marker>
+                        <Polygon positions={poly} pathOptions={{ color: 'blue', fillOpacity: 0.2 }} />
+                      </React.Fragment>
+                    );
+                  }
+                  return null;
+                })}
+              </MapContainer>
+            </div>
+          );
+        })()}
+        {/* ============================================ */}
+        {/* INPUT FORM SECTION */}
+        {/* ============================================ */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Location Analysis Parameters
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Latitude Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Latitude (-90 to 90)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                placeholder="e.g., 25.76177"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
-            {/* Enhanced Mobile Layer Toggle */}
-            {isMobile && (
-              <button
-                onClick={() => setShowLayers(!showLayers)}
-                className="absolute top-6 left-6 bg-white border border-gray-300 text-gray-700 w-12 h-12 rounded-lg flex items-center justify-center shadow-md z-30 hover:bg-gray-50"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
-              </button>
-            )}
+            {/* Longitude Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Longitude (-180 to 180)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                placeholder="e.g., 84.15032"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-            {/* Enhanced Legend */}
-            <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-4 shadow-lg max-w-xs">
-              <h4 className="font-semibold text-gray-900 text-sm mb-3 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Legend
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                  <span className="text-gray-700">Forest Land Plots</span>
-                </div>
-                {activeLayers.ndvi && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getNDVIColor(0.7) }}></div>
-                    <span className="text-gray-700">Vegetation Health</span>
-                  </div>
-                )}
-                {activeLayers.ndwi && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getNDWIColor(0.5) }}></div>
-                    <span className="text-gray-700">Water Content</span>
-                  </div>
-                )}
-                {selectedPlot && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                    <span className="text-gray-700">Selected Plot</span>
-                  </div>
-                )}
-              </div>
+            {/* Radius Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Radius (meters, min 10)
+              </label>
+              <input
+                type="number"
+                step="10"
+                value={radius}
+                onChange={(e) => setRadius(e.target.value)}
+                placeholder="e.g., 100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </div>
 
-          {/* Enhanced Layer Panel */}
-          {showLayers && (
-            <div className={`absolute ${isMobile ? 'inset-4 z-40' : 'top-6 right-24 w-80 z-30'} bg-white border border-gray-200 rounded-lg shadow-xl p-6`}>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Map Layers</h3>
-                <button
-                  onClick={() => setShowLayers(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {[
-                  { key: 'boundaries', label: 'Plot Boundaries', color: 'green' },
-                  { key: 'ndvi', label: 'NDVI (Vegetation)', color: 'green' },
-                  { key: 'ndwi', label: 'NDWI (Water Index)', color: 'blue' },
-                  { key: 'soil', label: 'Soil Type', color: 'yellow' },
-                  { key: 'rainfall', label: 'Rainfall Data', color: 'indigo' },
-                  { key: 'irrigation', label: 'Irrigation Network', color: 'purple' }
-                ].map(({ key, label, color }) => (
-                  <div key={key} className="flex items-center justify-between py-2">
-                    <label className="text-sm font-medium text-gray-700 cursor-pointer flex items-center">
-                      <div className={`w-3 h-3 bg-${color}-500 rounded-sm mr-3`}></div>
-                      {label}
-                    </label>
-                    <input
-                      type="checkbox"
-                      checked={activeLayers[key]}
-                      onChange={() => toggleLayer(key)}
-                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                  </div>
-                ))}
+          {/* Analyze Button */}
+          <button
+            onClick={fetchAnalysis}
+            disabled={loading}
+            className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 ${
+              loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-md hover:shadow-lg'
+            }`}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Analyzing Satellite Data...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Analyze Location</span>
+              </>
+            )}
+          </button>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h4 className="font-semibold text-red-800">Error</h4>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
           )}
+
+          {/* Quick Examples */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-2">Quick examples:</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  setLatitude('25.76177');
+                  setLongitude('84.15032');
+                  setRadius('100');
+                }}
+                className="text-xs px-3 py-1 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 border border-blue-200"
+              >
+                Bihar, India
+              </button>
+              <button
+                onClick={() => {
+                  setLatitude('28.6139');
+                  setLongitude('77.2090');
+                  setRadius('150');
+                }}
+                className="text-xs px-3 py-1 bg-green-50 text-green-700 rounded-full hover:bg-green-100 border border-green-200"
+              >
+                Delhi, India
+              </button>
+              <button
+                onClick={() => {
+                  setLatitude('37.7749');
+                  setLongitude('-122.4194');
+                  setRadius('200');
+                }}
+                className="text-xs px-3 py-1 bg-purple-50 text-purple-700 rounded-full hover:bg-purple-100 border border-purple-200"
+              >
+                San Francisco, USA
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Enhanced Desktop Analysis Panel */}
-        {!isMobile && (
-          <div className={`${selectedPlot ? 'w-1/3' : 'w-1/4'} bg-white border-l border-gray-200 flex flex-col`}>
-            {/* Enhanced Tabs */}
-            <div className="flex border-b border-gray-200">
-              {[
-                { id: 'ndvi', label: 'NDVI Analysis', icon: '🌿' },
-                { id: 'ndwi', label: 'NDWI Analysis', icon: '💧' },
-                { id: 'custom', label: 'Custom Layers', icon: '🗺️' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 px-4 py-4 text-sm font-medium transition-colors border-b-2 ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 border-blue-600 bg-blue-50'
-                      : 'text-gray-500 hover:text-gray-700 border-transparent'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+        {/* ============================================ */}
+        {/* RESULTS SECTION - ONLY SHOWN WHEN DATA EXISTS */}
+        {/* ============================================ */}
+        {analysisData && (
+          <>
+            {/* ============================================ */}
+            {/* METADATA SUMMARY CARDS */}
+            {/* ============================================ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Location Card */}
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">Location</span>
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-800 font-mono">
+                  {analysisData.metadata.location.latitude.toFixed(5)}, {analysisData.metadata.location.longitude.toFixed(5)}
+                </p>
+              </div>
+
+              {/* Radius Card */}
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">Analysis Area</span>
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{analysisData.metadata.location.radius_meters}m</p>
+              </div>
+
+              {/* Acquisition Date Card */}
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">Satellite Image</span>
+                  <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-800">{analysisData.metadata.acquisition_date || 'N/A'}</p>
+              </div>
+
+              {/* Land Classification Card */}
+              <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg shadow-md border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">Land Type</span>
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945" />
+                  </svg>
+                </div>
+                <p className="text-xs font-semibold text-gray-900 leading-tight">
+                  {analysisData.analysis.land_classification}
+                </p>
+              </div>
             </div>
 
-            {/* Enhanced Analysis Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'ndvi' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Vegetation Health Analysis</h3>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Health Scale</h4>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-green-500 rounded"></div>
-                          <span>Excellent (0.7+)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                          <span>Good (0.5-0.7)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                          <span>Fair (0.3-0.5)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-red-500 rounded"></div>
-                          <span>Poor (0.0-0.3)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-4">6-Month Trend</h4>
-                      <div className="h-32 flex items-end space-x-3">
-                        {ndviTrendData.map((data, index) => (
-                          <div key={index} className="flex-1 flex flex-col items-center">
-                            <div 
-                              className="bg-green-500 rounded-t w-full transition-all duration-500"
-                              style={{ height: `${data.value * 100}%` }}
-                            ></div>
-                            <span className="text-xs mt-2 text-gray-600">{data.month}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'ndwi' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Water Content Analysis</h3>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Water Index Scale</h4>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                          <span>High (0.5+)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-cyan-500 rounded"></div>
-                          <span>Moderate (0.3-0.5)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                          <span>Low (0.1-0.3)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-gray-500 rounded"></div>
-                          <span>Very Low (0.0-0.1)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-4">Seasonal Comparison</h4>
-                      <div className="space-y-4">
-                        {ndwiSeasonalData.map((season, index) => (
-                          <div key={index}>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="font-medium">{season.season}</span>
-                              <span className="text-gray-600">{season.current}</span>
-                            </div>
-                            <div className="flex space-x-2">
-                              <div className="flex-1 bg-gray-100 rounded-full h-2">
-                                <div 
-                                  className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${season.current * 100}%` }}
-                                ></div>
-                              </div>
-                              <div className="flex-1 bg-gray-100 rounded-full h-2">
-                                <div 
-                                  className="bg-gray-400 h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${season.previous * 100}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                              <span>Current</span>
-                              <span>Previous</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'custom' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Analysis</h3>
-                    
-                    <div className="space-y-4">
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-yellow-800 mb-2">Soil Analysis</h4>
-                        <p className="text-sm text-yellow-700">Red soil: 45%, Black soil: 30%, Alluvial: 25%</p>
-                      </div>
-
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-blue-800 mb-2">Rainfall Pattern</h4>
-                        <p className="text-sm text-blue-700">Average: 1200mm/year, Current: 950mm</p>
-                      </div>
-
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-purple-800 mb-2">Irrigation Network</h4>
-                        <p className="text-sm text-purple-700">Coverage: 68%, Active wells: 12, Canals: 3</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* ============================================ */}
+            {/* NAVIGATION TABS */}
+            {/* ============================================ */}
+            <div className="bg-white rounded-t-xl border border-b-0 border-gray-200 overflow-x-auto">
+              <div className="flex">
+                {[
+                  { id: 'overview', label: 'Overview', icon: '📊' },
+                  { id: 'images', label: 'Satellite Images', icon: '🛰️' },
+                  { id: 'vegetation', label: 'Vegetation', icon: '🌿' },
+                  { id: 'water', label: 'Water', icon: '💧' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 min-w-max px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                      activeTab === tab.id
+                        ? 'text-blue-600 border-blue-600 bg-blue-50'
+                        : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Enhanced Selected Plot Info */}
-            {selectedPlot && (
-              <div className="border-t border-gray-200 p-6 bg-gray-50">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Plot Details</h3>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Plot ID:</span>
-                      <div className="font-semibold">{selectedPlot.id}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Land Size:</span>
-                      <div className="font-semibold">{selectedPlot.landSize}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Crop Type:</span>
-                      <div className="font-semibold">{selectedPlot.cropType}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Soil Type:</span>
-                      <div className="font-semibold">{selectedPlot.soilType}</div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Holder Information</h4>
-                    <div className="text-lg font-semibold text-gray-900">{selectedPlot.holderName}</div>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Health Indicators</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">NDVI:</span>
-                        <div className="flex items-center space-x-2">
-                          <div 
-                            className="w-3 h-3 rounded-sm"
-                            style={{ backgroundColor: getNDVIColor(selectedPlot.ndvi) }}
+            {/* ============================================ */}
+            {/* TAB CONTENT AREA */}
+            {/* ============================================ */}
+            <div className="bg-white rounded-b-xl shadow-lg border border-gray-200 p-6">
+              
+              {/* OVERVIEW TAB */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Analysis Summary</h3>
+                  
+                  {/* Vegetation and Water Coverage Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Vegetation Coverage */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-green-900">Vegetation Coverage</h4>
+                        <span className="text-3xl">🌿</span>
+                      </div>
+                      <div className="mb-4">
+                        <div className="text-4xl font-bold text-green-700 mb-2">
+                          {analysisData.analysis.vegetation.coverage_percentage}%
+                        </div>
+                        <div className="w-full bg-green-200 rounded-full h-3">
+                          <div
+                            className="bg-green-600 h-3 rounded-full transition-all duration-1000"
+                            style={{ width: `${analysisData.analysis.vegetation.coverage_percentage}%` }}
                           ></div>
-                          <span className="font-semibold">{selectedPlot.ndvi}</span>
                         </div>
                       </div>
                       
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">NDWI:</span>
-                        <div className="flex items-center space-x-2">
-                          <div 
-                            className="w-3 h-3 rounded-sm"
-                            style={{ backgroundColor: getNDWIColor(selectedPlot.ndwi) }}
-                          ></div>
-                          <span className="font-semibold">{selectedPlot.ndwi}</span>
+                      {/* NDVI Stats */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-green-800">Mean NDVI:</span>
+                          <span className="font-semibold text-green-900">
+                            {analysisData.analysis.vegetation.statistics.mean}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-800">Range:</span>
+                          <span className="font-semibold text-green-900">
+                            {analysisData.analysis.vegetation.statistics.min} to {analysisData.analysis.vegetation.statistics.max}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-800">Status:</span>
+                          <span className={`font-semibold px-2 py-1 rounded ${
+                            analysisData.analysis.vegetation.statistics.mean >= 0.7 ? 'bg-green-600 text-white' :
+                            analysisData.analysis.vegetation.statistics.mean >= 0.5 ? 'bg-yellow-500 text-white' :
+                            'bg-orange-500 text-white'
+                          }`}>
+                            {getNDVILabel(analysisData.analysis.vegetation.statistics.mean)}
+                          </span>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Health Score:</span>
-                        <span className={`font-semibold px-3 py-1 rounded-full border ${getHealthScoreColor(selectedPlot.healthScore)}`}>
-                          {selectedPlot.healthScore}/10
-                        </span>
+                    {/* Water Coverage */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-blue-900">Water Coverage</h4>
+                        <span className="text-3xl">💧</span>
                       </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Vegetation:</span>
-                        <span className={`font-semibold px-3 py-1 rounded-full ${getVegetationColor(selectedPlot.vegetation)}`}>
-                          {selectedPlot.vegetation}
-                        </span>
+                      <div className="mb-4">
+                        <div className="text-4xl font-bold text-blue-700 mb-2">
+                          {analysisData.analysis.water.coverage_percentage}%
+                        </div>
+                        <div className="w-full bg-blue-200 rounded-full h-3">
+                          <div
+                            className="bg-blue-600 h-3 rounded-full transition-all duration-1000"
+                            style={{ width: `${analysisData.analysis.water.coverage_percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {/* MNDWI Stats */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-blue-800">Mean MNDWI:</span>
+                          <span className="font-semibold text-blue-900">
+                            {analysisData.analysis.water.statistics.mean}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-800">Range:</span>
+                          <span className="font-semibold text-blue-900">
+                            {analysisData.analysis.water.statistics.min} to {analysisData.analysis.water.statistics.max}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-800">Status:</span>
+                          <span className={`font-semibold px-2 py-1 rounded ${
+                            analysisData.analysis.water.statistics.mean >= 0.5 ? 'bg-blue-600 text-white' :
+                            analysisData.analysis.water.statistics.mean >= 0.3 ? 'bg-cyan-500 text-white' :
+                            'bg-gray-500 text-white'
+                          }`}>
+                            {getWaterLabel(analysisData.analysis.water.statistics.mean)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Land Classification Detail */}
+                  <div className="bg-gradient-to-r from-amber-50 to-green-50 rounded-lg p-6 border border-amber-200">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Land Classification Analysis
+                    </h4>
+                    <p className="text-2xl font-bold text-gray-900 mb-2">
+                      {analysisData.analysis.land_classification}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      This classification is based on vegetation density, water content, and spectral analysis of the satellite imagery.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* SATELLITE IMAGES TAB */}
+              {activeTab === 'images' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Satellite Imagery</h3>
                   
-                  <div className="text-xs text-gray-500 text-center">
-                    Last Updated: {selectedPlot.lastUpdated}
+                  {/* Image Type Selector */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                    {imageTypes.map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setSelectedImage(type.id)}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                          selectedImage === type.id
+                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                      >
+                        <div className="text-2xl mb-2">{type.icon}</div>
+                        <div className="text-sm font-semibold text-gray-900">{type.label}</div>
+                        <div className="text-xs text-gray-600 mt-1">{type.description}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected Image Display */}
+                  <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900">
+                        {imageTypes.find(t => t.id === selectedImage)?.label} View
+                      </h4>
+                      <button
+                        onClick={() => setShowImageModal(true)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        View Fullscreen
+                      </button>
+                    </div>
+                    
+                    {analysisData.images[selectedImage] ? (
+                                              <div className="relative">
+                        <img
+                          src={analysisData.images[selectedImage]}
+                          alt={imageTypes.find(t => t.id === selectedImage)?.label}
+                          className="w-full h-auto rounded-lg shadow-lg cursor-pointer hover:opacity-95 transition-opacity"
+                          onClick={() => setShowImageModal(true)}
+                        />
+                        <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-xs text-gray-700">
+                          Click to enlarge
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center text-gray-500">
+                        Image not available
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Image Download Section */}
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-3">Download Images</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                      {imageTypes.map((type) => (
+                        analysisData.images[type.id] && (
+                          <a
+                            key={type.id}
+                            href={analysisData.images[type.id]}
+                            download={`${type.label.replace(/\s/g, '_')}.png`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-xs text-blue-700 hover:bg-blue-100 transition-colors text-center font-medium"
+                          >
+                            {type.icon} {type.label}
+                          </a>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VEGETATION TAB */}
+              {activeTab === 'vegetation' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Detailed Vegetation Analysis (NDVI)</h3>
+                  
+                  {/* NDVI Explanation */}
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <h4 className="font-semibold text-green-900 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      What is NDVI?
+                    </h4>
+                    <p className="text-sm text-green-800 leading-relaxed">
+                      <strong>Normalized Difference Vegetation Index (NDVI)</strong> measures vegetation health and density. 
+                      Values range from -1 to +1, where higher values indicate healthier, denser vegetation. 
+                      This is calculated from near-infrared and red light reflectance captured by satellites.
+                    </p>
+                  </div>
+
+                  {/* NDVI Statistics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Mean NDVI</div>
+                      <div className="text-3xl font-bold text-green-600 mb-2">
+                        {analysisData.analysis.vegetation.statistics.mean}
+                      </div>
+                      <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                        analysisData.analysis.vegetation.statistics.mean >= 0.7 ? 'bg-green-100 text-green-800' :
+                        analysisData.analysis.vegetation.statistics.mean >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        {getNDVILabel(analysisData.analysis.vegetation.statistics.mean)} Health
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Maximum NDVI</div>
+                      <div className="text-3xl font-bold text-green-700">
+                        {analysisData.analysis.vegetation.statistics.max}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                        Peak vegetation health in area
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Minimum NDVI</div>
+                      <div className="text-3xl font-bold text-gray-700">
+                        {analysisData.analysis.vegetation.statistics.min}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                        Lowest vegetation in area
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* NDVI Color Scale Reference */}
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4">NDVI Color Scale Reference</h4>
+                    <div className="space-y-3">
+                      {[
+                        { range: '0.7 to 1.0', color: 'bg-green-600', label: 'Excellent', desc: 'Dense, healthy vegetation' },
+                        { range: '0.5 to 0.7', color: 'bg-yellow-500', label: 'Good', desc: 'Moderate vegetation cover' },
+                        { range: '0.3 to 0.5', color: 'bg-orange-500', label: 'Fair', desc: 'Sparse vegetation' },
+                        { range: '0.0 to 0.3', color: 'bg-red-500', label: 'Poor', desc: 'Little to no vegetation' }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center space-x-4">
+                          <div className={`w-16 h-8 ${item.color} rounded`}></div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-sm">{item.label} ({item.range})</div>
+                            <div className="text-xs text-gray-600">{item.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Coverage Visualization */}
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4">Vegetation Coverage</h4>
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">Area with healthy vegetation (NDVI &gt; 0.2)</span>
+                        <span className="font-bold text-green-700">
+                          {analysisData.analysis.vegetation.coverage_percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-4">
+                        <div
+                          className="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                          style={{ width: `${analysisData.analysis.vegetation.coverage_percentage}%` }}
+                        >
+                          {analysisData.analysis.vegetation.coverage_percentage > 10 && (
+                            <span className="text-xs font-bold text-white">
+                              {analysisData.analysis.vegetation.coverage_percentage}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WATER TAB */}
+              {activeTab === 'water' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Detailed Water Analysis (MNDWI)</h3>
+                  
+                  {/* MNDWI Explanation */}
+                  <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      What is MNDWI?
+                    </h4>
+                    <p className="text-sm text-blue-800 leading-relaxed">
+                      <strong>Modified Normalized Difference Water Index (MNDWI)</strong> detects water bodies and measures water content. 
+                      Values range from -1 to +1, where positive values indicate water presence. 
+                      This enhanced version is better at distinguishing water from built-up areas.
+                    </p>
+                  </div>
+
+                  {/* MNDWI Statistics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Mean MNDWI</div>
+                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                        {analysisData.analysis.water.statistics.mean}
+                      </div>
+                      <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                        analysisData.analysis.water.statistics.mean >= 0.5 ? 'bg-blue-100 text-blue-800' :
+                        analysisData.analysis.water.statistics.mean >= 0.3 ? 'bg-cyan-100 text-cyan-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {getWaterLabel(analysisData.analysis.water.statistics.mean)} Water Content
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Maximum MNDWI</div>
+                      <div className="text-3xl font-bold text-blue-700">
+                        {analysisData.analysis.water.statistics.max}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                        Peak water detection in area
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Minimum MNDWI</div>
+                      <div className="text-3xl font-bold text-gray-700">
+                        {analysisData.analysis.water.statistics.min}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                        Lowest water presence
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MNDWI Color Scale Reference */}
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4">MNDWI Color Scale Reference</h4>
+                    <div className="space-y-3">
+                      {[
+                        { range: '0.5 to 1.0', color: 'bg-blue-600', label: 'High', desc: 'Clear water bodies' },
+                        { range: '0.3 to 0.5', color: 'bg-cyan-500', label: 'Moderate', desc: 'Wet areas, moisture' },
+                        { range: '0.1 to 0.3', color: 'bg-purple-500', label: 'Low', desc: 'Damp soil, vegetation' },
+                        { range: '-1.0 to 0.1', color: 'bg-gray-500', label: 'Very Low', desc: 'Dry land, vegetation' }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center space-x-4">
+                          <div className={`w-16 h-8 ${item.color} rounded`}></div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-sm">{item.label} ({item.range})</div>
+                            <div className="text-xs text-gray-600">{item.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Coverage Visualization */}
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4">Water Coverage</h4>
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">Area with water presence (MNDWI &gt; 0.0)</span>
+                        <span className="font-bold text-blue-700">
+                          {analysisData.analysis.water.coverage_percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-4">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                          style={{ width: `${analysisData.analysis.water.coverage_percentage}%` }}
+                        >
+                          {analysisData.analysis.water.coverage_percentage > 10 && (
+                            <span className="text-xs font-bold text-white">
+                              {analysisData.analysis.water.coverage_percentage}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ============================================ */}
+            {/* TECHNICAL DETAILS SECTION */}
+            {/* ============================================ */}
+            <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Technical Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="font-medium text-gray-700 mb-2">Data Source</div>
+                  <div className="text-gray-600">Sentinel-2 Satellite (ESA/Copernicus)</div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="font-medium text-gray-700 mb-2">Processing Date</div>
+                  <div className="text-gray-600">{analysisData.metadata.processing_date}</div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="font-medium text-gray-700 mb-2">Image Acquisition</div>
+                  <div className="text-gray-600">{analysisData.metadata.acquisition_date || 'N/A'}</div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="font-medium text-gray-700 mb-2">Analysis Status</div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-green-600 font-semibold">Complete</span>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Enhanced Mobile Bottom Panel */}
-      {isMobile && showBottomPanel && selectedPlot && (
-        <div className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-50 max-h-96 overflow-y-auto border-t border-gray-200">
-          <div className="p-6">
-            {/* Handle */}
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+      {/* ============================================ */}
+      {/* FULLSCREEN IMAGE MODAL */}
+      {/* ============================================ */}
+      {showImageModal && analysisData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
+          <div className="relative max-w-6xl w-full">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-100 transition-colors z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Plot Analysis</h3>
-              <button
-                onClick={() => setShowBottomPanel(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Enhanced Mobile Tabs */}
-            <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'info', label: 'Overview' },
-                { id: 'ndvi', label: 'Vegetation' },
-                { id: 'ndwi', label: 'Water' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 bg-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-700'
-                  }`}
+            {/* Image */}
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-3">
+                {imageTypes.find(t => t.id === selectedImage)?.label}
+              </h3>
+              <img
+                src={analysisData.images[selectedImage]}
+                alt={imageTypes.find(t => t.id === selectedImage)?.label}
+                className="w-full h-auto rounded-lg"
+              />
+              <div className="mt-4 flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  {imageTypes.find(t => t.id === selectedImage)?.description}
+                </p>
+                <a
+                  href={analysisData.images[selectedImage]}
+                  download={`${imageTypes.find(t => t.id === selectedImage)?.label.replace(/\s/g, '_')}.png`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Enhanced Mobile Content */}
-            {activeTab === 'info' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Plot ID</div>
-                    <div className="font-semibold text-sm">{selectedPlot.id}</div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Land Size</div>
-                    <div className="font-semibold text-sm">{selectedPlot.landSize}</div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Crop Type</div>
-                    <div className="font-semibold text-sm">{selectedPlot.cropType}</div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Soil Type</div>
-                    <div className="font-semibold text-sm">{selectedPlot.soilType}</div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <div className="text-sm font-medium text-blue-900 mb-1">Holder Information</div>
-                  <div className="text-lg font-bold text-blue-800">{selectedPlot.holderName}</div>
-                </div>
-
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-700">AI Health Score</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold border ${getHealthScoreColor(selectedPlot.healthScore)}`}>
-                      {selectedPlot.healthScore}/10
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-sm"
-                        style={{ backgroundColor: getNDVIColor(selectedPlot.ndvi) }}
-                      ></div>
-                      <span>NDVI: {selectedPlot.ndvi}</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-sm"
-                        style={{ backgroundColor: getNDWIColor(selectedPlot.ndwi) }}
-                      ></div>
-                      <span>NDWI: {selectedPlot.ndwi}</span>
-                    </div>
-                  </div>
-                </div>
+                  Download Image
+                </a>
               </div>
-            )}
-
-            {activeTab === 'ndvi' && (
-              <div className="space-y-4">
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                  <h4 className="text-sm font-medium text-green-800 mb-3">Vegetation Health</h4>
-                  
-                  <div className="h-20 flex items-end space-x-2 mb-4">
-                    {ndviTrendData.slice(-6).map((data, index) => (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div 
-                          className="bg-green-500 rounded-t w-full transition-all duration-500"
-                          style={{ height: `${data.value * 60}%` }}
-                        ></div>
-                        <span className="text-xs mt-1 text-green-700">{data.month}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="text-sm text-green-700">
-                    Current NDVI: <span className="font-semibold">{selectedPlot.ndvi}</span>
-                    {selectedPlot.ndvi > 0.7 ? ' (Excellent)' : selectedPlot.ndvi > 0.5 ? ' (Good)' : ' (Needs Attention)'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'ndwi' && (
-              <div className="space-y-4">
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-800 mb-3">Water Content</h4>
-                  
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Water Index</span>
-                      <span className="font-semibold">{selectedPlot.ndwi}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${selectedPlot.ndwi * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-blue-700">
-                    {selectedPlot.ndwi > 0.5 ? 'High Water Content' : selectedPlot.ndwi > 0.3 ? 'Moderate Water' : 'Low Water Content'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
-              Last Updated: {selectedPlot.lastUpdated}
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile overlay */}
-      {isMobile && showBottomPanel && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-25 z-40"
-          onClick={() => setShowBottomPanel(false)}
-        ></div>
-      )}
+      {/* ============================================ */}
+      {/* FOOTER */}
+      {/* ============================================ */}
+      <footer className="bg-white border-t border-gray-200 mt-12">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="text-center text-sm text-gray-600">
+            <p className="mb-2">
+              Powered by Google Earth Engine & Sentinel-2 Satellite Imagery
+            </p>
+            <p className="text-xs text-gray-500">
+              NDVI: Normalized Difference Vegetation Index | MNDWI: Modified Normalized Difference Water Index
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-}
+};
 
 export default Map_Land_Analysis;
