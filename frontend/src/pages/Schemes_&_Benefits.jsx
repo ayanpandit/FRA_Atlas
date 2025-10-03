@@ -312,10 +312,10 @@ const SchemesBenefits = ({ userData }) => {
   }, [records, searchTerm, priorityFilter, categoryFilter]);
 
   const renderEmptyState = () => (
-    <div className="bg-gray-900/80 border border-gray-800 rounded-3xl p-16 text-center">
-      <Award className="h-16 w-16 text-blue-400 mx-auto mb-6" />
-      <h3 className="text-2xl font-semibold text-white mb-3">No recommendations yet</h3>
-      <p className="text-gray-400 max-w-2xl mx-auto">
+    <div className="bg-white border border-gray-200 rounded-3xl p-16 text-center">
+      <Award className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+      <h3 className="text-2xl font-semibold text-gray-900 mb-3">No recommendations yet</h3>
+      <p className="text-gray-600 max-w-2xl mx-auto">
         We could not find any scheme recommendations that match your current filters. Try broadening the filters or check back after new land assessments are synced.
       </p>
     </div>
@@ -326,17 +326,17 @@ const SchemesBenefits = ({ userData }) => {
       {Array.from({ length: 4 }).map((_, index) => (
         <div
           key={index}
-          className="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 animate-pulse"
+          className="bg-white border border-gray-200 rounded-3xl p-6 animate-pulse"
         >
-          <div className="h-6 bg-gray-800 rounded-xl w-1/3 mb-4" />
+          <div className="h-6 bg-gray-200 rounded-xl w-1/3 mb-4" />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div className="h-20 bg-gray-800 rounded-2xl" />
-            <div className="h-20 bg-gray-800 rounded-2xl" />
-            <div className="h-20 bg-gray-800 rounded-2xl" />
+            <div className="h-20 bg-gray-200 rounded-2xl" />
+            <div className="h-20 bg-gray-200 rounded-2xl" />
+            <div className="h-20 bg-gray-200 rounded-2xl" />
           </div>
           <div className="space-y-3">
             {Array.from({ length: 2 }).map((__, innerIndex) => (
-              <div key={innerIndex} className="h-20 bg-gray-800 rounded-2xl" />
+              <div key={innerIndex} className="h-20 bg-gray-200 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -345,19 +345,29 @@ const SchemesBenefits = ({ userData }) => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap');
+        .alan-sans {
+          font-family: "Alan Sans", sans-serif;
+          font-optical-sizing: auto;
+          font-weight: 728;
+          font-style: normal;
+        }`}
+      </style>
+    <div className="min-h-screen bg-gray-50 text-gray-900 alan-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
         <header className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <p className="inline-flex items-center gap-2 text-sm font-medium text-blue-300 uppercase tracking-[0.2em]">
+              <p className="inline-flex items-center gap-2 text-sm font-medium text-teal-700 uppercase tracking-[0.2em]">
                 <Sparkles className="h-4 w-4" />
                 Intelligent scheme intelligence
               </p>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 leading-tight">
                 Schemes &amp; Benefits Aligned With Land Insights
               </h1>
-              <p className="text-gray-400 max-w-2xl">
+              <p className="text-gray-600 max-w-2xl">
                 Explore dynamically generated scheme recommendations powered by your land&apos;s NDVI / NDWI analysis, NDVI health, and socio-economic indicators. Every recommendation is fetched live from Supabase and automatically ranked by suitability.
               </p>
             </div>
@@ -365,58 +375,74 @@ const SchemesBenefits = ({ userData }) => {
         </header>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-200 rounded-2xl p-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 mt-0.5" />
               <div>
                 <p className="font-semibold">Unable to load recommendations</p>
-                <p className="text-sm text-red-200/80">{error}</p>
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             </div>
           </div>
         )}
 
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-600/80 to-indigo-500/70 border border-blue-500/40 rounded-3xl p-6 shadow-lg">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-blue-100/90 uppercase tracking-wide">Total Recommendations</h3>
-              <Sparkles className="h-5 w-5 text-blue-100" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(59, 130, 246, 0.3)'}}>
+                <Sparkles className="h-6 w-6 text-blue-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+              </div>
             </div>
-            <p className="text-3xl font-semibold">{overviewStats.totalSchemes}</p>
-            <p className="text-sm text-blue-100/80 mt-2">Across {overviewStats.totalPattas} pattas with live AI scoring</p>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-gray-600">Total Recommendations</p>
+              <p className="text-3xl font-bold text-gray-900">{overviewStats.totalSchemes}</p>
+              <p className="text-sm text-gray-500 mt-2">Across {overviewStats.totalPattas} pattas with live AI scoring</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-red-600/80 to-orange-500/70 border border-red-500/40 rounded-3xl p-6 shadow-lg">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-red-100/90 uppercase tracking-wide">High Priority Alerts</h3>
-              <AlertTriangle className="h-5 w-5 text-red-100" />
+              <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-xl flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(239, 68, 68, 0.3)'}}>
+                <AlertTriangle className="h-6 w-6 text-red-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+              </div>
             </div>
-            <p className="text-3xl font-semibold">{overviewStats.highPriorityCount}</p>
-            <p className="text-sm text-red-100/80 mt-2">Schemes needing immediate action</p>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-gray-600">High Priority Alerts</p>
+              <p className="text-3xl font-bold text-gray-900">{overviewStats.highPriorityCount}</p>
+              <p className="text-sm text-gray-500 mt-2">Schemes needing immediate action</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-600/80 to-teal-500/70 border border-emerald-500/40 rounded-3xl p-6 shadow-lg">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-emerald-100/90 uppercase tracking-wide">Average Suitability Score</h3>
-              <TrendingUp className="h-5 w-5 text-emerald-100" />
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-100 to-teal-200 rounded-xl flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(20, 184, 166, 0.3)'}}>
+                <TrendingUp className="h-6 w-6 text-teal-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+              </div>
             </div>
-            <p className="text-3xl font-semibold">
-              {overviewStats.scoreAverage != null ? overviewStats.scoreAverage.toFixed(1) : '—'}
-            </p>
-            <p className="text-sm text-emerald-100/80 mt-2">Calculated from Supabase assessments</p>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-gray-600">Average Suitability Score</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {overviewStats.scoreAverage != null ? overviewStats.scoreAverage.toFixed(1) : '—'}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">Calculated from Supabase assessments</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-600/80 to-fuchsia-500/70 border border-purple-500/40 rounded-3xl p-6 shadow-lg">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-purple-100/90 uppercase tracking-wide">Unique Categories</h3>
-              <Layers className="h-5 w-5 text-purple-100" />
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(147, 51, 234, 0.3)'}}>
+                <Layers className="h-6 w-6 text-purple-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+              </div>
             </div>
-            <p className="text-3xl font-semibold">{categoryOptions.length}</p>
-            <p className="text-sm text-purple-100/80 mt-2">Diverse program clusters discovered</p>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-gray-600">Unique Categories</p>
+              <p className="text-3xl font-bold text-gray-900">{categoryOptions.length}</p>
+              <p className="text-sm text-gray-500 mt-2">Diverse program clusters discovered</p>
+            </div>
           </div>
         </section>
 
-        <section className="bg-gray-900/80 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-6">
+        <section className="bg-white rounded-2xl p-6 sm:p-8 border-2 border-gray-200/50 space-y-6 transform hover:scale-[1.005] transition-all duration-500" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -424,20 +450,20 @@ const SchemesBenefits = ({ userData }) => {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search by holder, patta, village, scheme or benefit keyword..."
-                className="w-full bg-gray-950/60 border border-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 rounded-2xl pl-12 pr-4 py-3 text-sm text-white placeholder:text-gray-500 transition-all"
+                className="w-full bg-white border-2 border-gray-200/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 rounded-lg pl-12 pr-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 transition-all" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'}}
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-gray-950/60 border border-gray-800 rounded-2xl px-4 py-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-400">Priority</span>
+              <div className="flex items-center gap-2 bg-white border-2 border-gray-200/50 rounded-lg px-4 py-2" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'}}>
+                <Filter className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-600">Priority</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPriorityFilter('all')}
-                    className={`text-xs px-3 py-1.5 rounded-xl transition-colors ${
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
                       priorityFilter === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-900 text-gray-400 hover:text-gray-200'
+                        ? 'bg-teal-800 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     All
@@ -446,10 +472,10 @@ const SchemesBenefits = ({ userData }) => {
                     <button
                       key={option}
                       onClick={() => setPriorityFilter(option)}
-                      className={`text-xs px-3 py-1.5 rounded-xl capitalize transition-colors ${
+                      className={`text-xs px-3 py-1.5 rounded-md capitalize transition-colors ${
                         priorityFilter === option
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-900 text-gray-400 hover:text-gray-200'
+                          ? 'bg-teal-800 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                       }`}
                     >
                       {option}
@@ -461,7 +487,7 @@ const SchemesBenefits = ({ userData }) => {
                 <select
                   value={categoryFilter}
                   onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="appearance-none bg-gray-950/60 border border-gray-800 rounded-2xl px-4 py-2 pr-10 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                  className="appearance-none bg-white border-2 border-gray-200/50 rounded-lg px-4 py-2 pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'}}
                 >
                   <option value="all">All categories</option>
                   {categoryOptions.map((category) => (
@@ -488,20 +514,20 @@ const SchemesBenefits = ({ userData }) => {
               return (
                 <article
                   key={record.id}
-                  className="bg-gray-950/80 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-blue-900/10 hover:border-blue-500/40 transition-all"
+                  className="bg-white border-2 border-gray-200/50 rounded-3xl p-6 sm:p-8 hover:border-blue-500/40 transition-all transform hover:scale-[1.005] duration-500" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}
                 >
                   <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-2xl font-semibold text-white">{record.holderName}</h2>
-                        <span className="text-xs uppercase tracking-[0.2em] text-gray-400 bg-gray-900 border border-gray-800 rounded-full px-3 py-1">
+                        <h2 className="text-2xl font-semibold text-gray-900">{record.holderName}</h2>
+                        <span className="text-xs uppercase tracking-[0.2em] text-gray-600 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">
                           Patta {record.pattaId}
                         </span>
                         <span className={`text-xs px-3 py-1 rounded-full ${getPriorityClass(record.schemePriority)}`}>
                           {record.schemePriority ? record.schemePriority.replace(/_/g, ' ') : 'Balanced focus'}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
                           {[record.location?.village, record.location?.district, record.location?.state]
@@ -519,27 +545,27 @@ const SchemesBenefits = ({ userData }) => {
                       </div>
                     </div>
                     <div className="flex flex-col items-start lg:items-end gap-2">
-                      <span className="text-sm text-gray-400">Top suitability</span>
-                      <span className="text-3xl font-semibold text-blue-300">{Math.round(record.topScore || 0)} / 100</span>
+                      <span className="text-sm text-gray-600">Top suitability</span>
+                      <span className="text-3xl font-semibold text-teal-700">{Math.round(record.topScore || 0)} / 100</span>
                     </div>
                   </header>
 
                   <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Territorial extent</p>
-                      <p className="text-xl font-semibold text-white">{formatArea(record.area)}</p>
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'}}>
+                      <p className="text-xs uppercase tracking-wide text-gray-600 mb-2">Territorial extent</p>
+                      <p className="text-xl font-semibold text-gray-900">{formatArea(record.area)}</p>
                     </div>
-                    <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">NDVI health</p>
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'}}>
+                      <p className="text-xs uppercase tracking-wide text-gray-600 mb-2">NDVI health</p>
                       <div className="flex items-baseline gap-2">
-                        <p className="text-xl font-semibold text-white">{record.ndvi?.toFixed(3) ?? '—'}</p>
+                        <p className="text-xl font-semibold text-gray-900">{record.ndvi?.toFixed(3) ?? '—'}</p>
                         <span className={`text-xs font-medium ${ndviMeta.color}`}>{ndviMeta.label}</span>
                       </div>
                     </div>
-                    <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">NDWI moisture</p>
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'}}>
+                      <p className="text-xs uppercase tracking-wide text-gray-600 mb-2">NDWI moisture</p>
                       <div className="flex items-baseline gap-2">
-                        <p className="text-xl font-semibold text-white">{record.ndwi?.toFixed(3) ?? '—'}</p>
+                        <p className="text-xl font-semibold text-gray-900">{record.ndwi?.toFixed(3) ?? '—'}</p>
                         <span className={`text-xs font-medium ${ndwiMeta.color}`}>{ndwiMeta.label}</span>
                       </div>
                     </div>
@@ -549,15 +575,15 @@ const SchemesBenefits = ({ userData }) => {
                     {record.schemes.map((scheme) => (
                       <div
                         key={`${record.id}-${scheme.scheme_id || scheme.scheme_name}`}
-                        className="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 sm:p-6 hover:border-blue-500/40 transition-all"
+                        className="bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-blue-500/40 transition-all" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'}}
                       >
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                           <div className="space-y-2 max-w-3xl">
                             <div className="flex flex-wrap items-center gap-3">
-                              <div className="bg-blue-500/20 text-blue-200 rounded-2xl p-2">
+                              <div className="bg-blue-100 text-blue-700 rounded-2xl p-2">
                                 <Award className="h-5 w-5" />
                               </div>
-                              <h3 className="text-xl font-semibold text-white">{scheme.scheme_name}</h3>
+                              <h3 className="text-xl font-semibold text-gray-900">{scheme.scheme_name}</h3>
                               <span className={`text-xs px-3 py-1 rounded-full ${getCategoryClass(scheme.category)}`}>
                                 {scheme.category || 'General Welfare'}
                               </span>
@@ -565,47 +591,47 @@ const SchemesBenefits = ({ userData }) => {
                                 {getPriorityLabel(scheme.priority)}
                               </span>
                             </div>
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                               <span className="inline-flex items-center gap-2">
-                                <Target className="h-4 w-4 text-blue-300" />
-                                Suitability Score: <span className="text-white font-medium">{formatScore(scheme.score)}</span>
+                                <Target className="h-4 w-4 text-blue-600" />
+                                Suitability Score: <span className="text-gray-900 font-medium">{formatScore(scheme.score)}</span>
                               </span>
                               {scheme.amount && (
                                 <span className="inline-flex items-center gap-2">
-                                  <Leaf className="h-4 w-4 text-emerald-300" />
-                                  Support: <span className="text-white font-medium">{scheme.amount}</span>
+                                  <Leaf className="h-4 w-4 text-emerald-600" />
+                                  Support: <span className="text-gray-900 font-medium">{scheme.amount}</span>
                                 </span>
                               )}
                               {scheme.frequency && (
                                 <span className="inline-flex items-center gap-2">
-                                  <Clock className="h-4 w-4 text-amber-300" />
-                                  Frequency: <span className="text-white font-medium">{scheme.frequency}</span>
+                                  <Clock className="h-4 w-4 text-amber-600" />
+                                  Frequency: <span className="text-gray-900 font-medium">{scheme.frequency}</span>
                                 </span>
                               )}
                             </div>
                             {scheme.benefits?.length > 0 && (
-                              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-sm text-gray-300">
+                              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-sm text-gray-700">
                                 {scheme.benefits.slice(0, 6).map((benefit, index) => (
                                   <li key={index} className="flex items-start gap-2">
-                                    <ChevronRight className="h-4 w-4 text-blue-400 mt-0.5" />
+                                    <ChevronRight className="h-4 w-4 text-blue-600 mt-0.5" />
                                     <span>{benefit}</span>
                                   </li>
                                 ))}
                               </ul>
                             )}
                             {scheme.description && (
-                              <p className="text-sm text-gray-400 mt-3">{scheme.description}</p>
+                              <p className="text-sm text-gray-600 mt-3">{scheme.description}</p>
                             )}
                           </div>
                           <div className="flex flex-col gap-3 min-w-[12rem]">
-                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4">
-                              <p className="text-xs uppercase tracking-wide text-blue-200 mb-2">Implementation fit</p>
-                              <p className="text-2xl font-semibold text-blue-100">{Math.round(scheme.score ?? 0)}</p>
-                              <p className="text-xs text-blue-100/80">Higher score indicates stronger suitability for this land parcel</p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                              <p className="text-xs uppercase tracking-wide text-blue-700 mb-2">Implementation fit</p>
+                              <p className="text-2xl font-semibold text-blue-800">{Math.round(scheme.score ?? 0)}</p>
+                              <p className="text-xs text-blue-600">Higher score indicates stronger suitability for this land parcel</p>
                             </div>
                             {scheme.coverage && (
-                              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-sm text-gray-300">
-                                <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Coverage</p>
+                              <div className="bg-white border border-gray-200 rounded-2xl p-4 text-sm text-gray-700">
+                                <p className="text-xs uppercase tracking-wide text-gray-600 mb-1">Coverage</p>
                                 <p>{scheme.coverage}</p>
                               </div>
                             )}
@@ -621,26 +647,26 @@ const SchemesBenefits = ({ userData }) => {
         )}
 
         {!loading && categorySnapshot.length > 0 && (
-          <section className="bg-gray-900/70 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-6">
+          <section className="bg-white border-2 border-gray-200/50 rounded-3xl p-6 sm:p-8 space-y-6 transform hover:scale-[1.005] transition-all duration-500" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Category snapshot</h2>
-              <Layers className="h-5 w-5 text-purple-200" />
+              <h2 className="text-xl font-semibold text-gray-900">Category snapshot</h2>
+              <Layers className="h-5 w-5 text-purple-600" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {categorySnapshot.map((entry) => (
                 <div
                   key={entry.category}
-                  className="bg-gray-950/70 border border-gray-800 rounded-2xl p-5 flex flex-col gap-3"
+                  className="bg-gray-50 border border-gray-200 rounded-2xl p-5 flex flex-col gap-3" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'}}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-white">{entry.category}</p>
-                    <span className="text-xs text-gray-500">{entry.total} schemes</span>
+                    <p className="text-sm font-medium text-gray-900">{entry.category}</p>
+                    <span className="text-xs text-gray-600">{entry.total} schemes</span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-semibold text-blue-200">{entry.highPriority}</p>
-                    <span className="text-sm text-gray-400">high priority</span>
+                    <p className="text-2xl font-semibold text-teal-700">{entry.highPriority}</p>
+                    <span className="text-sm text-gray-600">high priority</span>
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-600">
                     Avg score: {entry.avgScore != null ? entry.avgScore.toFixed(1) : '—'}
                   </div>
                 </div>
@@ -650,6 +676,7 @@ const SchemesBenefits = ({ userData }) => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
