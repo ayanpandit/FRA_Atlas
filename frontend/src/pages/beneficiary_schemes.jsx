@@ -318,12 +318,12 @@ export default function BeneficiarySchemes() {
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse" style={{
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'
             }}>
-              <div className="h-4 bg-gray-700 rounded w-3/4 mb-4"></div>
-              <div className="h-3 bg-gray-700 rounded w-1/2 mb-2"></div>
-              <div className="h-3 bg-gray-700 rounded w-full mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-full mb-4"></div>
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="h-16 bg-gray-700 rounded"></div>
-                <div className="h-16 bg-gray-700 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
               </div>
             </div>
           ))}
@@ -557,21 +557,21 @@ export default function BeneficiarySchemes() {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{
         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'
-      }}>'
+      }}>
         {/* Mobile and tablet view - card layout */}
         <div className="block lg:hidden space-y-4 p-4">
           {filteredData.map((holder) => (
             <div key={holder.id || holder.patta_id} className="bg-gray-50 rounded-lg p-4 border border-gray-200" style={{
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
-            }}>'
+            }}>
               {/* Mobile card header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                     {(holder.holder_name || 'U').charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-gray-800 truncate">{holder.holder_name || 'Unknown'}</div>
+                    <div className="text-sm font-semibold text-gray-900 truncate">{holder.holder_name || 'Unknown'}</div>
                     <div className="text-xs text-gray-600">{holder.patta_id}</div>
                     <div className="text-xs text-gray-500">{formatArea(holder.area_hectares)}</div>
                   </div>
@@ -591,7 +591,7 @@ export default function BeneficiarySchemes() {
                 }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-600">NDVI</span>
-                    <span className="text-xs font-medium text-gray-800">{(holder.ndvi || 0).toFixed(3)}</span>
+                    <span className="text-xs font-medium text-gray-900">{(holder.ndvi || 0).toFixed(3)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-1.5">
                     <div 
@@ -605,7 +605,7 @@ export default function BeneficiarySchemes() {
                 }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-600">NDWI</span>
-                    <span className="text-xs font-medium text-gray-800">{(holder.ndwi || 0).toFixed(3)}</span>
+                    <span className="text-xs font-medium text-gray-900">{(holder.ndwi || 0).toFixed(3)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-1.5">
                     <div 
@@ -618,18 +618,18 @@ export default function BeneficiarySchemes() {
               
               {/* Mobile schemes */}
               <div>
-                <div className="text-xs font-medium text-gray-300 mb-2">Schemes ({holder.schemes?.length || 0})</div>
+                <div className="text-xs font-medium text-gray-600 mb-2">Schemes ({holder.schemes?.length || 0})</div>
                 <div className="flex flex-wrap gap-1">
                   {holder.schemes && holder.schemes.length > 0 ? (
                     <>
                       {holder.schemes.slice(0, 2).map((scheme, index) => (
-                        <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-900/50 text-blue-300 border border-blue-700">
+                        <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200">
                           <span className="mr-1">{getSchemeIcon(scheme)}</span>
                           <span className="truncate max-w-20">{typeof scheme === 'string' ? scheme : scheme.scheme_name}</span>
                         </span>
                       ))}
                       {holder.schemes.length > 2 && (
-                        <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">+{holder.schemes.length - 2}</span>
+                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">+{holder.schemes.length - 2}</span>
                       )}
                     </>
                   ) : (
@@ -643,35 +643,35 @@ export default function BeneficiarySchemes() {
 
         {/* Desktop view - table layout */}
         <div className="hidden lg:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-800">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Patta Holder
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Land Metrics
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Recommended Schemes
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-900 divide-y divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-200">
               {filteredData.map((holder) => (
-                <tr key={holder.id || holder.patta_id} className="hover:bg-gray-800 transition-colors">
+                <tr key={holder.id || holder.patta_id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                           {(holder.holder_name || 'U').charAt(0)}
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-white">{holder.holder_name || 'Unknown'}</div>
-                          <div className="text-sm text-gray-400">{holder.patta_id}</div>
+                          <div className="text-sm font-semibold text-gray-900">{holder.holder_name || 'Unknown'}</div>
+                          <div className="text-sm text-gray-600">{holder.patta_id}</div>
                           <div className="text-xs text-gray-500">{formatArea(holder.area_hectares)}</div>
                         </div>
                       </div>
@@ -680,24 +680,24 @@ export default function BeneficiarySchemes() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-400 w-10">NDVI:</span>
-                        <div className="w-20 bg-gray-700 rounded-full h-2">
+                        <span className="text-xs text-gray-600 w-10">NDVI:</span>
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div 
                             className={`h-full ${getConditionColor(holder.ndvi, 'ndvi')} rounded-full transition-all duration-300`}
                             style={{ width: `${Math.max(0, Math.min(100, ((holder.ndvi || 0) + 1) * 50))}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-gray-300 w-12 text-right">{(holder.ndvi || 0).toFixed(3)}</span>
+                        <span className="text-sm font-medium text-gray-900 w-12 text-right">{(holder.ndvi || 0).toFixed(3)}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-400 w-10">NDWI:</span>
-                        <div className="w-20 bg-gray-700 rounded-full h-2">
+                        <span className="text-xs text-gray-600 w-10">NDWI:</span>
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div 
                             className={`h-full ${getConditionColor(holder.ndwi, 'ndwi')} rounded-full transition-all duration-300`}
                             style={{ width: `${Math.max(0, Math.min(100, ((holder.ndwi || 0) + 1) * 50))}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-gray-300 w-12 text-right">{(holder.ndwi || 0).toFixed(3)}</span>
+                        <span className="text-sm font-medium text-gray-900 w-12 text-right">{(holder.ndwi || 0).toFixed(3)}</span>
                       </div>
                     </div>
                   </td>
@@ -706,7 +706,7 @@ export default function BeneficiarySchemes() {
                       <div className="flex flex-wrap gap-1 mb-1">
                         {holder.schemes && holder.schemes.length > 0 ? (
                           holder.schemes.slice(0, 3).map((scheme, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-900/50 text-blue-300 border border-blue-700">
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200">
                               <span className="mr-1">{getSchemeIcon(scheme)}</span>
                               <span className="truncate max-w-24">{typeof scheme === 'string' ? scheme : scheme.scheme_name}</span>
                             </span>
@@ -716,7 +716,7 @@ export default function BeneficiarySchemes() {
                         )}
                       </div>
                       {holder.schemes && holder.schemes.length > 3 && (
-                        <span className="text-xs text-gray-400">+{holder.schemes.length - 3} more schemes</span>
+                        <span className="text-xs text-gray-600">+{holder.schemes.length - 3} more schemes</span>
                       )}
                     </div>
                   </td>
@@ -724,11 +724,11 @@ export default function BeneficiarySchemes() {
                     <div className="flex flex-col space-y-1">
                       <button 
                         onClick={() => setSelectedHolder(holder)}
-                        className="text-blue-400 hover:text-blue-300 text-left"
+                        className="text-blue-600 hover:text-blue-700 text-left"
                       >
                         View Details
                       </button>
-                      <button className="text-green-400 hover:text-green-300 text-left">
+                      <button className="text-teal-600 hover:text-teal-700 text-left">
                         Download
                       </button>
                     </div>
@@ -753,14 +753,14 @@ export default function BeneficiarySchemes() {
           font-style: normal;
         }`}
       </style>
-      <div className="min-h-screen bg-white text-gray-900 alan-sans">
+      <div className="min-h-screen bg-gray-50 text-gray-900 alan-sans">
         {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-6 lg:mb-8">
           <div className="flex flex-col space-y-4 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex-1">
-              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
                 Beneficiary Scheme Recommendations
               </h2>
               <p className="text-gray-600 text-sm lg:text-base">AI-powered scheme matching based on satellite analysis</p>
@@ -769,7 +769,7 @@ export default function BeneficiarySchemes() {
               <button
                 onClick={generateAllRecommendations}
                 disabled={loading}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex-shrink-0"
+                className="bg-teal-800 hover:bg-teal-900 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50 flex-shrink-0"
               >
                 {loading ? 'Processing...' : '🧠 Generate Recommendations'}
               </button>
@@ -988,11 +988,11 @@ export default function BeneficiarySchemes() {
 
               {/* Region Selector */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Select Region</label>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Select Region</label>
                 <select 
                   value={selectedRegion}
                   onChange={(e) => setSelectedRegion(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full bg-white border-2 border-gray-200/50 rounded-lg px-4 py-2.5 text-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1)'}}
                 >
                   {regions.map(region => (
                     <option key={region} value={region}>{region}</option>
@@ -1007,11 +1007,11 @@ export default function BeneficiarySchemes() {
                 }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Total Pattas</span>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm" style={{
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-sm" style={{
                       boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.1)'
                     }}>📄</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-800">{communityStats.totalPattas}</div>
+                  <div className="text-2xl font-bold text-gray-900">{communityStats.totalPattas}</div>
                 </div>
                 
                 <div className="bg-white rounded-xl p-4 border border-gray-200 transform hover:scale-105 transition-all duration-300" style={{
@@ -1023,7 +1023,7 @@ export default function BeneficiarySchemes() {
                       boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.1)'
                     }}>👥</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-800">{communityStats.beneficiaries.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-gray-900">{communityStats.beneficiaries.toLocaleString()}</div>
                 </div>
               </div>
 
@@ -1031,12 +1031,12 @@ export default function BeneficiarySchemes() {
               <div className="bg-white rounded-xl p-4 mb-6 border border-gray-200" style={{
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.1)'
               }}>
-                <h4 className="text-sm font-medium text-gray-800 mb-3">Regional Health Indicators</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Regional Health Indicators</h4>
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm text-gray-600">Average NDVI</span>
-                      <span className="text-sm font-semibold text-gray-800">{communityStats.avgNDVI.toFixed(3)}</span>
+                      <span className="text-sm font-semibold text-gray-900">{communityStats.avgNDVI.toFixed(3)}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
@@ -1049,7 +1049,7 @@ export default function BeneficiarySchemes() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm text-gray-600">Average NDWI</span>
-                      <span className="text-sm font-semibold text-gray-800">{communityStats.avgNDWI.toFixed(3)}</span>
+                      <span className="text-sm font-semibold text-gray-900">{communityStats.avgNDWI.toFixed(3)}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
@@ -1063,19 +1063,19 @@ export default function BeneficiarySchemes() {
 
               {/* Priority Schemes */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-800 mb-3">Top Recommended Schemes</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Top Recommended Schemes</h4>
                 <div className="space-y-2">
                   {Object.values(SCHEME_DEFINITIONS).slice(0, 3).map((scheme, index) => (
                     <div key={scheme.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200 transform hover:scale-105 transition-all duration-300" style={{
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
                     }}>
-                      <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-lg flex items-center justify-center text-white text-sm" style={{
+                      <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg flex items-center justify-center text-white text-sm" style={{
                         boxShadow: 'inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.1)'
                       }}>
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-800 flex items-center gap-2">
+                        <div className="font-medium text-gray-900 flex items-center gap-2">
                           <span>{scheme.icon}</span>
                           <span className="text-sm">{scheme.name}</span>
                         </div>
@@ -1103,9 +1103,9 @@ export default function BeneficiarySchemes() {
         </div>
 
         {/* AI Insights Section */}
-        <section className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-8 text-white mt-8">
+        <section className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl p-8 text-white mt-8 border-2 border-teal-400/30" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), 0 25px 50px -12px rgba(20, 83, 83, 0.5)'}}>
           <div className="max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
+            <h3 className="text-2xl font-semibold mb-4 flex items-center justify-center gap-2">
               <span>🤖</span>
               AI-Powered Recommendations Engine
             </h3>
@@ -1135,7 +1135,7 @@ export default function BeneficiarySchemes() {
 
         {/* Enhanced Footer Stats */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-6 border border-gray-200 text-center hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 text-center transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="text-3xl font-bold text-gray-900 mb-2">98.7%</div>
             <div className="text-sm text-gray-600">Accuracy Rate</div>
             <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
