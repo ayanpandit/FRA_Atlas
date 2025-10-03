@@ -202,20 +202,32 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-6 lg:p-8">
+    <>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap');
+        .alan-sans {
+          font-family: "Alan Sans", sans-serif;
+          font-optical-sizing: auto;
+          font-weight: 728;
+          font-style: normal;
+        }`}
+      </style>
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 md:p-6 lg:p-8 alan-sans">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Users className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(59, 130, 246, 0.3)'}}>
+            <Users className="h-6 w-6 text-blue-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+          </div>
+          <h1 className="text-3xl font-semibold text-gray-900">User Management</h1>
         </div>
         <p className="text-gray-600">Manage users, roles, and permissions for the FRA Dashboard</p>
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 overflow-x-auto">
+        <div className="bg-white rounded-xl p-2 border-2 border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 8px 20px rgba(0,0,0,0.08)'}}>
+          <nav className="flex space-x-2 overflow-x-auto">
             {[
               { id: 'users', label: 'Users', icon: Users },
               { id: 'roles', label: 'Role Management', icon: Shield },
@@ -225,11 +237,14 @@ const UserManagement = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                className={`flex items-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm whitespace-nowrap transition-all duration-300 transform hover:scale-105 ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-teal-800 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
+                style={activeTab === tab.id ? {
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.2)'
+                } : {}}
               >
                 <tab.icon className="h-4 w-4" />
                 {tab.label}
@@ -243,7 +258,7 @@ const UserManagement = () => {
       {activeTab === 'users' && (
         <div className="space-y-6">
           {/* Filters */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-xl border-2 border-gray-200/50 mb-6 transform hover:scale-[1.01] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -253,7 +268,7 @@ const UserManagement = () => {
                     placeholder="Search users..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="pl-10 pr-4 py-2 w-full border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-gray-50"
                   />
                 </div>
               </div>
@@ -261,7 +276,7 @@ const UserManagement = () => {
                 <select
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 bg-gray-50 font-medium text-gray-700"
                 >
                   <option value="all">All Roles</option>
                   <option value="Admin">Admin</option>
@@ -271,7 +286,7 @@ const UserManagement = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 bg-gray-50 font-medium text-gray-700"
                 >
                   <option value="all">All Status</option>
                   <option value="Active">Active</option>
@@ -282,27 +297,27 @@ const UserManagement = () => {
           </div>
 
           {/* Users Table/Cards */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-xl border-2 border-gray-200/50 overflow-hidden transform hover:scale-[1.005] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Region</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Login</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-200">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm font-semibold text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-600">{user.email}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -333,7 +348,7 @@ const UserManagement = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleUserStatus(user.id)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-teal-700 hover:text-teal-900 transform hover:scale-110 transition-all duration-200"
                           >
                             <Edit3 className="h-4 w-4" />
                           </button>
@@ -348,11 +363,11 @@ const UserManagement = () => {
             {/* Mobile Cards */}
             <div className="lg:hidden">
               {filteredUsers.map((user) => (
-                <div key={user.id} className="p-4 border-b border-gray-200 last:border-b-0">
+                <div key={user.id} className="p-4 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors duration-200">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">{user.name}</h3>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                      <p className="text-sm text-gray-600">{user.email}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       {getStatusIcon(user.status)}
@@ -380,7 +395,7 @@ const UserManagement = () => {
                     </div>
                     <button
                       onClick={() => toggleUserStatus(user.id)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-teal-700 hover:text-teal-900 transform hover:scale-110 transition-all duration-200"
                     >
                       <Edit3 className="h-4 w-4" />
                     </button>
@@ -394,20 +409,22 @@ const UserManagement = () => {
 
       {/* Role Management Tab */}
       {activeTab === 'roles' && (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl border-2 border-gray-200/50 transform hover:scale-[1.005] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(59, 130, 246, 0.3)'}}>
+              <Shield className="h-5 w-5 text-blue-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+            </div>
             Role Management
           </h2>
           <div className="space-y-4">
             {users.map((user) => (
-              <div key={user.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div key={user.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-teal-500/40 transition-all duration-200 hover:shadow-md" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'}}>
                 <div className="mb-2 md:mb-0">
-                  <div className="font-medium text-gray-900">{user.name}</div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
+                  <div className="font-semibold text-gray-900">{user.name}</div>
+                  <div className="text-sm text-gray-600">{user.email}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">Current Role:</span>
+                  <span className="text-sm text-gray-600 font-medium">Current Role:</span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
                     {getRoleIcon(user.role)}
                     {user.role}
@@ -415,7 +432,7 @@ const UserManagement = () => {
                   <select
                     value={user.role}
                     onChange={(e) => updateUserRole(user.id, e.target.value)}
-                    className="ml-3 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="ml-3 px-3 py-1 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 bg-gray-50 font-medium"
                   >
                     <option value="Admin">Admin</option>
                     <option value="Officer">Officer</option>
@@ -430,14 +447,16 @@ const UserManagement = () => {
 
       {/* Invite User Tab */}
       {activeTab === 'invite' && (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl border-2 border-gray-200/50 transform hover:scale-[1.005] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Plus className="h-5 w-5 text-green-600" />
+            <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(34, 197, 94, 0.3)'}}>
+              <Plus className="h-5 w-5 text-green-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+            </div>
             Invite New User
           </h2>
           <div className="max-w-md space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Email Address
               </label>
               <input
@@ -445,18 +464,18 @@ const UserManagement = () => {
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 placeholder="user@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-gray-50"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Role
               </label>
               <select
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 bg-gray-50 font-medium"
               >
                 <option value="Officer">Officer</option>
                 <option value="Admin">Admin</option>
@@ -465,13 +484,13 @@ const UserManagement = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Region
               </label>
               <select
                 value={newUser.region}
                 onChange={(e) => setNewUser({ ...newUser, region: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 bg-gray-50 font-medium"
               >
                 <option value="Maharashtra">Maharashtra</option>
                 <option value="Karnataka">Karnataka</option>
@@ -485,7 +504,7 @@ const UserManagement = () => {
             <button
               onClick={handleInviteUser}
               disabled={!newUser.email}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-teal-800 text-white px-4 py-2 rounded-lg hover:bg-teal-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 font-semibold transform hover:scale-105"
             >
               Send Invitation
             </button>
@@ -495,26 +514,28 @@ const UserManagement = () => {
 
       {/* Activity Log Tab */}
       {activeTab === 'activity' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
+        <div className="bg-white rounded-xl border-2 border-gray-200/50 overflow-hidden transform hover:scale-[1.005] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
             <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Activity className="h-5 w-5 text-orange-600" />
+              <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(249, 115, 22, 0.3)'}}>
+                <Activity className="h-5 w-5 text-orange-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)'}} />
+              </div>
               Activity Log
             </h2>
           </div>
           <div className="divide-y divide-gray-200">
             {activityLog.map((activity) => (
-              <div key={activity.id} className="p-6 hover:bg-gray-50">
+              <div key={activity.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
                 <div className="flex items-start gap-3">
                   {getActivityIcon(activity.type)}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-semibold text-gray-900">
                       {activity.user}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-700 mt-1">
                       {activity.action}
                     </p>
-                    <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {activity.timestamp}
                     </p>
@@ -526,6 +547,7 @@ const UserManagement = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
