@@ -1,0 +1,22 @@
+# Render services manifest for FRA_Atlas
+# This defines three services:
+#  - static site for frontend (Vite build output)
+#  - web service for map API (Flask)
+#  - web service for OCR API (Flask)
+
+services:
+  - type: static
+    name: fra-atlas-frontend
+    env: static
+    branch: main
+    buildCommand: "cd frontend && npm install && npm run build"
+    publishPath: frontend/dist
+
+  - type: web_service
+    name: fra-atlas-backend
+    env: python
+    branch: main
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    # Use the combined service file (ocr_ner_map.py) that exposes `app` as the Flask application
+    startCommand: "cd backend && gunicorn ocr_ner_map:app --bind 0.0.0.0:$PORT --workers 4"
+    plan: starter

@@ -6,55 +6,252 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 
-// Chart data
-const moneyInsightsData = [
-  { month: 'Jan', income: 45000, expense: 32000 },
-  { month: 'Feb', income: 52000, expense: 38000 },
-  { month: 'Mar', income: 48000, expense: 35000 },
-  { month: 'Apr', income: 61000, expense: 42000 },
-  { month: 'May', income: 55000, expense: 39000 },
-  { month: 'Jun', income: 67000, expense: 45000 },
-  { month: 'Jul', income: 59000, expense: 41000 },
-  { month: 'Aug', income: 70000, expense: 48000 },
-  { month: 'Sep', income: 65000, expense: 44000 },
-  { month: 'Oct', income: 72000, expense: 50000 },
-  { month: 'Nov', income: 68000, expense: 46000 },
-  { month: 'Dec', income: 75000, expense: 52000 }
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const FALLBACK_MONTHLY = MONTH_LABELS.map(month => ({ month, applications: 0, approvals: 0 }));
+
+const INITIAL_SUMMARY = {
+  totalApplications: 0,
+  approved: 0,
+  pending: 0,
+  verified: 0,
+  beneficiaries: 0
+};
+
+const FALLBACK_STATUS_DISTRIBUTION = [
+  { name: 'Approved', value: 0, color: '#34d399' },
+  { name: 'Pending', value: 0, color: '#fbbf24' },
+  { name: 'Verified', value: 0, color: '#38bdf8' }
 ];
 
-const totalOrdersData = [
-  { name: 'Orders', value: 1308, fill: '#34d399' }
-];
-
-const expensesData = [
-  { name: 'Payroll', value: 52, fill: '#34d399' },
-  { name: 'Business Supplies', value: 17.5, fill: '#a3e635' },
-  { name: 'Other', value: 30.5, fill: '#fbbf24' }
-];
-
-const recentInvoices = [
-  { id: '677829', client: 'Emma Tomson', amount: '$3,250', date: '30-09-2023', status: 'Overdue' },
-  { id: '893750', client: 'Richard Miller', amount: '$12,800', date: '30-09-2023', status: 'Paid' },
-  { id: '814113', client: 'Liam Davis', amount: '$1,300', date: '30-09-2023', status: 'Overdue' },
-  { id: '105226', client: 'Robert Brown', amount: '$4,040', date: '29-09-2023', status: 'Overdue' },
-  { id: '192803', client: 'Noah Williams', amount: '$850', date: '29-09-2023', status: 'First Paid' },
-  { id: '553714', client: 'Amanda C. Herman', amount: '$2,150', date: '29-09-2023', status: 'Paid' },
-  { id: '781926', client: 'Luna Thomas', amount: '$315', date: '29-09-2023', status: 'Last Paid' },
-  { id: '542809', client: 'Maxwell Kim', amount: '$470', date: '29-09-2023', status: 'Paid' }
-];
+const PIE_FALLBACK_COLORS = ['#34d399', '#a3e635', '#fbbf24', '#38bdf8', '#c084fc'];
 
 const Dashboard = () => {
   const [totalOrdersFilter, setTotalOrdersFilter] = useState('Weekly');
   const [expensesFilter, setExpensesFilter] = useState('Monthly');
+  const [summary, setSummary] = useState(INITIAL_SUMMARY);
+  const [monthlySeries, setMonthlySeries] = useState({
+    applications: Array(12).fill(0),
+    approvals: Array(12).fill(0),
+    pending: Array(12).fill(0),
+    beneficiaries: Array(12).fill(0)
+  });
+  const [statusDistribution, setStatusDistribution] = useState([]);
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
+  const [metricsError, setMetricsError] = useState(null);
+
+  const normalizeStatus = (status) => (status || 'Unknown').toString().trim();
 
   const getStatusColor = (status) => {
-    const colors = {
-      'Overdue': 'bg-red-100 text-red-800',
-      'Paid': 'bg-emerald-100 text-emerald-800',
-      'First Paid': 'bg-emerald-100 text-emerald-800',
-      'Last Paid': 'bg-emerald-100 text-emerald-800'
+    const normalized = normalizeStatus(status).toLowerCase();
+    if (normalized === 'approved') return 'bg-emerald-100 text-emerald-700';
+    if (['pending', 'in review', 'under review', 'submitted', 'processing'].includes(normalized)) return 'bg-amber-100 text-amber-700';
+    if (normalized === 'verified') return 'bg-sky-100 text-sky-700';
+    if (['rejected', 'cancelled', 'denied'].includes(normalized)) return 'bg-rose-100 text-rose-700';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const computeGrowth = (series) => {
+    const currentMonth = new Date().getMonth();
+    const previousMonth = (currentMonth + 11) % 12;
+    const currentValue = series[currentMonth] ?? 0;
+    const previousValue = series[previousMonth] ?? 0;
+    let percentChange = 0;
+    if (previousValue === 0) {
+      percentChange = currentValue > 0 ? 100 : 0;
+    } else {
+      percentChange = ((currentValue - previousValue) / previousValue) * 100;
+    }
+    return { currentValue, previousValue, percentChange };
+  };
+
+  const formatPercentChange = (value) => {
+    if (!Number.isFinite(value)) return '0%';
+    const rounded = Math.abs(value) < 0.1 ? 0 : value;
+    const formatted = rounded.toFixed(1);
+    return `${rounded >= 0 ? '+' : ''}${formatted}%`;
+  };
+
+  const formatDelta = (current, previous) => {
+    const delta = current - previous;
+    const rounded = Math.round(delta);
+    return `${rounded >= 0 ? '+' : ''}${rounded}`;
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-GB');
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchMetrics = async () => {
+      setIsLoadingMetrics(true);
+      setMetricsError(null);
+
+      const { data, error } = await supabase
+        .from('pattas')
+        .select('patta_id, holder_name, village, state, status, date_applied, created_at, area_hectares');
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Failed to load dashboard metrics:', error);
+        setMetricsError('Unable to load live dashboard data right now. Showing the latest available snapshot.');
+        setSummary(INITIAL_SUMMARY);
+        setMonthlySeries({
+          applications: Array(12).fill(0),
+          approvals: Array(12).fill(0),
+          pending: Array(12).fill(0),
+          beneficiaries: Array(12).fill(0)
+        });
+        setStatusDistribution([]);
+        setRecentApplications([]);
+        setIsLoadingMetrics(false);
+        return;
+      }
+
+      const records = data || [];
+      const totalApplications = records.length;
+
+      const approvedStatuses = new Set(['approved']);
+      const pendingStatuses = new Set(['pending', 'submitted', 'in review', 'under review', 'processing']);
+
+      const statusCounts = records.reduce((acc, record) => {
+        const status = (record.status || 'unknown').toLowerCase();
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const approvedCount = Array.from(approvedStatuses).reduce((sum, status) => sum + (statusCounts[status] || 0), 0);
+      const verifiedCount = statusCounts['verified'] || 0;
+      const pendingCount = Array.from(pendingStatuses).reduce((sum, status) => sum + (statusCounts[status] || 0), 0);
+
+      const beneficiariesSet = new Set();
+      const beneficiariesMonthlySets = Array.from({ length: 12 }, () => new Set());
+      const monthlyApplications = Array(12).fill(0);
+      const monthlyApprovals = Array(12).fill(0);
+      const monthlyPending = Array(12).fill(0);
+
+      records.forEach(record => {
+        const status = (record.status || '').toLowerCase();
+        const holder = record.holder_name ? record.holder_name.trim() : '';
+        if (holder) {
+          beneficiariesSet.add(holder.toLowerCase());
+        }
+
+        const dateValue = record.date_applied || record.created_at;
+        const parsedDate = dateValue ? new Date(dateValue) : null;
+        if (!parsedDate || Number.isNaN(parsedDate.getTime())) return;
+
+        const monthIndex = parsedDate.getMonth();
+        monthlyApplications[monthIndex] += 1;
+        if (approvedStatuses.has(status)) {
+          monthlyApprovals[monthIndex] += 1;
+        } else if (pendingStatuses.has(status)) {
+          monthlyPending[monthIndex] += 1;
+        }
+        if (holder) {
+          beneficiariesMonthlySets[monthIndex].add(holder.toLowerCase());
+        }
+      });
+
+      const monthlyBeneficiaries = beneficiariesMonthlySets.map(set => set.size);
+
+      const distribution = [];
+      if (totalApplications > 0) {
+        distribution.push({ name: 'Approved', value: approvedCount, color: '#34d399' });
+        distribution.push({ name: 'Pending', value: pendingCount, color: '#fbbf24' });
+        if (verifiedCount > 0) {
+          distribution.push({ name: 'Verified', value: verifiedCount, color: '#38bdf8' });
+        }
+        const otherCount = totalApplications - approvedCount - pendingCount - verifiedCount;
+        if (otherCount > 0) {
+          distribution.push({ name: 'Other', value: otherCount, color: '#c084fc' });
+        }
+      }
+
+      const recent = [...records]
+        .sort((a, b) => {
+          const dateA = new Date(a.date_applied || a.created_at || 0).getTime();
+          const dateB = new Date(b.date_applied || b.created_at || 0).getTime();
+          return dateB - dateA;
+        })
+        .slice(0, 8)
+        .map(item => ({
+          id: item.patta_id || '—',
+          holder: item.holder_name || '—',
+          status: normalizeStatus(item.status),
+          area: typeof item.area_hectares === 'number' && !Number.isNaN(item.area_hectares)
+            ? `${item.area_hectares.toFixed(2)} ha`
+            : '—',
+          date: formatDate(item.date_applied || item.created_at)
+        }));
+
+      if (!isMounted) return;
+
+      setSummary({
+        totalApplications,
+        approved: approvedCount,
+        pending: pendingCount,
+        verified: verifiedCount,
+        beneficiaries: beneficiariesSet.size
+      });
+      setMonthlySeries({
+        applications: monthlyApplications,
+        approvals: monthlyApprovals,
+        pending: monthlyPending,
+        beneficiaries: monthlyBeneficiaries
+      });
+      setStatusDistribution(distribution);
+      setRecentApplications(recent);
+      setIsLoadingMetrics(false);
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+
+    fetchMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const applicationsGrowth = computeGrowth(monthlySeries.applications);
+  const approvalsGrowth = computeGrowth(monthlySeries.approvals);
+  const pendingGrowth = computeGrowth(monthlySeries.pending);
+  const beneficiaryGrowth = computeGrowth(monthlySeries.beneficiaries);
+
+  const applicationsChartData = MONTH_LABELS.map((month, index) => ({
+    month,
+    applications: monthlySeries.applications[index] ?? 0,
+    approvals: monthlySeries.approvals[index] ?? 0
+  }));
+
+  const totalCurrentMonth = applicationsGrowth.currentValue;
+  const totalPreviousMonth = applicationsGrowth.previousValue;
+  const displayedDistribution = statusDistribution.length > 0
+    ? statusDistribution
+    : FALLBACK_STATUS_DISTRIBUTION;
+  const statusTotal = displayedDistribution.reduce((sum, item) => sum + item.value, 0);
+  const formatStatusShare = (value) => {
+    if (statusTotal === 0) {
+      return isLoadingMetrics ? '—' : '0%';
+    }
+    const percent = (value / statusTotal) * 100;
+    return `${percent.toFixed(1)}%`;
+  };
+
+  const getTrendChipClasses = (percent, theme = 'positive') => {
+    const positiveClasses = theme === 'warning'
+      ? 'text-amber-600 bg-amber-50 border border-amber-200/60'
+      : 'text-green-600 bg-green-50 border border-green-200/60';
+    const negativeClasses = theme === 'warning'
+      ? 'text-emerald-600 bg-emerald-50 border border-emerald-200/60'
+      : 'text-red-600 bg-red-50 border border-red-200/60';
+    return percent >= 0 ? positiveClasses : negativeClasses;
   };
 
   return (
@@ -78,6 +275,12 @@ const Dashboard = () => {
             <Plus className="w-4 h-4" />
           </button>
         </div>
+
+        {metricsError && (
+          <div className="mb-6 p-3 border border-amber-200 bg-amber-50 text-sm text-amber-700 rounded-xl shadow-sm">
+            {metricsError}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Bank Connection Card */}
@@ -110,8 +313,10 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-gray-600">Total Applications</p>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl font-semibold text-gray-900">2,350</span>
-                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+8.4%</span>
+                    <span className="text-xl font-semibold text-gray-900">{isLoadingMetrics ? '—' : summary.totalApplications.toLocaleString()}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${getTrendChipClasses(applicationsGrowth.percentChange)}`}>
+                      {formatPercentChange(applicationsGrowth.percentChange)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -126,8 +331,10 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-gray-600">Approved</p>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl font-semibold text-gray-900">1,020</span>
-                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+15%</span>
+                    <span className="text-xl font-semibold text-gray-900">{isLoadingMetrics ? '—' : summary.approved.toLocaleString()}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${getTrendChipClasses(approvalsGrowth.percentChange)}`}>
+                      {formatPercentChange(approvalsGrowth.percentChange)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -142,8 +349,10 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-gray-600">Pending Review</p>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl font-semibold text-gray-900">950</span>
-                    <span className="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">+1.8%</span>
+                    <span className="text-xl font-semibold text-gray-900">{isLoadingMetrics ? '—' : summary.pending.toLocaleString()}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${getTrendChipClasses(pendingGrowth.percentChange, 'warning')}`}>
+                      {formatPercentChange(pendingGrowth.percentChange)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -158,8 +367,10 @@ const Dashboard = () => {
                 <div>
                   <p className="text-sm text-gray-600">Beneficiaries</p>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl font-semibold text-gray-900">3,065</span>
-                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+5.0%</span>
+                    <span className="text-xl font-semibold text-gray-900">{isLoadingMetrics ? '—' : summary.beneficiaries.toLocaleString()}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${getTrendChipClasses(beneficiaryGrowth.percentChange)}`}>
+                      {formatPercentChange(beneficiaryGrowth.percentChange)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -181,7 +392,7 @@ const Dashboard = () => {
               <div className="h-48 relative">
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 to-transparent rounded-lg"></div>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={moneyInsightsData}>
+                  <BarChart data={applicationsChartData}>
                     <XAxis 
                       dataKey="month" 
                       axisLine={false}
@@ -189,8 +400,8 @@ const Dashboard = () => {
                       tick={{ fontSize: 12, fill: '#6b7280' }}
                     />
                     <YAxis hide />
-                    <Bar dataKey="income" fill="url(#emeraldGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(52, 211, 153, 0.3))'}} />
-                    <Bar dataKey="expense" fill="url(#blueGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(96, 165, 250, 0.3))'}} />
+                    <Bar dataKey="applications" fill="url(#emeraldGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(52, 211, 153, 0.3))'}} />
+                    <Bar dataKey="approvals" fill="url(#blueGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(96, 165, 250, 0.3))'}} />
                     <defs>
                       <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#34d399" />
@@ -235,17 +446,17 @@ const Dashboard = () => {
               </select>
             </div>
             <div className="flex items-center space-x-4 mb-4">
-              <span className="text-2xl font-bold text-gray-900">3,021</span>
-              <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded flex items-center shadow-sm border border-green-200/50">
+              <span className="text-2xl font-bold text-gray-900">{isLoadingMetrics ? '—' : summary.totalApplications.toLocaleString()}</span>
+              <span className={`text-sm px-2 py-1 rounded flex items-center shadow-sm ${isLoadingMetrics ? 'text-gray-500 bg-gray-100 border border-gray-200/60' : getTrendChipClasses(applicationsGrowth.percentChange)}`}>
                 <TrendingUp className="w-3 h-3 mr-1" />
-                +164 increase
+                {isLoadingMetrics ? '—' : `${formatDelta(totalCurrentMonth, totalPreviousMonth)} change`}
               </span>
             </div>
             <div className="h-32 bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg flex items-end justify-center p-4 relative overflow-hidden" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent"></div>
               <div className="w-12 h-20 bg-gradient-to-t from-teal-700 to-teal-500 rounded-t flex items-end justify-center text-white text-xs font-medium pb-2 relative transform hover:scale-105 transition-transform duration-300" style={{boxShadow: '0 8px 16px rgba(20, 83, 83, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)'}}>
                 <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20 rounded-t"></div>
-                <span className="relative z-10">1308</span>
+                <span className="relative z-10">{isLoadingMetrics ? '—' : totalCurrentMonth}</span>
               </div>
             </div>
           </div>
@@ -269,7 +480,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={expensesData}
+                    data={displayedDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={30}
@@ -277,43 +488,45 @@ const Dashboard = () => {
                     dataKey="value"
                     style={{filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))'}}
                   >
-                    {expensesData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`url(#pieGradient${index})`}
+                    {displayedDistribution.map((entry, index) => (
+                      <Cell
+                        key={`cell-${entry.name}-${index}`}
+                        fill={entry.color || PIE_FALLBACK_COLORS[index % PIE_FALLBACK_COLORS.length]}
                         stroke="rgba(255,255,255,0.8)"
                         strokeWidth={2}
                       />
                     ))}
                   </Pie>
-                  <defs>
-                    <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#34d399" />
-                      <stop offset="100%" stopColor="#10b981" />
-                    </linearGradient>
-                    <linearGradient id="pieGradient1" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#a3e635" />
-                      <stop offset="100%" stopColor="#84cc16" />
-                    </linearGradient>
-                    <linearGradient id="pieGradient2" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#fbbf24" />
-                      <stop offset="100%" stopColor="#f59e0b" />
-                    </linearGradient>
-                  </defs>
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="space-y-2 mt-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full shadow-sm" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(52, 211, 153, 0.3)'}}></div>
-                <span className="text-sm text-gray-600">Approved:</span>
-                <span className="text-sm font-medium text-gray-900">52%</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-br from-lime-400 to-lime-600 rounded-full shadow-sm" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(163, 230, 53, 0.3)'}}></div>
-                <span className="text-sm text-gray-600">Pending:</span>
-                <span className="text-sm font-medium text-gray-900">17.5%</span>
-              </div>
+              {displayedDistribution.slice(0, 3).map((item, index) => {
+                const color = item.color || PIE_FALLBACK_COLORS[index % PIE_FALLBACK_COLORS.length];
+                return (
+                  <div className="flex items-center space-x-2" key={`${item.name}-${index}`}>
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px ${color}33`
+                      }}
+                    ></div>
+                    <span className="text-sm text-gray-600">{item.name}:</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {isLoadingMetrics ? '—' : formatStatusShare(item.value)}
+                    </span>
+                    {!isLoadingMetrics && (
+                      <span className="text-xs text-gray-500">({item.value.toLocaleString()} applications)</span>
+                    )}
+                  </div>
+                );
+              })}
+              {!isLoadingMetrics && displayedDistribution.length > 3 && (
+                <div className="text-xs text-gray-500">
+                  +{displayedDistribution.length - 3} more statuses tracked
+                </div>
+              )}
             </div>
           </div>
 
@@ -329,21 +542,37 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-2 text-xs text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">
                 <span>Status</span>
                 <span>ID</span>
-                <span>Client</span>
-                <span>Total</span>
-                <span>Date Created</span>
+                <span>Holder</span>
+                <span>Area</span>
+                <span>Date Filed</span>
               </div>
-              {recentInvoices.map((invoice) => (
-                <div key={invoice.id} className="grid grid-cols-5 gap-2 py-2 text-sm items-center">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                    {invoice.status}
-                  </span>
-                  <span className="text-gray-900 font-medium">{invoice.id}</span>
-                  <span className="text-gray-600">{invoice.client}</span>
-                  <span className="text-gray-900 font-medium">{invoice.amount}</span>
-                  <span className="text-gray-500 text-xs">{invoice.date}</span>
+              {isLoadingMetrics ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`skeleton-${index}`} className="grid grid-cols-5 gap-2 py-2 text-sm items-center animate-pulse">
+                    <span className="h-5 bg-gray-100 rounded"></span>
+                    <span className="h-5 bg-gray-100 rounded"></span>
+                    <span className="h-5 bg-gray-100 rounded"></span>
+                    <span className="h-5 bg-gray-100 rounded"></span>
+                    <span className="h-5 bg-gray-100 rounded"></span>
+                  </div>
+                ))
+              ) : recentApplications.length > 0 ? (
+                recentApplications.map((application) => (
+                  <div key={application.id} className="grid grid-cols-5 gap-2 py-2 text-sm items-center">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(application.status)}`}>
+                      {application.status}
+                    </span>
+                    <span className="text-gray-900 font-medium">{application.id}</span>
+                    <span className="text-gray-600 truncate" title={application.holder}>{application.holder}</span>
+                    <span className="text-gray-900 font-medium">{application.area}</span>
+                    <span className="text-gray-500 text-xs">{application.date}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm text-gray-500">
+                  No applications found yet. Once new applications are submitted they'll show up here.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

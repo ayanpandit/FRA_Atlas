@@ -906,7 +906,8 @@ const Claimant_patta = ({ userData }) => {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      const response = await fetch('http://localhost:5000/extract', {
+      const { backendUrl } = await import('../lib/api');
+      const response = await fetch(backendUrl('/extract'), {
         method: 'POST',
         body: formData,
       });

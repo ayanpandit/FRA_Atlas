@@ -1,0 +1,10 @@
+Flask
+flask-cors
+requests
+python-dotenv
+google-api-python-client
+earthengine-api
+google-generativeai
+numpy
+opencv-python-headless
+gunicorn

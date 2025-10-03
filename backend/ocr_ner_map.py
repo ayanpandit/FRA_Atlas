@@ -19,8 +19,14 @@ load_dotenv()
 # Flask App Initialization
 # -------------------------------
 app = Flask(__name__)
-# Updated CORS setup for full frontend/backend compatibility
-CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
+# Updated CORS setup: read allowed origin from FRONTEND_URL env to avoid CORS issues in production
+frontend_origin = os.getenv('FRONTEND_URL', '*')
+if frontend_origin == '*':
+    cors_origins = '*'
+else:
+    cors_origins = [frontend_origin]
+print(f"🔒 Configuring CORS to allow origin: {cors_origins}")
+CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 # -------------------------------
 # API Keys Configuration

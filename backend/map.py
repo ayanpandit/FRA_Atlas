@@ -13,8 +13,11 @@ import gc  # Garbage collector for memory management
 # Flask App Initialization
 # -------------------------------
 app = Flask(__name__)
-# Updated CORS setup for full frontend/backend compatibility
-CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
+# Read FRONTEND_URL to restrict CORS in production
+frontend_origin = os.getenv('FRONTEND_URL', '*')
+cors_origins = '*' if frontend_origin == '*' else [frontend_origin]
+print(f"🔒 Configuring CORS to allow origin: {cors_origins}")
+CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 # -------------------------------
 # Earth Engine Initialization

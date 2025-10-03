@@ -12,7 +12,10 @@ load_dotenv()
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app)
+frontend_origin = os.getenv('FRONTEND_URL', '*')
+cors_origins = '*' if frontend_origin == '*' else [frontend_origin]
+print(f"🔒 Configuring CORS to allow origin: {cors_origins}")
+CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 # API Keys from .env
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
