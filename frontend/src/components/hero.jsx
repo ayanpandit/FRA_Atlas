@@ -6,8 +6,8 @@ import { useNavigate } from "react-router-dom";
 import bg1 from "/bg1.jpg";
 import bg2 from "/bg2.jpg";
 import bg3 from "/bg3.jpg";
-import bg4 from "/bg4.webp";
-import bg5 from "/bg5.png";
+import bg4 from "/bg4.jpg";
+import bg5 from "/bg5.jpg";
 
 const tagText = "AI-Powered";
 const h1Text = "FRA Atlas for Smarter Tribal Land Governance";
