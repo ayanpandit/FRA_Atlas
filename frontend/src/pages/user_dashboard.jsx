@@ -837,6 +837,18 @@ const Dashboard = ({ userData }) => {
                   window.dashboardMapMarker = marker;
                   // ensure popupclose removes markers/overlays
                   marker.on('popupclose', () => clearMapPointersAndOverlays());
+
+                  // If another page requested a patta to be shown on the dashboard, handle it now
+                  try {
+                    if (window.__openPattaOnDashboard) {
+                      const pending = window.__openPattaOnDashboard;
+                      // clear it so it doesn't repeatedly open
+                      window.__openPattaOnDashboard = null;
+                      setTimeout(() => {
+                        try { handleViewOnMap(pending); } catch (e) { console.warn('Failed to open pending patta on map', e); }
+                      }, 300);
+                    }
+                  } catch (e) { /* ignore */ }
                 }
               }, 100);
             };
@@ -940,6 +952,14 @@ const Dashboard = ({ userData }) => {
                 window.createRandomPolygon = createRandomPolygon;
                 window.dashboardMapInstance = map;
                 window.dashboardMapMarker = marker;
+                // If a patta was set from another page, display it now
+                try {
+                  if (window.__openPattaOnDashboard) {
+                    const pending = window.__openPattaOnDashboard;
+                    window.__openPattaOnDashboard = null;
+                    setTimeout(() => { try { handleViewOnMap(pending); } catch (e) { console.warn('Failed to open pending patta on map', e); } }, 200);
+                  }
+                } catch (e) { /* ignore */ }
               }
             }, 100);
           }

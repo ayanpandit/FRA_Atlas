@@ -254,6 +254,15 @@ const Claimant_patta = ({ userData }) => {
   const [pattas, setPattas] = useState([]);
   const [formData, setFormData] = useState({});
 
+  // Add Alan Sans font
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Verified':
@@ -562,19 +571,21 @@ const Claimant_patta = ({ userData }) => {
     const isVerified = patta.status && (patta.status.toLowerCase() === 'verified' || patta.status.toLowerCase() === 'approved');
 
     return (
-      <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden hover:shadow-emerald-500/10 hover:border-emerald-500/30 transition-all duration-500 group hover:scale-[1.02]">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group transform hover:scale-[1.02] hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
         {patta.status && patta.status.toLowerCase() === 'rejected' && patta.reject_message && (
-          <div className="p-4 bg-red-900/30 backdrop-blur-sm border-b border-red-700/50 text-red-300 text-sm font-medium">
-            <AlertCircle className="inline-block mr-2 h-4 w-4 text-red-400" />
+          <div className="p-4 bg-red-50 border-b border-red-200 text-red-800 text-sm font-medium">
+            <AlertCircle className="inline-block mr-2 h-4 w-4 text-red-600" />
             Rejected: {patta.reject_message}
           </div>
         )}
         
-        <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
+        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                {getCategoryIcon(patta.category)}
+              <div className="p-3 bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(20, 184, 166, 0.3)'}}>
+                <div style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', color: '#0f766e'}}>
+                  {getCategoryIcon(patta.category)}
+                </div>
               </div>
 
               {adminEditing && (
@@ -588,17 +599,17 @@ const Claimant_patta = ({ userData }) => {
                 />
               )}
               <div>
-                <h3 className="text-xl font-bold text-white mb-1">{patta.title}</h3>
-                <p className="text-sm text-gray-300 mb-2">{patta.location}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">{patta.title}</h3>
+                <p className="text-sm text-gray-600 mb-2">{patta.location}</p>
  
                 <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                    getStatusColor(patta.status).replace('bg-', 'bg-').replace('text-', 'text-').replace('border-', 'border-')
-                  }`}>
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                    getStatusColor(patta.status)
+                  } flex items-center gap-1`}>
                     {getStatusIcon(patta.status)}
-                    <span className="ml-1">{patta.status}</span>
+                    <span>{patta.status}</span>
                   </span>
-                  <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded-full">ID: {patta.id}</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">ID: {patta.id}</span>
                 </div>
               </div>
             </div>
@@ -609,20 +620,20 @@ const Claimant_patta = ({ userData }) => {
                     setSelectedPattaForQR(patta);
                     setShowQRModal(true);
                   }}
-                  className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 rounded-xl transition-all duration-300 hover:scale-110"
+                  className="p-2 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all duration-200"
                   title="Share via QR Code"
                 >
                   <QrCode className="h-5 w-5" />
                 </button>
               )}
-              <button className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-500/20 rounded-xl transition-all duration-300 hover:scale-110">
+              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
                 <Share2 className="h-4 w-4" />
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-500/20 rounded-xl transition-all duration-300 hover:scale-110">
+              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
                 <MoreVertical className="h-4 w-4" />
               </button>
               {adminMode && (
-                <button onClick={() => setAdminEditing(patta.id)} className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-xl">Admin</button>
+                <button onClick={() => setAdminEditing(patta.id)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">Admin</button>
               )}
             </div>
           </div>
@@ -631,22 +642,22 @@ const Claimant_patta = ({ userData }) => {
         <div className="p-6">
           {patta.patta_doc_url && (
             <div className="mb-4">
-              <img src={patta.patta_doc_url} alt="patta document" className="w-full max-h-48 object-contain rounded-md border" />
+              <img src={patta.patta_doc_url} alt="patta document" className="w-full max-h-48 object-contain rounded-md border border-gray-200" />
             </div>
           )}
           
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-gray-300">Processing Progress</span>
-              <span className="text-emerald-400 font-bold">{patta.progress}%</span>
+              <span className="font-medium text-gray-700">Processing Progress</span>
+              <span className="text-teal-700 font-semibold">{patta.progress}%</span>
             </div>
-            <div className="w-full bg-gray-700/50 rounded-full h-3 shadow-inner">
+            <div className="w-full bg-gray-200 rounded-full h-2.5" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <div 
-                className={`h-3 rounded-full transition-all duration-1000 shadow-lg ${
-                  patta.progress === 100 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : 
-                  patta.progress >= 50 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                className={`h-2.5 rounded-full transition-all duration-1000 ${
+                  patta.progress === 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 
+                  patta.progress >= 50 ? 'bg-gradient-to-r from-blue-500 to-cyan-600' : 'bg-gradient-to-r from-yellow-500 to-orange-500'
                 }`}
-                style={{ width: `${patta.progress}%` }}
+                style={{ width: `${patta.progress}%`, boxShadow: '0 2px 4px rgba(20, 184, 166, 0.4)' }}
               ></div>
             </div>
           </div>
@@ -655,46 +666,46 @@ const Claimant_patta = ({ userData }) => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm">
                 <Ruler className="h-4 w-4 text-gray-500" />
-                <span className="text-white">Area:</span>
-                <span className="font-medium text-white">{patta.area}</span>
+                <span className="text-gray-600">Area:</span>
+                <span className="font-medium text-gray-900">{patta.area}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-white">Applied:</span>
-                <span className="font-medium text-white">{patta.dateApplied}</span>
+                <span className="text-gray-600">Applied:</span>
+                <span className="font-medium text-gray-900">{patta.dateApplied}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 {patta.type === 'Individual' ? 
                   <User className="h-4 w-4 text-gray-500" /> : 
                   <Users className="h-4 w-4 text-gray-500" />
                 }
-                <span className="text-white">Type:</span>
-                <span className="font-medium text-white">{patta.type}</span>
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium text-gray-900">{patta.type}</span>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm">
-                <MapPin className="h-4 w-4 text-white" />
-                <span className="text-white">Coordinates:</span>
-                <span className="font-medium text-white text-xs">{patta.coordinates}</span>
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Coordinates:</span>
+                <span className="font-medium text-gray-900 text-xs">{patta.coordinates}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 <TreePine className="h-4 w-4 text-gray-500" />
-                <span className="text-white">Forest Type:</span>
-                <span className="font-medium text-white">{patta.forestType}</span>
+                <span className="text-gray-600">Forest Type:</span>
+                <span className="font-medium text-gray-900">{patta.forestType}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
-                <span className="text-white">Last Updated:</span>
-                <span className="font-medium text-white">{patta.lastUpdated}</span>
+                <span className="text-gray-600">Last Updated:</span>
+                <span className="font-medium text-gray-900">{patta.lastUpdated}</span>
               </div>
             </div>
           </div>
 
           {patta.issues.length > 0 && (
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)'}}>
               <div className="flex items-center space-x-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-orange-500" />
-                <span className="font-medium text-orange-700">Pending Issues</span>
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <span className="font-medium text-orange-800">Pending Issues</span>
               </div>
               <ul className="space-y-1">
                 {patta.issues.map((issue, index) => (
@@ -705,20 +716,22 @@ const Claimant_patta = ({ userData }) => {
           )}
 
           <div className="flex flex-wrap gap-3">
-            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-emerald-500/25">
-              <Eye className="h-4 w-4" />
-              <span>View Details</span>
-            </button>
-            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-blue-500/25">
+            <button
+              className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 text-sm"
+              onClick={() => {
+                try {
+                  // publish patta for dashboard to pick up and navigate there
+                  window.__openPattaOnDashboard = patta;
+                } catch (e) { console.warn('Failed to set global patta', e); }
+                // navigate to workflow_user dashboard via hash used by Workflow_User
+                try { window.location.hash = 'dashboard'; } catch (e) { window.location.href = '/'; }
+              }}
+            >
               <MapIcon className="h-4 w-4" />
               <span>View on Map</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-gray-500/25">
-              <Download className="h-4 w-4" />
-              <span>Download</span>
-            </button>
             {patta.status === 'Pending' && (
-              <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/25">
+              <button className="flex items-center space-x-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all duration-200 text-sm">
                 <Edit className="h-4 w-4" />
                 <span>Update</span>
               </button>
@@ -906,46 +919,46 @@ const Claimant_patta = ({ userData }) => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gray-50" style={{fontFamily: '"Alan Sans", sans-serif', fontOpticalSizing: 'auto', fontWeight: 728, fontStyle: 'normal'}}>
       <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0 mb-6">
         <div className="space-y-2">
-          <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-2">
             My Pattas
           </h2>
-          <p className="text-gray-300 text-lg">Manage your forest rights certificates and land records</p>
-          <div className="flex items-center gap-4 text-sm text-gray-400">
+          <p className="text-gray-600 text-base">Manage your forest rights certificates and land records</p>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
             <span className="flex items-center gap-1">
               <FileText className="w-4 h-4" />
               {pattas.length} total records
             </span>
           </div>
         </div>
-        <button className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-cyan-600 hover:from-emerald-700 hover:via-emerald-800 hover:to-cyan-700 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all duration-500 transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-emerald-500/25 border border-emerald-500/20 hover:border-emerald-400/40"
+        <button className="flex items-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95"
           onClick={handleOpenModal}
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-5 w-5" />
           <span>Apply for New Patta</span>
         </button>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm p-2 overflow-hidden">
-            <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 w-full max-w-lg sm:max-w-xl md:max-w-2xl relative mx-2 transform transition-all duration-300 max-h-[95vh] overflow-y-auto">
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-all duration-200 z-20 bg-gray-800/80 backdrop-blur-sm rounded-full p-2 hover:bg-gray-700 shadow-lg" onClick={handleCloseModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg sm:max-w-xl md:max-w-2xl relative mx-2 transform transition-all duration-300 max-h-[95vh] overflow-y-auto" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.25)'}}>
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-all duration-200 z-20 bg-gray-100 hover:bg-gray-200 rounded-full p-2 shadow-sm" onClick={handleCloseModal}>
                 <X className="h-5 w-5" />
               </button>
-              <div className="p-8">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-4">
-                    <Plus className="h-8 w-8 text-white" />
+              <div className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-200 rounded-xl flex items-center justify-center mx-auto mb-4 transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(20, 184, 166, 0.3)'}}>
+                    <Plus className="h-7 w-7 text-teal-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">Apply for New Patta</h3>
-                  <p className="text-gray-300 text-sm">Upload your document and let AI extract the information automatically</p>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Apply for New Patta</h3>
+                  <p className="text-gray-600 text-sm">Upload your document and let AI extract the information automatically</p>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div className="group">
-                    <label className="block text-sm font-medium text-gray-300 mb-3 group-focus-within:text-emerald-400 transition-colors duration-200">Upload Document</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 group-focus-within:text-teal-700 transition-colors duration-200">Upload Document</label>
                     <div className="relative">
                       <input
                         type="file"
@@ -954,10 +967,10 @@ const Claimant_patta = ({ userData }) => {
                         className="hidden"
                         id="document-upload-modal"
                       />
-                      <label htmlFor="document-upload-modal" className="flex items-center justify-center w-full px-6 py-8 bg-gray-800/50 border-2 border-dashed border-gray-600/50 rounded-xl cursor-pointer hover:border-emerald-500/50 hover:bg-gray-700/50 transition-all duration-200 backdrop-blur-sm group">
+                      <label htmlFor="document-upload-modal" className="flex items-center justify-center w-full px-6 py-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-teal-600 hover:bg-gray-100 transition-all duration-200 group">
                         <div className="text-center">
-                          <Upload className="h-10 w-10 text-gray-400 group-hover:text-emerald-400 mx-auto mb-3 transition-colors duration-200" />
-                          <p className="text-gray-300 group-hover:text-emerald-400 transition-colors duration-200 font-medium">
+                          <Upload className="h-10 w-10 text-gray-400 group-hover:text-teal-600 mx-auto mb-3 transition-colors duration-200" />
+                          <p className="text-gray-700 group-hover:text-gray-900 transition-colors duration-200 font-medium text-sm">
                             {selectedFile ? selectedFile.name : 'Click to upload document'}
                           </p>
                           <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG up to 10MB</p>
@@ -967,7 +980,7 @@ const Claimant_patta = ({ userData }) => {
                   </div>
 
                   <button
-                    className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center space-x-2"
+                    className="w-full px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
                     onClick={handleUpload}
                     disabled={!selectedFile || loading}
                   >
@@ -985,46 +998,46 @@ const Claimant_patta = ({ userData }) => {
                   </button>
 
                   {ocrResult && ocrResult.success && ocrResult.data && (
-                    <div className="mt-8">
-                      <div className="text-center mb-6">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg mx-auto mb-3">
-                          <CheckCircle className="h-6 w-6 text-white" />
+                    <div className="mt-6">
+                      <div className="text-center mb-5">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-3" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(34, 197, 94, 0.3)'}}>
+                          <CheckCircle className="h-6 w-6 text-green-700" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />
                         </div>
-                        <h4 className="text-lg font-semibold text-green-400 mb-1">OCR Processing Complete</h4>
-                        <p className="text-gray-400 text-sm">Review and edit the extracted information below</p>
+                        <h4 className="text-base font-semibold text-gray-900 mb-1">OCR Processing Complete</h4>
+                        <p className="text-gray-600 text-sm">Review and edit the extracted information below</p>
                       </div>
 
                       <form className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {Object.entries(formData).length > 0 ? Object.entries(formData).map(([key, value]) => (
                             <div key={key} className="group">
-                              <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-emerald-400 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 group-focus-within:text-teal-700 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
                               <input
                                 type="text"
                                 value={value ?? ''}
                                 onChange={(e) => handleFormChange(key, e.target.value)}
-                                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 backdrop-blur-sm"
+                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm"
                               />
                             </div>
                           )) : Object.entries(ocrResult.data).map(([key, value]) => (
                             <div key={key} className="group">
-                              <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-emerald-400 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 group-focus-within:text-teal-700 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
                               <input
                                 type="text"
                                 value={value ?? ''}
                                 onChange={(e) => handleFormChange(key, e.target.value)}
-                                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 backdrop-blur-sm"
+                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-sm"
                               />
                             </div>
                           ))}
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-700/50">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
                           <button
                             type="button"
                             onClick={handleClaim}
                             disabled={loading}
-                            className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center space-x-2"
+                            className="flex-1 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
                           >
                             {loading ? (
                               <>
@@ -1041,7 +1054,7 @@ const Claimant_patta = ({ userData }) => {
                           <button
                             type="button"
                             onClick={handleCloseModal}
-                            className="flex-1 px-6 py-3 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm border border-gray-600/50 hover:border-gray-500/50"
+                            className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all duration-200 border border-gray-300 text-sm"
                           >
                             Cancel
                           </button>
@@ -1051,12 +1064,12 @@ const Claimant_patta = ({ userData }) => {
                   )}
 
                   {ocrResult && ocrResult.error && (
-                    <div className="mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
+                    <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)'}}>
                       <div className="flex items-center space-x-2">
-                        <AlertCircle className="h-5 w-5 text-red-400" />
-                        <p className="text-red-400 font-medium">Processing Error</p>
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        <p className="text-red-800 font-medium text-sm">Processing Error</p>
                       </div>
-                      <p className="text-red-300 text-sm mt-1">{ocrResult.error}</p>
+                      <p className="text-red-700 text-sm mt-1">{ocrResult.error}</p>
                     </div>
                   )}
                 </div>
@@ -1083,7 +1096,7 @@ const Claimant_patta = ({ userData }) => {
         />
       )}
 
-      <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 p-8 hover:border-emerald-500/30 transition-all duration-500">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transform hover:scale-[1.01] transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
         <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -1092,7 +1105,7 @@ const Claimant_patta = ({ userData }) => {
               placeholder="Search by ID, location, or title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition-all duration-300 text-white placeholder-gray-400 shadow-lg hover:shadow-xl hover:bg-gray-800/70"
+              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
             />
           </div>
 
@@ -1101,28 +1114,28 @@ const Claimant_patta = ({ userData }) => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-4 bg-gray-800/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition-all duration-300 text-white shadow-lg hover:shadow-xl hover:bg-gray-800/70"
+              className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-gray-900"
             >
-              <option value="all" className="bg-gray-800">All Status</option>
-              <option value="verified" className="bg-gray-800">Verified</option>
-              <option value="approved" className="bg-gray-800">Approved</option>
-              <option value="pending" className="bg-gray-800">Pending</option>
+              <option value="all">All Status</option>
+              <option value="verified">Verified</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
             </select>
           </div>
 
-          <div className="flex items-center bg-gray-800/50 rounded-xl p-1 border border-gray-600/50">
+          <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 transform hover:scale-105 ${
-                viewMode === 'grid' ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                viewMode === 'grid' ? 'bg-teal-800 text-white' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               Grid
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 transform hover:scale-105 ${
-                viewMode === 'list' ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                viewMode === 'list' ? 'bg-teal-800 text-white' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               List
@@ -1132,8 +1145,8 @@ const Claimant_patta = ({ userData }) => {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-gray-300 font-medium">
-          Showing <span className="text-emerald-400 font-bold">{filteredPattas.length}</span> of <span className="text-white font-bold">{pattas.length}</span> pattas
+        <p className="text-gray-600 font-medium text-sm">
+          Showing <span className="text-gray-900 font-semibold">{filteredPattas.length}</span> of <span className="text-gray-900 font-semibold">{pattas.length}</span> pattas
         </p>
       </div>
 
@@ -1148,12 +1161,12 @@ const Claimant_patta = ({ userData }) => {
       </div>
 
       {filteredPattas.length === 0 && (
-        <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 p-12 text-center hover:border-emerald-500/30 transition-all duration-500">
-          <div className="w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-600 rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-6">
-            <FileText className="h-12 w-12 text-gray-400" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.1)'}}>
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mx-auto mb-6" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1)'}}>
+            <FileText className="h-10 w-10 text-gray-400" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-4">No Pattas Found</h3>
-          <p className="text-gray-300 mb-8 text-lg max-w-md mx-auto leading-relaxed">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">No Pattas Found</h3>
+          <p className="text-gray-600 mb-6 text-base max-w-md mx-auto">
             {searchTerm || filterStatus !== 'all' 
               ? "No pattas match your current search and filter criteria."
               : "You haven't applied for any pattas yet."
@@ -1161,7 +1174,7 @@ const Claimant_patta = ({ userData }) => {
           </p>
           <button 
             onClick={handleOpenModal}
-            className="px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-cyan-600 hover:from-emerald-700 hover:via-emerald-800 hover:to-cyan-700 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all duration-500 transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-emerald-500/25 border border-emerald-500/20 hover:border-emerald-400/40"
+            className="px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-medium transition-all duration-200"
           >
             Apply for New Patta
           </button>
