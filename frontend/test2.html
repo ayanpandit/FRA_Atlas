@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CesiumJS Earth Data Viewer</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.95/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.95/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #cesiumContainer { width: 100vw; height: 100vh; }
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(42, 42, 42, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            max-width: 300px;
+        }
+        .control-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+        }
+        .layer-button {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .layer-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .layer-button.active {
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        }
+        .forest-btn { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; }
+        .water-btn { background: linear-gradient(135deg, #0277bd, #03a9f4); color: white; }
+        .population-btn { background: linear-gradient(135deg, #e65100, #ff9800); color: white; }
+        .boundary-btn { background: linear-gradient(135deg, #6a1b9a, #9c27b0); color: white; }
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #555;
+        }
+        .view-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .view-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .view-btn.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(42, 42, 42, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 250px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 8px;
+            color: white;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <div class="control-panel">
+        <h3>🌍 Earth Data Layers</h3>
+        <button class="layer-button forest-btn" onclick="toggleForest()">
+            <span>🌳</span>
+            <span>Forest Cover</span>
+        </button>
+        <button class="layer-button water-btn" onclick="toggleWater()">
+            <span>💧</span>
+            <span>Water Bodies</span>
+        </button>
+        <button class="layer-button population-btn" onclick="togglePopulation()">
+            <span>🏙️</span>
+            <span>Populated Areas</span>
+        </button>
+        <button class="layer-button boundary-btn" onclick="toggleBoundaries()">
+            <span>🗺️</span>
+            <span>Admin Boundaries</span>
+        </button>
+        
+        <div class="view-toggle">
+            <button class="view-btn active" id="view3d" onclick="setView('3d')">3D</button>
+            <button class="view-btn" id="view2d" onclick="setView('2d')">2D</button>
+        </div>
+    </div>
+
+    <div class="legend" id="legend" style="display: none;">
+        <h4 style="margin: 0 0 10px 0;">Legend</h4>
+        <div id="legendContent"></div>
+    </div>
+
+    <script>
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI1M2MwOWIwYi1lYzBhLTQwNDQtOGIyZC1jYTlkYjgyNmZlZmYiLCJpZCI6MzQ2MjAxLCJpYXQiOjE3NTkyOTE5Mjh9.bNfYxkNX-GHZ70ithbCBed672tbHg_JgYsTQdSa47fw';
+
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain(),
+            baseLayerPicker: false,
+            geocoder: false,
+            homeButton: true,
+            sceneModePicker: false,
+            navigationHelpButton: false,
+            animation: false,
+            timeline: false,
+            fullscreenButton: true
+        });
+
+        // Layer references
+        let layers = {
+            forest: null,
+            water: null,
+            population: null,
+            boundaries: null
+        };
+
+        // Toggle functions
+        function toggleForest() {
+            const btn = document.querySelector('.forest-btn');
+            if (layers.forest) {
+                viewer.imageryLayers.remove(layers.forest);
+                layers.forest = null;
+                btn.classList.remove('active');
+                updateLegend();
+            } else {
+                // Hansen Global Forest Change (using a representative WMS)
+                layers.forest = viewer.imageryLayers.addImageryProvider(
+                    new Cesium.WebMapServiceImageryProvider({
+                        url: 'https://gis-treecover.wri.org/arcgis/services/TreeCover2000/ImageServer/WMSServer',
+                        layers: '0',
+                        parameters: {
+                            transparent: true,
+                            format: 'image/png'
+                        }
+                    })
+                );
+                layers.forest.alpha = 0.7;
+                btn.classList.add('active');
+                updateLegend();
+            }
+        }
+
+        function toggleWater() {
+            const btn = document.querySelector('.water-btn');
+            if (layers.water) {
+                viewer.dataSources.remove(layers.water);
+                layers.water = null;
+                btn.classList.remove('active');
+                updateLegend();
+            } else {
+                // OpenStreetMap water layer via Overpass API visualization
+                const waterData = {
+                    type: "FeatureCollection",
+                    features: []
+                };
+                
+                // Create sample water bodies for demonstration
+                const majorWaterBodies = [
+                    {name: "Great Lakes", coords: [-84.5, 45.0]},
+                    {name: "Amazon River", coords: [-55.0, -3.0]},
+                    {name: "Nile River", coords: [31.0, 15.0]},
+                    {name: "Lake Victoria", coords: [33.0, -1.0]},
+                    {name: "Caspian Sea", coords: [50.0, 42.0]}
+                ];
+
+                majorWaterBodies.forEach(water => {
+                    viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(water.coords[0], water.coords[1]),
+                        point: {
+                            pixelSize: 15,
+                            color: Cesium.Color.CYAN.withAlpha(0.8),
+                            outlineColor: Cesium.Color.BLUE,
+                            outlineWidth: 2
+                        },
+                        label: {
+                            text: water.name,
+                            font: '12px sans-serif',
+                            fillColor: Cesium.Color.WHITE,
+                            outlineColor: Cesium.Color.BLACK,
+                            outlineWidth: 2,
+                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                            pixelOffset: new Cesium.Cartesian2(0, -20)
+                        }
+                    });
+                });
+
+                layers.water = true;
+                btn.classList.add('active');
+                updateLegend();
+            }
+        }
+
+        function togglePopulation() {
+            const btn = document.querySelector('.population-btn');
+            if (layers.population) {
+                viewer.dataSources.remove(layers.population);
+                layers.population = null;
+                btn.classList.remove('active');
+                updateLegend();
+            } else {
+                // Major populated cities
+                const cities = [
+                    {name: "Tokyo", coords: [139.69, 35.68], pop: "37M"},
+                    {name: "Delhi", coords: [77.21, 28.61], pop: "31M"},
+                    {name: "Shanghai", coords: [121.47, 31.23], pop: "27M"},
+                    {name: "São Paulo", coords: [-46.63, -23.55], pop: "22M"},
+                    {name: "Mexico City", coords: [-99.13, 19.43], pop: "21M"},
+                    {name: "Cairo", coords: [31.24, 30.04], pop: "20M"},
+                    {name: "Mumbai", coords: [72.88, 19.08], pop: "20M"},
+                    {name: "Beijing", coords: [116.40, 39.90], pop: "20M"},
+                    {name: "Dhaka", coords: [90.41, 23.81], pop: "20M"},
+                    {name: "Osaka", coords: [135.50, 34.69], pop: "19M"},
+                    {name: "New York", coords: [-74.01, 40.71], pop: "18M"},
+                    {name: "Karachi", coords: [67.01, 24.86], pop: "16M"},
+                    {name: "Buenos Aires", coords: [-58.38, -34.60], pop: "15M"},
+                    {name: "Istanbul", coords: [28.98, 41.01], pop: "15M"},
+                    {name: "Lagos", coords: [3.39, 6.45], pop: "14M"}
+                ];
+
+                cities.forEach(city => {
+                    const popNum = parseFloat(city.pop);
+                    viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(city.coords[0], city.coords[1]),
+                        point: {
+                            pixelSize: 8 + popNum,
+                            color: Cesium.Color.ORANGE.withAlpha(0.8),
+                            outlineColor: Cesium.Color.DARKORANGE,
+                            outlineWidth: 2
+                        },
+                        label: {
+                            text: city.name + '\n' + city.pop,
+                            font: '11px sans-serif',
+                            fillColor: Cesium.Color.WHITE,
+                            outlineColor: Cesium.Color.BLACK,
+                            outlineWidth: 2,
+                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                            pixelOffset: new Cesium.Cartesian2(0, -20)
+                        }
+                    });
+                });
+
+                layers.population = true;
+                btn.classList.add('active');
+                updateLegend();
+            }
+        }
+
+        function toggleBoundaries() {
+            const btn = document.querySelector('.boundary-btn');
+            if (layers.boundaries) {
+                viewer.dataSources.remove(layers.boundaries);
+                layers.boundaries = null;
+                btn.classList.remove('active');
+                updateLegend();
+            } else {
+                // Major country boundaries (simplified demonstration)
+                const countries = [
+                    {name: "United States", coords: [[-125, 49], [-125, 25], [-67, 25], [-67, 49], [-125, 49]]},
+                    {name: "Brazil", coords: [[-74, 5], [-74, -34], [-34, -34], [-34, 5], [-74, 5]]},
+                    {name: "China", coords: [[73, 53], [135, 53], [135, 18], [73, 18], [73, 53]]},
+                    {name: "India", coords: [[68, 35], [97, 35], [97, 8], [68, 8], [68, 35]]},
+                    {name: "Australia", coords: [[113, -10], [154, -10], [154, -44], [113, -44], [113, -10]]}
+                ];
+
+                countries.forEach(country => {
+                    const positions = [];
+                    country.coords.forEach(coord => {
+                        positions.push(coord[0], coord[1]);
+                    });
+                    
+                    viewer.entities.add({
+                        name: country.name,
+                        polyline: {
+                            positions: Cesium.Cartesian3.fromDegreesArray(positions),
+                            width: 3,
+                            material: Cesium.Color.MAGENTA.withAlpha(0.8)
+                        }
+                    });
+                });
+
+                layers.boundaries = true;
+                btn.classList.add('active');
+                updateLegend();
+            }
+        }
+
+        function updateLegend() {
+            const legendContent = document.getElementById('legendContent');
+            const legend = document.getElementById('legend');
+            let content = '';
+            let hasLayers = false;
+
+            if (layers.forest) {
+                content += '<div class="legend-item"><div class="legend-color" style="background: #4caf50;"></div><span>Forest Cover</span></div>';
+                hasLayers = true;
+            }
+            if (layers.water) {
+                content += '<div class="legend-item"><div class="legend-color" style="background: #03a9f4;"></div><span>Water Bodies</span></div>';
+                hasLayers = true;
+            }
+            if (layers.population) {
+                content += '<div class="legend-item"><div class="legend-color" style="background: #ff9800;"></div><span>Population Centers</span></div>';
+                hasLayers = true;
+            }
+            if (layers.boundaries) {
+                content += '<div class="legend-item"><div class="legend-color" style="background: #9c27b0;"></div><span>Admin Boundaries</span></div>';
+                hasLayers = true;
+            }
+
+            legendContent.innerHTML = content;
+            legend.style.display = hasLayers ? 'block' : 'none';
+        }
+
+        function setView(mode) {
+            const btn3d = document.getElementById('view3d');
+            const btn2d = document.getElementById('view2d');
+            
+            if (mode === '3d') {
+                viewer.scene.mode = Cesium.SceneMode.SCENE3D;
+                btn3d.classList.add('active');
+                btn2d.classList.remove('active');
+            } else {
+                viewer.scene.mode = Cesium.SceneMode.SCENE2D;
+                btn2d.classList.add('active');
+                btn3d.classList.remove('active');
+            }
+        }
+
+        // Initial camera position
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(0, 20, 20000000)
+        });
+    </script>
+</body>
+</html>

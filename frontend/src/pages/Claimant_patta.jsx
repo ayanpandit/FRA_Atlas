@@ -25,7 +25,9 @@ import {
   Briefcase,
   QrCode,
   X,
-  Printer
+  Printer,
+  Upload,
+  Save
 } from 'lucide-react';
 
 // Government Certificate Verification Component
@@ -296,102 +298,169 @@ const Claimant_patta = ({ userData }) => {
   // QR Code Modal Component
   const QRCodeModal = ({ patta, onClose }) => {
     const [qrDataURL, setQrDataURL] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
       if (!patta) return;
       
       // Create a shareable URL with patta ID encoded
-      const shareableData = `PATTA_VERIFY:${patta.id}`;
+      const shareableData = `https://fra-atlas.vercel.app/verify/${patta.id}`;
       
-      // Generate QR code URL using QR Server API
-      const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(shareableData)}`;
+      // Generate QR code URL using QR Server API with better quality
+      const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&margin=20&data=${encodeURIComponent(shareableData)}`;
       setQrDataURL(qrURL);
+      
+      // Simulate loading
+      setTimeout(() => setIsLoading(false), 800);
     }, [patta]);
+
+    const handleCopyLink = async () => {
+      try {
+        const shareableURL = `https://fra-atlas.vercel.app/verify/${patta.id}`;
+        await navigator.clipboard.writeText(shareableURL);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
+    };
+
+    const handleShare = async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'FRA Patta Certificate',
+            text: `View ${patta.title}'s Forest Rights Certificate`,
+            url: `https://fra-atlas.vercel.app/verify/${patta.id}`
+          });
+        } catch (err) {
+          console.error('Error sharing: ', err);
+        }
+      } else {
+        handleCopyLink();
+      }
+    };
 
     if (!patta) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4 overflow-y-auto">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg relative my-4 mx-2 sm:mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm p-2 overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 w-full max-w-xs sm:max-w-sm relative mx-2 transform transition-all duration-300 max-h-[90vh] overflow-y-auto">
+          {/* Animated background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-green-50/30 to-emerald-50/50 rounded-xl"></div>
+          
+          {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 bg-white rounded-full p-1"
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all duration-200 z-20 bg-white/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-white shadow-lg"
           >
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
+            <X className="h-4 w-4" />
           </button>
 
-          <div className="p-4 sm:p-6 md:p-8 text-center">
-            <div className="mb-4 sm:mb-6">
-              <div className="inline-flex p-2 sm:p-3 bg-green-100 rounded-full mb-3 sm:mb-4">
-                <QrCode className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+          <div className="relative p-4 text-center">
+            {/* Compact Header */}
+            <div className="mb-3">
+              <div className="relative inline-flex p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg mb-2 shadow-lg">
+                <QrCode className="relative h-5 w-5 text-green-600" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Share Patta Certificate</h3>
-              <p className="text-xs sm:text-sm text-gray-600 px-2">Scan this QR code to view official patta certificate</p>
+              <h3 className="text-base font-bold text-gray-900 mb-1">QR Certificate</h3>
             </div>
 
-            {/* QR Code Display */}
-            <div className="bg-white border-2 sm:border-4 border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 inline-block">
-              <img 
-                src={qrDataURL} 
-                alt="Patta QR Code" 
-                className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 mx-auto"
-              />
+            {/* Compact QR Code Display */}
+            <div className="relative mb-3">
+              <div className="bg-white/90 border border-gray-100 rounded-lg p-2 inline-block shadow-lg">
+                {isLoading ? (
+                  <div className="w-28 h-28 flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <img 
+                    src={qrDataURL} 
+                    alt="Patta QR Code" 
+                    className="w-28 h-28 mx-auto rounded"
+                    onLoad={() => setIsLoading(false)}
+                  />
+                )}
+              </div>
             </div>
 
-            {/* Patta Info Summary */}
-            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 text-left">
-              <h4 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Patta Information</h4>
-              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                <div className="flex justify-between items-start">
-                  <span className="text-gray-600">ID:</span>
-                  <span className="font-medium text-gray-900 text-right">{patta.id}</span>
+            {/* Compact Info Cards */}
+            <div className="bg-gray-50/80 rounded-lg p-2 mb-3 text-left">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white/60 rounded p-1.5">
+                  <div className="text-gray-500 text-xs mb-0.5">ID: <span className="font-mono font-bold text-gray-900">{patta.id}</span></div>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-gray-600">Holder:</span>
-                  <span className="font-medium text-gray-900 text-right max-w-[60%] break-words">{patta.title}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Status:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(patta.status)}`}>
+                <div className="bg-white/60 rounded p-1.5">
+                  <span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-semibold ${getStatusColor(patta.status)}`}>
                     {patta.status}
                   </span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-gray-600">Area:</span>
-                  <span className="font-medium text-gray-900 text-right">{patta.area}</span>
+                <div className="bg-white/60 rounded p-1.5 col-span-2">
+                  <div className="text-gray-500 text-xs">Holder: <span className="font-bold text-gray-900 truncate">{patta.title}</span></div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-2 sm:space-y-3">
-              <button
-                onClick={() => {
-                  setShowQRModal(false);
-                  setSelectedPattaForCert(patta.id);
-                  setShowCertificate(true);
-                }}
-                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg sm:rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-              >
-                <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>View Certificate</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = qrDataURL;
-                  link.download = `patta-${patta.id}-qr.png`;
-                  link.click();
-                }}
-                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg sm:rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-              >
-                <Download className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>Download QR Code</span>
-              </button>
+            {/* Compact Action Buttons */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setShowQRModal(false);
+                    setSelectedPattaForCert(patta.id);
+                    setShowCertificate(true);
+                  }}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
+                >
+                  <Eye className="h-3 w-3" />
+                  <span>View</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = qrDataURL;
+                    link.download = `fra-patta-${patta.id}-qr.png`;
+                    link.click();
+                  }}
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
+                >
+                  <Download className="h-3 w-3" />
+                  <span>Save</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleShare}
+                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
+                >
+                  <Share2 className="h-3 w-3" />
+                  <span>Share</span>
+                </button>
+                
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 text-green-300" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-3 w-3" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
             
-            <p className="mt-4 text-xs text-gray-500">Scan with any QR scanner app or use "View Certificate" button</p>
+            {/* Mini footer */}
+            <p className="mt-3 text-xs text-gray-500">🔒 Secure verification</p>
           </div>
         </div>
       </div>
@@ -493,18 +562,18 @@ const Claimant_patta = ({ userData }) => {
     const isVerified = patta.status && (patta.status.toLowerCase() === 'verified' || patta.status.toLowerCase() === 'approved');
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+      <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden hover:shadow-emerald-500/10 hover:border-emerald-500/30 transition-all duration-500 group hover:scale-[1.02]">
         {patta.status && patta.status.toLowerCase() === 'rejected' && patta.reject_message && (
-          <div className="p-4 bg-red-50 border-b border-red-200 text-red-700 text-sm font-medium">
-            <AlertCircle className="inline-block mr-2 h-4 w-4 text-red-500" />
+          <div className="p-4 bg-red-900/30 backdrop-blur-sm border-b border-red-700/50 text-red-300 text-sm font-medium">
+            <AlertCircle className="inline-block mr-2 h-4 w-4 text-red-400" />
             Rejected: {patta.reject_message}
           </div>
         )}
         
-        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+        <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
           <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                 {getCategoryIcon(patta.category)}
               </div>
 
@@ -519,15 +588,17 @@ const Claimant_patta = ({ userData }) => {
                 />
               )}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{patta.title}</h3>
-                <p className="text-sm text-gray-600 mb-2">{patta.location}</p>
+                <h3 className="text-xl font-bold text-white mb-1">{patta.title}</h3>
+                <p className="text-sm text-gray-300 mb-2">{patta.location}</p>
  
                 <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(patta.status)}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    getStatusColor(patta.status).replace('bg-', 'bg-').replace('text-', 'text-').replace('border-', 'border-')
+                  }`}>
                     {getStatusIcon(patta.status)}
                     <span className="ml-1">{patta.status}</span>
                   </span>
-                  <span className="text-xs text-gray-500">ID: {patta.id}</span>
+                  <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded-full">ID: {patta.id}</span>
                 </div>
               </div>
             </div>
@@ -538,20 +609,20 @@ const Claimant_patta = ({ userData }) => {
                     setSelectedPattaForQR(patta);
                     setShowQRModal(true);
                   }}
-                  className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
+                  className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 rounded-xl transition-all duration-300 hover:scale-110"
                   title="Share via QR Code"
                 >
                   <QrCode className="h-5 w-5" />
                 </button>
               )}
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <button className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                 <Share2 className="h-4 w-4" />
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <button className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                 <MoreVertical className="h-4 w-4" />
               </button>
               {adminMode && (
-                <button onClick={() => setAdminEditing(patta.id)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full">Admin</button>
+                <button onClick={() => setAdminEditing(patta.id)} className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-xl">Admin</button>
               )}
             </div>
           </div>
@@ -566,14 +637,14 @@ const Claimant_patta = ({ userData }) => {
           
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-gray-700">Processing Progress</span>
-              <span className="text-gray-600">{patta.progress}%</span>
+              <span className="font-medium text-gray-300">Processing Progress</span>
+              <span className="text-emerald-400 font-bold">{patta.progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-700/50 rounded-full h-3 shadow-inner">
               <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  patta.progress === 100 ? 'bg-green-500' : 
-                  patta.progress >= 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                className={`h-3 rounded-full transition-all duration-1000 shadow-lg ${
+                  patta.progress === 100 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : 
+                  patta.progress >= 50 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gradient-to-r from-yellow-500 to-orange-500'
                 }`}
                 style={{ width: `${patta.progress}%` }}
               ></div>
@@ -584,37 +655,37 @@ const Claimant_patta = ({ userData }) => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm">
                 <Ruler className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">Area:</span>
-                <span className="font-medium text-gray-900">{patta.area}</span>
+                <span className="text-white">Area:</span>
+                <span className="font-medium text-white">{patta.area}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">Applied:</span>
-                <span className="font-medium text-gray-900">{patta.dateApplied}</span>
+                <span className="text-white">Applied:</span>
+                <span className="font-medium text-white">{patta.dateApplied}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 {patta.type === 'Individual' ? 
                   <User className="h-4 w-4 text-gray-500" /> : 
                   <Users className="h-4 w-4 text-gray-500" />
                 }
-                <span className="text-gray-600">Type:</span>
-                <span className="font-medium text-gray-900">{patta.type}</span>
+                <span className="text-white">Type:</span>
+                <span className="font-medium text-white">{patta.type}</span>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">Coordinates:</span>
-                <span className="font-medium text-gray-900 text-xs">{patta.coordinates}</span>
+                <MapPin className="h-4 w-4 text-white" />
+                <span className="text-white">Coordinates:</span>
+                <span className="font-medium text-white text-xs">{patta.coordinates}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
                 <TreePine className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">Forest Type:</span>
-                <span className="font-medium text-gray-900">{patta.forestType}</span>
+                <span className="text-white">Forest Type:</span>
+                <span className="font-medium text-white">{patta.forestType}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm">
-                <span className="text-gray-600">Last Updated:</span>
-                <span className="font-medium text-gray-900">{patta.lastUpdated}</span>
+                <span className="text-white">Last Updated:</span>
+                <span className="font-medium text-white">{patta.lastUpdated}</span>
               </div>
             </div>
           </div>
@@ -633,21 +704,21 @@ const Claimant_patta = ({ userData }) => {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+          <div className="flex flex-wrap gap-3">
+            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-emerald-500/25">
               <Eye className="h-4 w-4" />
               <span>View Details</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-blue-500/25">
               <MapIcon className="h-4 w-4" />
               <span>View on Map</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">
+            <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-gray-500/25">
               <Download className="h-4 w-4" />
               <span>Download</span>
             </button>
             {patta.status === 'Pending' && (
-              <button className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+              <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/25">
                 <Edit className="h-4 w-4" />
                 <span>Update</span>
               </button>
@@ -715,6 +786,7 @@ const Claimant_patta = ({ userData }) => {
       progress: status.toLowerCase() === 'verified' || status.toLowerCase() === 'approved' ? 100 : (status.toLowerCase() === 'pending' ? 30 : 0),
       issues: r.issues || [],
       reject_message: r.reject_message || '',
+
       patta_doc_url: r.patta_doc_url || null
     };
   };
@@ -834,86 +906,164 @@ const Claimant_patta = ({ userData }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">My Pattas</h2>
-          <p className="text-gray-600">Manage your forest rights certificates and land records</p>
+    <div className="min-h-screen bg-black">
+      <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+        <div className="space-y-2">
+          <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+            My Pattas
+          </h2>
+          <p className="text-gray-300 text-lg">Manage your forest rights certificates and land records</p>
+          <div className="flex items-center gap-4 text-sm text-gray-400">
+            <span className="flex items-center gap-1">
+              <FileText className="w-4 h-4" />
+              {pattas.length} total records
+            </span>
+          </div>
         </div>
-        <button className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+        <button className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-cyan-600 hover:from-emerald-700 hover:via-emerald-800 hover:to-cyan-700 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all duration-500 transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-emerald-500/25 border border-emerald-500/20 hover:border-emerald-400/40"
           onClick={handleOpenModal}
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-6 w-6" />
           <span>Apply for New Patta</span>
         </button>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 w-full max-w-lg sm:max-w-xl md:max-w-2xl relative mx-2 sm:mx-0">
-            <button className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-2xl sm:text-3xl" onClick={handleCloseModal}>&times;</button>
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-900 text-center">Apply for New Patta</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image or PDF</label>
-              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} className="border rounded px-3 py-2 w-full" />
-            </div>
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors mb-4 w-full sm:w-auto"
-              onClick={handleUpload}
-              disabled={!selectedFile || loading}
-            >
-              {loading ? 'Processing...' : 'Run OCR & Fill Form'}
-            </button>
-            {ocrResult && ocrResult.success && ocrResult.data && (
-              <form className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(formData).length > 0 ? Object.entries(formData).map(([key, value]) => (
-                      <div key={key} className="flex flex-col bg-gray-50 rounded-lg p-3 border border-gray-200">
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 capitalize">{key.replace(/_/g, ' ')}</label>
-                        <input
-                          type="text"
-                          value={value ?? ''}
-                          onChange={(e) => handleFormChange(key, e.target.value)}
-                          className="border rounded px-3 py-2 w-full text-sm bg-white"
-                        />
-                      </div>
-                    )) : Object.entries(ocrResult.data).map(([key, value]) => (
-                      <div key={key} className="flex flex-col bg-gray-50 rounded-lg p-3 border border-gray-200">
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 capitalize">{key.replace(/_/g, ' ')}</label>
-                        <input
-                          type="text"
-                          value={value ?? ''}
-                          onChange={(e) => handleFormChange(key, e.target.value)}
-                          className="border rounded px-3 py-2 w-full text-sm bg-white"
-                        />
-                      </div>
-                    ))}
-                    <div className="sm:col-span-2 flex items-center justify-end space-x-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={handleClaim}
-                        disabled={loading}
-                        className="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors"
-                      >
-                        {loading ? 'Saving...' : 'Claim'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCloseModal}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-sm p-2 overflow-hidden">
+            <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 w-full max-w-lg sm:max-w-xl md:max-w-2xl relative mx-2 transform transition-all duration-300 max-h-[95vh] overflow-y-auto">
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-all duration-200 z-20 bg-gray-800/80 backdrop-blur-sm rounded-full p-2 hover:bg-gray-700 shadow-lg" onClick={handleCloseModal}>
+                <X className="h-5 w-5" />
+              </button>
+              <div className="p-8">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-4">
+                    <Plus className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">Apply for New Patta</h3>
+                  <p className="text-gray-300 text-sm">Upload your document and let AI extract the information automatically</p>
+                </div>
+                <div className="space-y-6">
+                  <div className="group">
+                    <label className="block text-sm font-medium text-gray-300 mb-3 group-focus-within:text-emerald-400 transition-colors duration-200">Upload Document</label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="document-upload-modal"
+                      />
+                      <label htmlFor="document-upload-modal" className="flex items-center justify-center w-full px-6 py-8 bg-gray-800/50 border-2 border-dashed border-gray-600/50 rounded-xl cursor-pointer hover:border-emerald-500/50 hover:bg-gray-700/50 transition-all duration-200 backdrop-blur-sm group">
+                        <div className="text-center">
+                          <Upload className="h-10 w-10 text-gray-400 group-hover:text-emerald-400 mx-auto mb-3 transition-colors duration-200" />
+                          <p className="text-gray-300 group-hover:text-emerald-400 transition-colors duration-200 font-medium">
+                            {selectedFile ? selectedFile.name : 'Click to upload document'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
                     </div>
-              </form>
-            )}
-            {ocrResult && ocrResult.error && (
-              <div className="mt-4 text-red-600 text-center">{ocrResult.error}</div>
-            )}
+                  </div>
+
+                  <button
+                    className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center space-x-2"
+                    onClick={handleUpload}
+                    disabled={!selectedFile || loading}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-5 w-5" />
+                        <span>Run OCR & Fill Form</span>
+                      </>
+                    )}
+                  </button>
+
+                  {ocrResult && ocrResult.success && ocrResult.data && (
+                    <div className="mt-8">
+                      <div className="text-center mb-6">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg mx-auto mb-3">
+                          <CheckCircle className="h-6 w-6 text-white" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-green-400 mb-1">OCR Processing Complete</h4>
+                        <p className="text-gray-400 text-sm">Review and edit the extracted information below</p>
+                      </div>
+
+                      <form className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {Object.entries(formData).length > 0 ? Object.entries(formData).map(([key, value]) => (
+                            <div key={key} className="group">
+                              <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-emerald-400 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
+                              <input
+                                type="text"
+                                value={value ?? ''}
+                                onChange={(e) => handleFormChange(key, e.target.value)}
+                                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 backdrop-blur-sm"
+                              />
+                            </div>
+                          )) : Object.entries(ocrResult.data).map(([key, value]) => (
+                            <div key={key} className="group">
+                              <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-emerald-400 transition-colors duration-200 capitalize">{key.replace(/_/g, ' ')}</label>
+                              <input
+                                type="text"
+                                value={value ?? ''}
+                                onChange={(e) => handleFormChange(key, e.target.value)}
+                                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 backdrop-blur-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-700/50">
+                          <button
+                            type="button"
+                            onClick={handleClaim}
+                            disabled={loading}
+                            className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center space-x-2"
+                          >
+                            {loading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-5 w-5" />
+                                <span>Claim Patta</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            className="flex-1 px-6 py-3 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm border border-gray-600/50 hover:border-gray-500/50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {ocrResult && ocrResult.error && (
+                    <div className="mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-5 w-5 text-red-400" />
+                        <p className="text-red-400 font-medium">Processing Error</p>
+                      </div>
+                      <p className="text-red-300 text-sm mt-1">{ocrResult.error}</p>
+                    </div>
+                  )}
+                </div>
+            </div>
           </div>
         </div>
-      )}
-
-      {showQRModal && selectedPattaForQR && (
+      )}      {showQRModal && selectedPattaForQR && (
         <QRCodeModal 
           patta={selectedPattaForQR} 
           onClose={() => {
@@ -933,46 +1083,46 @@ const Claimant_patta = ({ userData }) => {
         />
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 p-8 hover:border-emerald-500/30 transition-all duration-500">
         <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by ID, location, or title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition-all duration-300 text-white placeholder-gray-400 shadow-lg hover:shadow-xl hover:bg-gray-800/70"
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-4 py-4 bg-gray-800/50 border border-gray-600/50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition-all duration-300 text-white shadow-lg hover:shadow-xl hover:bg-gray-800/70"
             >
-              <option value="all">All Status</option>
-              <option value="verified">Verified</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
+              <option value="all" className="bg-gray-800">All Status</option>
+              <option value="verified" className="bg-gray-800">Verified</option>
+              <option value="approved" className="bg-gray-800">Approved</option>
+              <option value="pending" className="bg-gray-800">Pending</option>
             </select>
           </div>
 
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center bg-gray-800/50 rounded-xl p-1 border border-gray-600/50">
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 transform hover:scale-105 ${
+                viewMode === 'grid' ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
               }`}
             >
               Grid
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 transform hover:scale-105 ${
+                viewMode === 'list' ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
               }`}
             >
               List
@@ -982,9 +1132,11 @@ const Claimant_patta = ({ userData }) => {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-gray-600">
-          Showing {filteredPattas.length} of {pattas.length} pattas
+        <p className="text-gray-300 font-medium">
+          Showing <span className="text-emerald-400 font-bold">{filteredPattas.length}</span> of <span className="text-white font-bold">{pattas.length}</span> pattas
         </p>
+      </div>
+
       </div>
 
       <div className={`grid gap-6 ${
@@ -996,10 +1148,12 @@ const Claimant_patta = ({ userData }) => {
       </div>
 
       {filteredPattas.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Pattas Found</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-700/50 p-12 text-center hover:border-emerald-500/30 transition-all duration-500">
+          <div className="w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-600 rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-6">
+            <FileText className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-4">No Pattas Found</h3>
+          <p className="text-gray-300 mb-8 text-lg max-w-md mx-auto leading-relaxed">
             {searchTerm || filterStatus !== 'all' 
               ? "No pattas match your current search and filter criteria."
               : "You haven't applied for any pattas yet."
@@ -1007,7 +1161,7 @@ const Claimant_patta = ({ userData }) => {
           </p>
           <button 
             onClick={handleOpenModal}
-            className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+            className="px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-cyan-600 hover:from-emerald-700 hover:via-emerald-800 hover:to-cyan-700 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all duration-500 transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-emerald-500/25 border border-emerald-500/20 hover:border-emerald-400/40"
           >
             Apply for New Patta
           </button>

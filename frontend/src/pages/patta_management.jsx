@@ -21,7 +21,20 @@ const PattaManagement = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [pattas, setPattas] = useState([]);
   const [loadingPattas, setLoadingPattas] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null); // Track which patta's dropdown is open
   const itemsPerPage = 10;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest('.relative')) {
+        setDropdownOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   // Fetch all pattas from Supabase
   useEffect(() => {
@@ -191,6 +204,35 @@ const PattaManagement = () => {
     setShowDetailsModal(true);
   };
 
+  // Delete a patta from database
+  const handleDeletePatta = async (patta) => {
+    if (!confirm(`Are you sure you want to delete patta ${patta.patta_id}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const filter = patta.id ? { column: 'id', value: patta.id } : { column: 'patta_id', value: patta.patta_id };
+      const { error } = await supabase.from('pattas').delete().eq(filter.column, filter.value);
+      
+      if (error) throw error;
+      
+      // Remove from local state
+      setPattas(prev => prev.filter(p => p.id !== patta.id && p.patta_id !== patta.patta_id));
+      
+      // Close modal if the deleted patta was being viewed
+      if (selectedPatta && (selectedPatta.id === patta.id || selectedPatta.patta_id === patta.patta_id)) {
+        setShowDetailsModal(false);
+        setSelectedPatta(null);
+        setEditablePatta(null);
+      }
+      
+      alert('Patta deleted successfully');
+    } catch (e) {
+      console.error('Failed to delete patta', e);
+      alert('Failed to delete patta: ' + (e.message || e));
+    }
+  };
+
   const getFilteredPattas = () => {
     let filtered = pattas;
     if (activeTab !== 'all') {
@@ -243,46 +285,79 @@ const PattaManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto p-6">
+    <>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap');
+        .alan-sans {
+          font-family: "Alan Sans", sans-serif;
+          font-optical-sizing: auto;
+          font-weight: 728;
+          font-style: normal;
+        }`}
+      </style>
+      <div className="min-h-screen bg-white alan-sans">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">Land Record Management</h1>
-              <p className="text-gray-600">Manage and track land patta applications</p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+            <div className="space-y-2">
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                Land Record Management
+              </h1>
+              <p className="text-gray-600 text-lg">Manage and track land patta applications with advanced analytics</p>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  Last updated: {new Date().toLocaleDateString()}
+                </span>
+                <span className="flex items-center gap-1">
+                  <FileText className="w-4 h-4" />
+                  {pattas.length} total records
+                </span>
+              </div>
             </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm hover:shadow-md"
-            >
-              <Upload className="w-4 h-4" />
-              New Application
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 16px rgba(20, 83, 83, 0.3)'}}
+              >
+                <Upload className="w-5 h-5" />
+                New Application
+              </button>
+              <button
+                onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
+                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-all border-2 border-gray-200/50 transform hover:scale-105"
+                style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 8px rgba(0,0,0,0.1)'}}
+              >
+                <Filter className="w-5 h-5" />
+                {viewMode === 'table' ? 'Card View' : 'Table View'}
+              </button>
+            </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Enhanced Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
             {[
-              { label: 'Total Records', value: pattas.length, color: 'blue', icon: FileText, trend: '+12%' },
-              { label: 'Pending Review', value: pattas.filter(p => p.status === 'pending').length, color: 'amber', icon: Clock, trend: '+5%' },
-              { label: 'Verified', value: pattas.filter(p => p.status === 'verified').length, color: 'emerald', icon: Check, trend: '+8%' },
-              { label: 'Rejected', value: pattas.filter(p => p.status === 'rejected').length, color: 'red', icon: XCircle, trend: '-2%' }
+              { label: 'Total Records', value: pattas.length, color: 'blue', icon: FileText, trend: '+12%', bg: 'from-blue-500 to-blue-600' },
+              { label: 'Pending Review', value: pattas.filter(p => p.status === 'pending').length, color: 'amber', icon: Clock, trend: '+5%', bg: 'from-amber-500 to-orange-500' },
+              { label: 'Verified', value: pattas.filter(p => p.status === 'verified').length, color: 'emerald', icon: Check, trend: '+8%', bg: 'from-emerald-500 to-green-500' },
+              { label: 'Rejected', value: pattas.filter(p => p.status === 'rejected').length, color: 'red', icon: XCircle, trend: '-2%', bg: 'from-red-500 to-red-600' }
             ].map((stat, idx) => {
               const Icon = stat.icon;
               return (
-                <div key={idx} className="bg-white rounded-xl p-5 border border-gray-200 hover:border-gray-300 transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <p className={`text-xs font-medium mt-1 ${stat.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                        {stat.trend} vs last month
-                      </p>
+                <div key={idx} className="bg-white rounded-xl p-4 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-12 h-12 bg-gradient-to-br ${stat.color === 'blue' ? 'from-blue-100 to-blue-200' : stat.color === 'amber' ? 'from-amber-100 to-amber-200' : stat.color === 'emerald' ? 'from-emerald-100 to-emerald-200' : 'from-red-100 to-red-200'} rounded-xl flex items-center justify-center transform hover:scale-110 transition-all duration-300`} style={{boxShadow: `inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px ${stat.color === 'blue' ? 'rgba(59, 130, 246, 0.3)' : stat.color === 'amber' ? 'rgba(245, 158, 11, 0.3)' : stat.color === 'emerald' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'})`}}>
+                      <Icon className={`w-6 h-6 ${stat.color === 'blue' ? 'text-blue-700' : stat.color === 'amber' ? 'text-amber-700' : stat.color === 'emerald' ? 'text-emerald-700' : 'text-red-700'} transform hover:scale-105 transition-transform duration-200`} style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', textShadow: '0 1px 1px rgba(0,0,0,0.2)'}} />
                     </div>
-                    <div className={`w-11 h-11 rounded-lg bg-${stat.color}-50 flex items-center justify-center`}>
-                      <Icon className={`w-5 h-5 text-${stat.color}-600`} />
-                    </div>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.trend.startsWith('+') ? 'text-emerald-700 bg-emerald-100' : 'text-red-700 bg-red-100'} border ${stat.trend.startsWith('+') ? 'border-emerald-200' : 'border-red-200'}`} style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.1)'}}>
+                      {stat.trend}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-gray-600">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                   </div>
                 </div>
               );
@@ -291,29 +366,33 @@ const PattaManagement = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          {/* Tabs */}
-          <div className="border-b border-gray-200 px-6 pt-6">
-            <nav className="flex gap-2 mb-6">
+                {/* Main Content Container */}
+        <div className="bg-white rounded-3xl border-2 border-gray-200/50 overflow-hidden transform hover:scale-[1.005] transition-all duration-500" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 25px 50px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+          {/* Navigation Tabs */}
+          <div className="border-b border-gray-200/50 px-4 sm:px-6 lg:px-8 pt-6 bg-gradient-to-r from-gray-50/50 to-white">
+            <nav className="flex flex-wrap gap-2 mb-6">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    className={`group flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 ${
                       activeTab === tab.id
-                        ? `bg-${tab.color}-50 text-${tab.color}-700 border border-${tab.color}-200`
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? `bg-gradient-to-r ${tab.color === 'blue' ? 'from-blue-500 to-blue-600' : tab.color === 'amber' ? 'from-amber-500 to-amber-600' : tab.color === 'emerald' ? 'from-emerald-500 to-emerald-600' : 'from-red-500 to-red-600'} text-white shadow-lg border-2 border-white/20`
+                        : 'bg-white/80 text-gray-700 hover:bg-gray-50 border-2 border-gray-200/50'
                     }`}
+                    style={{
+                      boxShadow: activeTab === tab.id 
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.1)' 
+                        : 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)'
+                    }}
                   >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? `bg-${tab.color}-100 text-${tab.color}-700`
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <Icon className="w-5 h-5" />
+                    <span>{tab.label}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                    }`} style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.1)'}}>
                       {tab.count}
                     </span>
                   </button>
@@ -322,104 +401,145 @@ const PattaManagement = () => {
             </nav>
           </div>
 
-          {/* Search and Filters */}
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row gap-4">
+          {/* Enhanced Search and Filters */}
+                    {/* Search and Filters */}
+          <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gradient-to-r from-gray-50/30 to-white border-b border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.05)'}}>
+            <div className="flex flex-col xl:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by Patta ID, holder name, or village..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm transform hover:scale-[1.01] transition-all duration-200"
+                  style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'}}
                 />
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="verified">Verified</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <select
-                value={districtFilter}
-                onChange={(e) => setDistrictFilter(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                {districts.map(d => (
-                  <option key={d} value={d === 'All Districts' ? 'all' : d}>{d}</option>
-                ))}
-              </select>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border-2 border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm transform hover:scale-[1.01] transition-all duration-200"
+                  style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'}}
+                >
+                  <option value="all" className="bg-white">All Status</option>
+                  <option value="pending" className="bg-white">Pending</option>
+                  <option value="verified" className="bg-white">Verified</option>
+                  <option value="rejected" className="bg-white">Rejected</option>
+                </select>
+                <select
+                  value={districtFilter}
+                  onChange={(e) => setDistrictFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border-2 border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm transform hover:scale-[1.01] transition-all duration-200"
+                  style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'}}
+                >
+                  {districts.map(d => (
+                    <option key={d} value={d === 'All Districts' ? 'all' : d} className="bg-white">{d}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Table */}
+          {/* Enhanced Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gradient-to-r from-gray-100/50 to-gray-50 border-b border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.05)'}}>
                 <tr>
-                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patta Details</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Patta Details</th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">Location</th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Date</th>
+                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200/50">
                 {paginatedPattas.map((patta) => (
-                  <tr key={patta.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-blue-600" />
+                  <tr key={patta.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-white transition-all duration-300 transform hover:scale-[1.01]" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)'}}>
+                    <td className="px-4 sm:px-6 lg:px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                          <FileText className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <div className="text-sm font-semibold text-gray-900">{patta.patta_id}</div>
-                          <div className="text-sm text-gray-600">{patta.holder_name}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-gray-900 truncate">{patta.patta_id}</div>
+                          <div className="text-sm text-gray-700 truncate">{patta.holder_name}</div>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">{patta.area_hectares} ha</span>
-                            <span className="text-gray-300">•</span>
-                            <span className="text-xs text-gray-500">{patta.right_type}</span>
+                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.area_hectares} ha</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.right_type}</span>
+                          </div>
+                          {/* Mobile-only location info */}
+                          <div className="md:hidden mt-2 text-xs text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {patta.village}, {patta.district}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                    <td className="px-4 sm:px-6 lg:px-8 py-6 hidden md:table-cell">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{patta.village}</div>
-                          <div className="text-sm text-gray-500">{patta.district}, {patta.state}</div>
+                          <div className="text-sm font-semibold text-gray-900">{patta.village}</div>
+                          <div className="text-sm text-gray-600">{patta.district}, {patta.state}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 lg:px-8 py-6">
                       {getStatusBadge(patta.status)}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-start gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
-                        <div className="text-sm text-gray-600">
-                          {new Date(patta.date_applied).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <td className="px-4 sm:px-6 lg:px-8 py-6 hidden lg:table-cell">
+                      <div className="flex items-start gap-3">
+                        <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
+                        <div className="text-sm text-gray-700">
+                          {new Date(patta.date_applied).toLocaleDateString('en-IN', { 
+                            day: 'numeric', 
+                            month: 'short', 
+                            year: 'numeric' 
+                          })}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 lg:px-8 py-6">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleViewDetails(patta)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-110 transform border border-blue-200/50"
                           title="View Details"
+                          style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(59, 130, 246, 0.2)'}}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5" />
                         </button>
-                        <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="More">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setDropdownOpen(dropdownOpen === patta.id ? null : patta.id)}
+                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-all hover:scale-110 transform border border-gray-200/50"
+                            title="More Actions"
+                            style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.1)'}}
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          {dropdownOpen === patta.id && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 z-10 overflow-hidden" style={{boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)'}}>
+                              <div className="py-2">
+                                <button
+                                  onClick={() => {
+                                    handleDeletePatta(patta);
+                                    setDropdownOpen(null);
+                                  }}
+                                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all flex items-center gap-3 font-medium"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  Delete Patta
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -428,69 +548,140 @@ const PattaManagement = () => {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Enhanced Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredPattas.length)}</span> of{' '}
-                <span className="font-medium">{filteredPattas.length}</span> results
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
+            <div className="px-4 sm:px-6 lg:px-8 py-6 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/30 to-white" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)'}}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <p className="text-sm text-gray-600">
+                  Showing <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredPattas.length)}</span> of{' '}
+                  <span className="font-bold text-gray-900">{filteredPattas.length}</span> results
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200/50 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 transform"
+                    style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 8px rgba(0,0,0,0.1)'}}
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 text-sm font-semibold rounded-xl transition-all hover:scale-105 transform ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-500'
+                              : 'text-gray-700 bg-white border-2 border-gray-200/50 hover:bg-gray-50'
+                          }`}
+                          style={{
+                            boxShadow: currentPage === pageNum 
+                              ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 8px rgba(59, 130, 246, 0.3)' 
+                              : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200/50 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 transform"
+                    style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 8px rgba(0,0,0,0.1)'}}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Details Modal */}
+      {/* Professional Enhanced Details Modal */}
       {showDetailsModal && selectedPatta && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-blue-600" />
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-white via-gray-50 to-white max-w-7xl w-full max-h-[95vh] shadow-2xl rounded-3xl border border-white/30 overflow-hidden flex flex-col">
+            {/* Background patterns - moved to pseudo-elements to avoid interference */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-purple-50/20 rounded-3xl pointer-events-none"></div>
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-emerald-600/10 rounded-t-3xl pointer-events-none"></div>
+
+            {/* Enhanced Header - Fixed position within modal */}
+            <div className="relative bg-white/90 backdrop-blur-xl border-b border-gray-200/50 p-6 lg:p-8 z-10 rounded-t-3xl flex-shrink-0">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex items-start gap-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-500 via-purple-500 to-emerald-500 flex items-center justify-center shadow-xl animate-pulse">
+                      <FileText className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Patta Details</h3>
-                    <p className="text-sm text-gray-600">{selectedPatta.patta_id}</p>
+                  <div className="space-y-2">
+                    <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                      Patta Details
+                    </h2>
+                    <p className="text-xl font-semibold text-gray-700">{selectedPatta.patta_id}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium">Applied: {new Date(selectedPatta.date_applied).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                        <MapPin className="w-4 h-4 text-green-600" />
+                        <span className="font-medium">{selectedPatta.village}, {selectedPatta.district}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-full">
+                        <Building2 className="w-4 h-4 text-purple-600" />
+                        <span className="font-medium">{selectedPatta.area_hectares} hectares</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="group p-3 bg-gray-100 hover:bg-red-50 rounded-2xl transition-all duration-300 hover:scale-110 self-start lg:self-center"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6 text-gray-500 group-hover:text-red-500 transition-colors" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className={`p-4 rounded-lg border-2 ${
+            {/* Scrollable Content Area - Improved scrolling */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 transition-colors">
+              {/* Enhanced Status Banner */}
+              <div className={`p-6 rounded-2xl border-2 shadow-lg ${
                 editablePatta.status === 'verified' ? 'bg-emerald-50 border-emerald-200' :
                 editablePatta.status === 'pending' ? 'bg-amber-50 border-amber-200' :
                 'bg-red-50 border-red-200'
               }`}>
-                {getStatusBadge(editablePatta.status)}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  {getStatusBadge(editablePatta.status)}
+                  <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-600">
+                    <span>Last updated: {new Date(editablePatta.updated_at || editablePatta.created_at).toLocaleDateString()}</span>
+                    <span className="hidden sm:block">•</span>
+                    <span>Area: {editablePatta.area_hectares} hectares</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Enhanced Form Fields Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {[
                   { label: 'ID', key: 'id', type: 'text', disabled: true },
                   { label: 'Patta ID', key: 'patta_id', type: 'text', disabled: true },
@@ -501,36 +692,155 @@ const PattaManagement = () => {
                   { label: 'Village', key: 'village', type: 'text' },
                   { label: 'District', key: 'district', type: 'text' },
                   { label: 'State', key: 'state', type: 'text' },
-                  { label: 'Coordinates', key: 'coordinates', type: 'textarea', render: v => JSON.stringify(v) },
+                  { label: 'Coordinates', key: 'coordinates', type: 'textarea', render: v => JSON.stringify(v, null, 2) },
                   { label: 'Area (hectares)', key: 'area_hectares', type: 'number' },
                   { label: 'Status', key: 'status', type: 'text' },
-                  { label: 'Recommended Schemes', key: 'recommended_schemes', type: 'textarea', render: v => JSON.stringify(v) },
+                  { label: 'Recommended Schemes', key: 'recommended_schemes', type: 'textarea', render: v => JSON.stringify(v, null, 2) },
                   { label: 'Date Applied', key: 'date_applied', type: 'text' },
                   { label: 'Time Applied', key: 'time_applied', type: 'text' },
                   { label: 'Date Verified', key: 'date_verified', type: 'text' },
                   { label: 'Reject Message', key: 'reject_message', type: 'textarea' },
                   { label: 'Patta Doc Filename', key: 'patta_doc_filename', type: 'text' },
-                  { label: 'Patta Doc URL', key: 'patta_doc_url', type: 'text' },
+                  // Patta Doc URL Preview - replaced with preview component
+                  { label: 'Patta Document Preview', key: 'patta_doc_url', type: 'preview', render: (url) => {
+                    if (!url) return <div className="text-gray-500 text-sm italic">No document uploaded</div>;
+                    
+                    const isPDF = url.toLowerCase().includes('.pdf');
+                    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(url);
+                    
+                    if (isImage) {
+                      return (
+                        <div className="space-y-3">
+                          <div className="relative group max-w-md">
+                            <img 
+                              src={url} 
+                              alt="Patta Document" 
+                              className="w-full h-auto max-h-80 object-contain rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all"
+                            />
+                            <div 
+                              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-xl flex items-center justify-center cursor-pointer"
+                              onClick={() => window.open(url, '_blank')}
+                            >
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110">
+                                <Eye className="w-10 h-10 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <span className="flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => window.open(url, '_blank')}>
+                              <Eye className="w-4 h-4" />
+                              Click to view full size
+                            </span>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 underline"
+                            >
+                              <Download className="w-4 h-4" />
+                              Open in new tab
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    } else if (isPDF) {
+                      return (
+                        <div className="space-y-3">
+                          <div className="relative group max-w-md">
+                            <iframe 
+                              src={url} 
+                              className="w-full h-80 border border-gray-200 rounded-xl shadow-lg"
+                              title="Patta Document PDF"
+                            />
+                            <div 
+                              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-xl flex items-center justify-center cursor-pointer"
+                              onClick={() => window.open(url, '_blank')}
+                            >
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110">
+                                <Eye className="w-10 h-10 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <span className="flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => window.open(url, '_blank')}>
+                              <Eye className="w-4 h-4" />
+                              View PDF
+                            </span>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 underline"
+                            >
+                              <Download className="w-4 h-4" />
+                              Open PDF
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="space-y-3">
+                          <div className="relative group max-w-md">
+                            <div className="flex items-center gap-4 p-6 border border-gray-200 rounded-xl bg-gray-50">
+                              <FileText className="w-10 h-10 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">Document</p>
+                                <p className="text-xs text-gray-500">Unsupported file type</p>
+                              </div>
+                            </div>
+                            <div 
+                              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-xl flex items-center justify-center cursor-pointer"
+                              onClick={() => window.open(url, '_blank')}
+                            >
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110">
+                                <Eye className="w-10 h-10 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <span className="flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => window.open(url, '_blank')}>
+                              <Eye className="w-4 h-4" />
+                              View Document
+                            </span>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 underline"
+                            >
+                              <Download className="w-4 h-4" />
+                              Open Document
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    }
+                  }},
                   { label: 'Scheme Priority', key: 'scheme_priority', type: 'text' },
                   { label: 'Created At', key: 'created_at', type: 'text', disabled: true },
                   { label: 'Updated At', key: 'updated_at', type: 'text', disabled: true },
                 ].map(field => (
-                  <div className="space-y-1" key={field.key}>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">{field.label}</label>
-                    {field.type === 'textarea' ? (
+                  <div className="space-y-2" key={field.key}>
+                    <label className="block text-sm font-bold text-gray-700 uppercase tracking-wide">{field.label}</label>
+                    {field.type === 'preview' ? (
+                      <div className="w-full">
+                        {field.render ? field.render(editablePatta?.[field.key]) : (editablePatta?.[field.key] ?? '')}
+                      </div>
+                    ) : field.type === 'textarea' ? (
                       <textarea
                         value={field.render ? field.render(editablePatta?.[field.key]) : (editablePatta?.[field.key] ?? '')}
                         onChange={e => setEditablePatta(prev => ({ ...prev, [field.key]: e.target.value }))}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 bg-white/80 backdrop-blur-sm shadow-sm"
                         disabled={field.disabled}
-                        rows={2}
+                        rows={field.key === 'coordinates' || field.key === 'recommended_schemes' ? 4 : 2}
                       />
                     ) : (
                       <input
                         type={field.type}
                         value={field.render ? field.render(editablePatta?.[field.key]) : (editablePatta?.[field.key] ?? '')}
                         onChange={e => setEditablePatta(prev => ({ ...prev, [field.key]: e.target.value }))}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 bg-white/80 backdrop-blur-sm shadow-sm"
                         disabled={field.disabled}
                       />
                     )}
@@ -539,65 +849,75 @@ const PattaManagement = () => {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end gap-3">
+            {/* Footer */}
+            <div className="bg-white/95 backdrop-blur-xl border-t border-gray-200 p-6 lg:p-8 flex flex-col sm:flex-row justify-end gap-3 rounded-b-3xl flex-shrink-0">
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:scale-105 order-2 sm:order-1"
               >
                 Close
               </button>
-              <button
-                onClick={handleReject}
-                className={`px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={isUpdating}
-              >
-                Reject
-              </button>
-              <button
-                onClick={handleApprove}
-                className={`px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={isUpdating}
-              >
-                Approve
-              </button>
-              <button
-                onClick={async () => {
-                  setIsUpdating(true);
-                  try {
-                    const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
-                    // Only include valid patta fields in payload
-                    const validFields = [
-                      'owner_id','holder_name','category','right_type','village','district','state','coordinates','area_hectares','status','recommended_schemes','date_applied','time_applied','date_verified','reject_message','patta_doc_filename','patta_doc_url','scheme_priority'
-                    ];
-                    const payload = {};
-                    validFields.forEach(key => {
-                      if (key in editablePatta) payload[key] = editablePatta[key];
-                    });
-                    const { error: upErr } = await supabase.from('pattas').update(payload).eq(filter.column, filter.value);
-                    if (upErr) throw upErr;
-                    // fetch the updated row explicitly
-                    const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
-                    if (selErr) throw selErr;
-                    setSelectedPatta(selData);
-                    setEditablePatta(selData);
-                    setPattas(prev => prev.map(p => (p[filter.column] === filter.value ? selData : p)));
-                    setShowDetailsModal(false);
-                  } catch (e) {
-                    alert('Failed to save: ' + (e.message || e));
-                  } finally {
-                    setIsUpdating(false);
-                  }
-                }}
-                className={`px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Saving...' : 'Save Changes'}
-              </button>
+              <div className="flex gap-3 order-1 sm:order-2">
+                <button
+                  onClick={handleReject}
+                  className={`px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all hover:scale-105 shadow-lg hover:shadow-xl ${
+                    isUpdating ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                  disabled={isUpdating}
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={handleApprove}
+                  className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all hover:scale-105 shadow-lg hover:shadow-xl ${
+                    isUpdating ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                  disabled={isUpdating}
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsUpdating(true);
+                    try {
+                      const filter = editablePatta.id ? { column: 'id', value: editablePatta.id } : { column: 'patta_id', value: editablePatta.patta_id };
+                      // Only include valid patta fields in payload
+                      const validFields = [
+                        'owner_id','holder_name','category','right_type','village','district','state','coordinates','area_hectares','status','recommended_schemes','date_applied','time_applied','date_verified','reject_message','patta_doc_filename','patta_doc_url','scheme_priority'
+                      ];
+                      const payload = {};
+                      validFields.forEach(key => {
+                        if (key in editablePatta) payload[key] = editablePatta[key];
+                      });
+                      const { error: upErr } = await supabase.from('pattas').update(payload).eq(filter.column, filter.value);
+                      if (upErr) throw upErr;
+                      // fetch the updated row explicitly
+                      const { data: selData, error: selErr } = await supabase.from('pattas').select('*').eq(filter.column, filter.value).maybeSingle();
+                      if (selErr) throw selErr;
+                      setSelectedPatta(selData);
+                      setEditablePatta(selData);
+                      setPattas(prev => prev.map(p => (p[filter.column] === filter.value ? selData : p)));
+                      setShowDetailsModal(false);
+                    } catch (e) {
+                      alert('Failed to save: ' + (e.message || e));
+                    } finally {
+                      setIsUpdating(false);
+                    }
+                  }}
+                  className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all hover:scale-105 shadow-lg hover:shadow-xl ${
+                    isUpdating ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

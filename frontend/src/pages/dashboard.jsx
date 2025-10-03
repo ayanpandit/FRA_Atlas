@@ -1,671 +1,355 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-// ...existing code...
 import { 
-  FileText, Users, Clock, CheckCircle, XCircle, AlertTriangle,
-  Filter, Search, Eye, Check, X, ChevronDown, Calendar,
-  TrendingUp, TrendingDown, BarChart3, Activity, Download
+  Plus, TrendingUp, TrendingDown, Users, Eye, MoreHorizontal,
+  ChevronDown, Printer, CreditCard, DollarSign, Clock
 } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 
-const geoData = {
-  Jharkhand: [
-    { district: 'Gumla', netSown: 32, barren: 10, water: 1.5 },
-    { district: 'Latehar', netSown: 25, barren: 15, water: 1.0 },
-    { district: 'West Singhbhum', netSown: 28, barren: 12, water: 2.5 },
-    { district: 'Dumka', netSown: 40, barren: 5, water: 3.0 },
-    { district: 'Simdega', netSown: 22, barren: 18, water: 0.8 }
-  ],
-  Maharashtra: [
-    { district: 'Gadchiroli', netSown: 35, barren: 8, water: 4.0 },
-    { district: 'Nandurbar', netSown: 45, barren: 10, water: 1.2 },
-    { district: 'Chandrapur', netSown: 30, barren: 14, water: 2.5 },
-    { district: 'Pune (Rural Tribal Blocks)', netSown: 50, barren: 5, water: 1.8 },
-    { district: 'Amravati', netSown: 60, barren: 3, water: 1.5 }
-  ],
-  'Andhra Pradesh': [
-    { district: 'Alluri Sitharama Raju', netSown: 15, barren: 10, water: 1.2 },
-    { district: 'Parvathipuram Manyam', netSown: 25, barren: 15, water: 2.0 },
-    { district: 'Anakapalli', netSown: 50, barren: 2, water: 3.5 },
-    { district: 'Anantapur', netSown: 65, barren: 5, water: 0.5 },
-    { district: 'YSR Kadapa', netSown: 40, barren: 12, water: 1.0 }
-  ]
-};
-
-const featureOptions = [
-  { key: 'netSown', label: 'Net Sown Area (%)', color: '#3b82f6' },
-  { key: 'barren', label: 'Barren/Unculturable Land (%)', color: '#ef4444' },
-  { key: 'water', label: 'Water Body (%)', color: '#10b981' }
+// Chart data
+const moneyInsightsData = [
+  { month: 'Jan', income: 45000, expense: 32000 },
+  { month: 'Feb', income: 52000, expense: 38000 },
+  { month: 'Mar', income: 48000, expense: 35000 },
+  { month: 'Apr', income: 61000, expense: 42000 },
+  { month: 'May', income: 55000, expense: 39000 },
+  { month: 'Jun', income: 67000, expense: 45000 },
+  { month: 'Jul', income: 59000, expense: 41000 },
+  { month: 'Aug', income: 70000, expense: 48000 },
+  { month: 'Sep', income: 65000, expense: 44000 },
+  { month: 'Oct', income: 72000, expense: 50000 },
+  { month: 'Nov', income: 68000, expense: 46000 },
+  { month: 'Dec', income: 75000, expense: 52000 }
 ];
-const districtColors = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#6366f1', '#eab308', '#a21caf', '#14b8a6', '#f43f5e', '#22d3ee'
+
+const totalOrdersData = [
+  { name: 'Orders', value: 1308, fill: '#34d399' }
+];
+
+const expensesData = [
+  { name: 'Payroll', value: 52, fill: '#34d399' },
+  { name: 'Business Supplies', value: 17.5, fill: '#a3e635' },
+  { name: 'Other', value: 30.5, fill: '#fbbf24' }
+];
+
+const recentInvoices = [
+  { id: '677829', client: 'Emma Tomson', amount: '$3,250', date: '30-09-2023', status: 'Overdue' },
+  { id: '893750', client: 'Richard Miller', amount: '$12,800', date: '30-09-2023', status: 'Paid' },
+  { id: '814113', client: 'Liam Davis', amount: '$1,300', date: '30-09-2023', status: 'Overdue' },
+  { id: '105226', client: 'Robert Brown', amount: '$4,040', date: '29-09-2023', status: 'Overdue' },
+  { id: '192803', client: 'Noah Williams', amount: '$850', date: '29-09-2023', status: 'First Paid' },
+  { id: '553714', client: 'Amanda C. Herman', amount: '$2,150', date: '29-09-2023', status: 'Paid' },
+  { id: '781926', client: 'Luna Thomas', amount: '$315', date: '29-09-2023', status: 'Last Paid' },
+  { id: '542809', client: 'Maxwell Kim', amount: '$470', date: '29-09-2023', status: 'Paid' }
 ];
 
 const Dashboard = () => {
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedVillage, setSelectedVillage] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [totalOrdersFilter, setTotalOrdersFilter] = useState('Weekly');
+  const [expensesFilter, setExpensesFilter] = useState('Monthly');
 
-  // Live stats from Supabase
-  const [stats, setStats] = useState({
-    total: 0,
-    approved: 0,
-    pending: 0,
-    rejected: 0
-  });
-
-  useEffect(() => {
-    async function fetchStats() {
-      const { data, error } = await supabase.from('pattas').select('status');
-      if (!error && data) {
-        const total = data.length;
-  const approved = data.filter(p => p.status === 'approved' || p.status === 'verified').length;
-  const pending = data.filter(p => p.status === 'pending').length;
-  const rejected = data.filter(p => p.status === 'rejected' || p.status === 'cancelled').length;
-  setStats({ total, approved, pending, rejected });
-      }
-    }
-    fetchStats();
-  }, []);
-
-  const monthlyData = [
-    { month: 'Jan', uploaded: 120, approved: 95, rejected: 15, pending: 10 },
-    { month: 'Feb', uploaded: 140, approved: 110, rejected: 18, pending: 12 },
-    { month: 'Mar', uploaded: 160, approved: 125, rejected: 22, pending: 13 },
-    { month: 'Apr', uploaded: 180, approved: 145, rejected: 20, pending: 15 },
-    { month: 'May', uploaded: 200, approved: 165, rejected: 25, pending: 10 },
-    { month: 'Jun', uploaded: 175, approved: 140, rejected: 18, pending: 17 }
-  ];
-
-  const villageData = [
-    { village: 'Rampur', pattas: 85, approved: 65, pending: 15, rejected: 5 },
-    { village: 'Kumhari', pattas: 92, approved: 70, pending: 18, rejected: 4 },
-    { village: 'Bastar', pattas: 78, approved: 58, pending: 12, rejected: 8 },
-    { village: 'Jagdalpur', pattas: 105, approved: 82, pending: 16, rejected: 7 },
-    { village: 'Kanker', pattas: 68, approved: 52, pending: 11, rejected: 5 }
-  ];
-
-  const statusData = [
-    { name: 'Approved', value: stats.approved, color: '#10b981' },
-    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' }
-  ];
-
-  const [pattaData, setPattaData] = useState([
-    {
-      id: 'FRA2024001',
-      holderName: 'Ramesh Kumar Singh',
-      village: 'Rampur',
-      district: 'Bastar',
-      uploadDate: '2024-09-20',
-      status: 'pending',
-      officer: 'Suresh Patel',
-      area: '2.5 acres',
-      documents: 4
-    },
-    {
-      id: 'FRA2024002',
-      holderName: 'Sunita Devi',
-      village: 'Kumhari',
-      district: 'Durg',
-      uploadDate: '2024-09-19',
-      status: 'approved',
-      officer: 'Priya Sharma',
-      area: '1.8 acres',
-      documents: 5
-    },
-    {
-      id: 'FRA2024003',
-      holderName: 'Mohan Lal Verma',
-      village: 'Bastar',
-      district: 'Bastar',
-      uploadDate: '2024-09-18',
-      status: 'rejected',
-      officer: 'Rajesh Gupta',
-      area: '3.2 acres',
-      documents: 3
-    },
-    {
-      id: 'FRA2024004',
-      holderName: 'Geeta Bai',
-      village: 'Jagdalpur',
-      district: 'Bastar',
-      uploadDate: '2024-09-17',
-      status: 'pending',
-      officer: 'Suresh Patel',
-      area: '2.1 acres',
-      documents: 4
-    },
-    {
-      id: 'FRA2024005',
-      holderName: 'Vishnu Prasad',
-      village: 'Kanker',
-      district: 'Kanker',
-      uploadDate: '2024-09-16',
-      status: 'approved',
-      officer: 'Priya Sharma',
-      area: '1.5 acres',
-      documents: 5
-    },
-    {
-      id: 'FRA2024006',
-      holderName: 'Kavita Sharma',
-      village: 'Rampur',
-      district: 'Bastar',
-      uploadDate: '2024-09-15',
-      status: 'pending',
-      officer: 'Rajesh Gupta',
-      area: '3.1 acres',
-      documents: 4
-    }
-  ]);
-
-  // Geographical Feature Distribution state
-  const [selectedGeoState, setSelectedGeoState] = useState('Jharkhand');
-  const [selectedGeoFeature, setSelectedGeoFeature] = useState('netSown');
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved': return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-400" />;
-      case 'rejected': return <XCircle className="w-4 h-4 text-red-400" />;
-      default: return <AlertTriangle className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      approved: 'bg-green-900/20 text-green-300 border border-green-700',
-      pending: 'bg-yellow-900/20 text-yellow-300 border border-yellow-700',
-      rejected: 'bg-red-900/20 text-red-300 border border-red-700'
+  const getStatusColor = (status) => {
+    const colors = {
+      'Overdue': 'bg-red-100 text-red-800',
+      'Paid': 'bg-emerald-100 text-emerald-800',
+      'First Paid': 'bg-emerald-100 text-emerald-800',
+      'Last Paid': 'bg-emerald-100 text-emerald-800'
     };
-    return styles[status] || 'bg-gray-900/20 text-gray-300 border border-gray-700';
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
-
-  const handleAction = (pattaId, action) => {
-    setPattaData(prev => prev.map(patta => 
-      patta.id === pattaId 
-        ? { ...patta, status: action === 'approve' ? 'approved' : 'rejected' }
-        : patta
-    ));
-    
-    const updatedData = pattaData.map(patta => 
-      patta.id === pattaId 
-        ? { ...patta, status: action === 'approve' ? 'approved' : 'rejected' }
-        : patta
-    );
-    
-    const newStats = {
-      total: updatedData.length,
-      approved: updatedData.filter(p => p.status === 'approved').length,
-      pending: updatedData.filter(p => p.status === 'pending').length,
-      rejected: updatedData.filter(p => p.status === 'rejected').length
-    };
-    
-    setStats(newStats);
-  };
-
-  const filteredData = pattaData.filter(patta => {
-    const matchesStatus = selectedStatus === 'all' || patta.status === selectedStatus;
-    const matchesVillage = selectedVillage === 'all' || patta.village === selectedVillage;
-    const matchesSearch = patta.holderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patta.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesVillage && matchesSearch;
-  });
-
-  const StatCard = ({ title, value, change, icon: Icon, trend }) => (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm text-gray-400 mb-1">{title}</p>
-          <p className="text-2xl font-semibold text-white mb-2">{value.toLocaleString()}</p>
-          <div className="flex items-center space-x-2">
-            {trend === 'up' ? (
-              <TrendingUp className="w-4 h-4 text-green-400" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-red-400" />
-            )}
-            <span className={`text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-              {change}
-            </span>
-          </div>
-        </div>
-        <div className="p-3 bg-gray-700 rounded-lg">
-          <Icon className="w-6 h-6 text-gray-300" />
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Page Header */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-semibold text-white mb-1">Forest Rights Act Dashboard</h1>
-              <p className="text-gray-400 text-sm">Gram Sabha Officer Management Portal</p>
+    <>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap');
+        .alan-sans {
+          font-family: "Alan Sans", sans-serif;
+          font-optical-sizing: auto;
+          font-weight: 728;
+          font-style: normal;
+        }`}
+      </style>
+      <div className="min-h-screen bg-gray-50 p-6 alan-sans">
+        <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900">FRA Dashboard</h1>
+          <button className="bg-teal-800 hover:bg-teal-900 text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm">
+            <span>New Application</span>
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Bank Connection Card */}
+          <div className="lg:col-span-1">
+            <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-600 rounded-2xl p-10 text-white relative overflow-hidden min-h-[405px] flex items-center border-2 border-teal-400/30 shadow-2xl shadow-teal-900/50 hover:shadow-3xl hover:shadow-teal-800/60 transition-all duration-500 transform hover:scale-[1.02] hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), 0 25px 50px -12px rgba(20, 83, 83, 0.5), 0 0 0 1px rgba(45, 212, 191, 0.1)'}}>
+              <div className="absolute inset-0 opacity-20">
+                <div className="w-full h-full bg-gradient-to-tr from-white/10 via-transparent to-white/5"></div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10 rounded-2xl"></div>
+              <div className="relative z-10 w-full">
+                <h3 className="text-lg font-semibold mb-2">Forest Rights Management System</h3>
+                <p className="text-sm text-teal-100 mb-6">
+                  Streamline your forest rights applications and documentation process
+                </p>
+                <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Get Started
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                Export Report
-              </button>
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-gray-300">GO</span>
+          </div>
+
+          {/* Middle Column - Stats Cards */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Overall Revenue */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(59, 130, 246, 0.3)'}}>
+                  <DollarSign className="w-4 h-4 text-blue-700 transform hover:scale-105 transition-transform duration-200" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', textShadow: '0 1px 1px rgba(0,0,0,0.2)'}} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Applications</p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold text-gray-900">2,350</span>
+                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+8.4%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sales */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(20, 184, 166, 0.3)'}}>
+                  <TrendingUp className="w-4 h-4 text-teal-700 transform hover:scale-105 transition-transform duration-200" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', textShadow: '0 1px 1px rgba(0,0,0,0.2)'}} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Approved</p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold text-gray-900">1,020</span>
+                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+15%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(249, 115, 22, 0.3)'}}>
+                  <DollarSign className="w-4 h-4 text-orange-700 transform hover:scale-105 transition-transform duration-200" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', textShadow: '0 1px 1px rgba(0,0,0,0.2)'}} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Pending Review</p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold text-gray-900">950</span>
+                    <span className="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">+1.8%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Clients */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(245, 158, 11, 0.3)'}}>
+                  <Users className="w-4 h-4 text-yellow-700 transform hover:scale-105 transition-transform duration-200" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.4)', textShadow: '0 1px 1px rgba(0,0,0,0.2)'}} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Beneficiaries</p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold text-gray-900">3,065</span>
+                    <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+5.0%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Money Insights */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Application Insights</h3>
+                  <p className="text-sm text-gray-600">Monthly overview of forest rights applications</p>
+                </div>
+                <button className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                  View report
+                </button>
+              </div>
+              <div className="h-48 relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 to-transparent rounded-lg"></div>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={moneyInsightsData}>
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                    />
+                    <YAxis hide />
+                    <Bar dataKey="income" fill="url(#emeraldGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(52, 211, 153, 0.3))'}} />
+                    <Bar dataKey="expense" fill="url(#blueGradient)" radius={[4, 4, 0, 0]} style={{filter: 'drop-shadow(0 4px 6px rgba(96, 165, 250, 0.3))'}} />
+                    <defs>
+                      <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="100%" stopColor="#10b981" />
+                      </linearGradient>
+                      <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#60a5fa" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center space-x-6 mt-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Applications</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Approvals</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Applications"
-            value={stats.total}
-            change="+12.3%"
-            icon={FileText}
-            trend="up"
-          />
-          <StatCard
-            title="Approved"
-            value={stats.approved}
-            change="+8.1%"
-            icon={CheckCircle}
-            trend="up"
-          />
-          <StatCard
-            title="Under Review"
-            value={stats.pending}
-            change="-5.2%"
-            icon={Clock}
-            trend="down"
-          />
-          <StatCard
-            title="Rejected"
-            value={stats.rejected}
-            change="+3.4%"
-            icon={XCircle}
-            trend="up"
-          />
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Monthly Trends */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-sm font-medium text-white">Application Trends</h3>
-              <p className="text-xs text-gray-400">Monthly performance overview</p>
+        {/* Bottom Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          {/* Total Orders */}
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Total Applications</h3>
+              <select 
+                value={totalOrdersFilter} 
+                onChange={(e) => setTotalOrdersFilter(e.target.value)}
+                className="text-sm border-none focus:ring-0 text-gray-600 bg-transparent"
+              >
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Yearly">Yearly</option>
+              </select>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
-                  <YAxis stroke="#9ca3af" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '6px',
-                      color: '#ffffff'
-                    }} 
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="uploaded" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="flex items-center space-x-4 mb-4">
+              <span className="text-2xl font-bold text-gray-900">3,021</span>
+              <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded flex items-center shadow-sm border border-green-200/50">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                +164 increase
+              </span>
+            </div>
+            <div className="h-32 bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg flex items-end justify-center p-4 relative overflow-hidden" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
+              <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent"></div>
+              <div className="w-12 h-20 bg-gradient-to-t from-teal-700 to-teal-500 rounded-t flex items-end justify-center text-white text-xs font-medium pb-2 relative transform hover:scale-105 transition-transform duration-300" style={{boxShadow: '0 8px 16px rgba(20, 83, 83, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)'}}>
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20 rounded-t"></div>
+                <span className="relative z-10">1308</span>
+              </div>
             </div>
           </div>
 
-    {/* Status Distribution */}
-        {/* Geographical Feature Distribution */}
-    <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-medium text-white">Geographical Feature Distribution</h3>
-              <p className="text-xs text-gray-400">Current breakdown by district</p>
-            </div>
-            <div className="flex gap-2">
-              <select value={selectedGeoState} onChange={e => setSelectedGeoState(e.target.value)} className="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none">
-                {Object.keys(geoData).map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-              <select value={selectedGeoFeature} onChange={e => setSelectedGeoFeature(e.target.value)} className="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none">
-                {featureOptions.map(opt => (
-                  <option key={opt.key} value={opt.key}>{opt.label}</option>
-                ))}
+          {/* Expenses Analysis */}
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200/50 transform hover:scale-[1.02] transition-all duration-500 hover:-translate-y-1" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Status Distribution</h3>
+              <select 
+                value={expensesFilter} 
+                onChange={(e) => setExpensesFilter(e.target.value)}
+                className="text-sm border-none focus:ring-0 text-gray-600 bg-transparent"
+              >
+                <option value="Monthly">Monthly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Yearly">Yearly</option>
               </select>
             </div>
-          </div>
-          <div className="py-10 flex flex-col items-center gap-8">
-            <div className="w-full flex justify-center max-w-3xl mx-auto">
-              <ResponsiveContainer width="100%" minWidth={400} minHeight={340} height={380} aspect={2}>
-                <RechartsPieChart>
+            <div className="h-32 flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-50/30 to-transparent rounded-lg"></div>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
                   <Pie
-                    data={geoData[selectedGeoState].map(d => ({ name: d.district, value: d[selectedGeoFeature] }))}
-                    dataKey="value"
-                    nameKey="name"
+                    data={expensesData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={95}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                    innerRadius={30}
+                    outerRadius={60}
+                    dataKey="value"
+                    style={{filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))'}}
                   >
-                    {geoData[selectedGeoState].map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={featureOptions.find(f => f.key === selectedGeoFeature).color} />
+                    {expensesData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`url(#pieGradient${index})`}
+                        stroke="rgba(255,255,255,0.8)"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
-                </RechartsPieChart>
+                  <defs>
+                    <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                    <linearGradient id="pieGradient1" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#a3e635" />
+                      <stop offset="100%" stopColor="#84cc16" />
+                    </linearGradient>
+                    <linearGradient id="pieGradient2" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                  </defs>
+                </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="w-full">
-              <h4 className="text-xs font-semibold text-white mb-2">District Breakdown</h4>
-              <ul className="space-y-2">
-                {geoData[selectedGeoState].map((d, idx) => (
-                  <li key={d.district} className="flex items-center justify-between bg-gray-700 rounded px-3 py-2">
-                    <span className="text-sm text-white font-medium">{d.district}</span>
-                    <span className="text-xs text-gray-300">{featureOptions.find(f => f.key === selectedGeoFeature).label}: <span className="font-bold text-white">{d[selectedGeoFeature]}%</span></span>
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-2 mt-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full shadow-sm" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(52, 211, 153, 0.3)'}}></div>
+                <span className="text-sm text-gray-600">Approved:</span>
+                <span className="text-sm font-medium text-gray-900">52%</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-br from-lime-400 to-lime-600 rounded-full shadow-sm" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(163, 230, 53, 0.3)'}}></div>
+                <span className="text-sm text-gray-600">Pending:</span>
+                <span className="text-sm font-medium text-gray-900">17.5%</span>
+              </div>
             </div>
           </div>
-        </div>
-        </div>
 
-        {/* Village Distribution Chart */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <h3 className="text-sm font-medium text-white">Regional Distribution</h3>
-            <p className="text-xs text-gray-400">Applications by village/district</p>
-          </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={villageData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="village" stroke="#9ca3af" fontSize={12} />
-                <YAxis stroke="#9ca3af" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '6px',
-                    color: '#ffffff'
-                  }} 
-                />
-                <Bar dataKey="pattas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Key Insights Panel */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-              <h4 className="text-sm font-medium text-white">Approval Rate</h4>
-            </div>
-            <p className="text-xl font-semibold text-white mb-1">{((stats.approved / stats.total) * 100).toFixed(1)}%</p>
-            <p className="text-xs text-gray-400">High success rate this month</p>
-          </div>
-          
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <Clock className="w-5 h-5 text-yellow-400" />
-              <h4 className="text-sm font-medium text-white">Avg. Processing</h4>
-            </div>
-            <p className="text-xl font-semibold text-white mb-1">4.2 days</p>
-            <p className="text-xs text-gray-400">Faster than target of 7 days</p>
-          </div>
-          
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <Users className="w-5 h-5 text-blue-400" />
-              <h4 className="text-sm font-medium text-white">Active Officers</h4>
-            </div>
-            <p className="text-xl font-semibold text-white mb-1">12</p>
-            <p className="text-xs text-gray-400">Processing applications</p>
-          </div>
-          
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <AlertTriangle className="w-5 h-5 text-orange-400" />
-              <h4 className="text-sm font-medium text-white">Priority Cases</h4>
-            </div>
-            <p className="text-xl font-semibold text-white mb-1">8</p>
-            <p className="text-xs text-gray-400">Require immediate attention</p>
-          </div>
-        </div>
-
-        {/* Filters Section */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors text-sm"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          {/* Recent Invoices */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Recent Applications</h3>
+              <button>
+                <MoreHorizontal className="w-5 h-5 text-gray-400" />
               </button>
-              
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search applications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
             </div>
-
-            {showFilters && (
-              <div className="flex flex-wrap gap-3">
-                <select 
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending Review</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-                
-                <select 
-                  value={selectedVillage}
-                  onChange={(e) => setSelectedVillage(e.target.value)}
-                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="all">All Villages</option>
-                  <option value="Rampur">Rampur</option>
-                  <option value="Kumhari">Kumhari</option>
-                  <option value="Bastar">Bastar</option>
-                  <option value="Jagdalpur">Jagdalpur</option>
-                  <option value="Kanker">Kanker</option>
-                </select>
+            <div className="space-y-1">
+              <div className="grid grid-cols-5 gap-2 text-xs text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">
+                <span>Status</span>
+                <span>ID</span>
+                <span>Client</span>
+                <span>Total</span>
+                <span>Date Created</span>
               </div>
-            )}
+              {recentInvoices.map((invoice) => (
+                <div key={invoice.id} className="grid grid-cols-5 gap-2 py-2 text-sm items-center">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(invoice.status)}`}>
+                    {invoice.status}
+                  </span>
+                  <span className="text-gray-900 font-medium">{invoice.id}</span>
+                  <span className="text-gray-600">{invoice.client}</span>
+                  <span className="text-gray-900 font-medium">{invoice.amount}</span>
+                  <span className="text-gray-500 text-xs">{invoice.date}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-
-        {/* Applications Table */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-white">Applications Management</h3>
-                <p className="text-xs text-gray-400">Total {filteredData.length} applications • {stats.pending} pending review</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Desktop Table */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-750 border-b border-gray-700">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Application</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Applicant</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Officer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {filteredData.map((patta, index) => (
-                  <tr key={patta.id} className="hover:bg-gray-750 transition-colors">
-                    <td className="px-4 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-white">{patta.id}</div>
-                        <div className="text-xs text-gray-400">{patta.area} • {patta.documents} docs</div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-gray-300">
-                            {patta.holderName.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-white">{patta.holderName}</div>
-                          <div className="text-xs text-gray-400">{patta.uploadDate}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-white">{patta.village}</div>
-                      <div className="text-xs text-gray-400">{patta.district}</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(patta.status)}`}>
-                        {getStatusIcon(patta.status)}
-                        <span className="ml-1 capitalize">{patta.status}</span>
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-white">{patta.officer}</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded transition-all">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {patta.status === 'pending' && (
-                          <>
-                            <button 
-                              onClick={() => handleAction(patta.id, 'approve')}
-                              className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-700 rounded transition-all"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleAction(patta.id, 'reject')}
-                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="lg:hidden">
-            {filteredData.map((patta) => (
-              <div key={patta.id} className="p-4 border-b border-gray-700">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-300">
-                        {patta.holderName.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-white">{patta.holderName}</h4>
-                      <p className="text-xs text-gray-400">{patta.id}</p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(patta.status)}`}>
-                    {getStatusIcon(patta.status)}
-                    <span className="ml-1 capitalize">{patta.status}</span>
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
-                  <div>
-                    <span className="text-gray-400">Location:</span>
-                    <p className="text-white">{patta.village}, {patta.district}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Area:</span>
-                    <p className="text-white">{patta.area}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Officer:</span>
-                    <p className="text-white">{patta.officer}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Documents:</span>
-                    <p className="text-white">{patta.documents}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Applied: {patta.uploadDate}</span>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600 transition-colors">
-                      View
-                    </button>
-                    {patta.status === 'pending' && (
-                      <>
-                        <button 
-                          onClick={() => handleAction(patta.id, 'approve')}
-                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => handleAction(patta.id, 'reject')}
-                          className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {filteredData.length === 0 && (
-            <div className="p-8 text-center">
-              <FileText className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-sm font-medium text-white mb-2">No applications found</h3>
-              <p className="text-xs text-gray-400">Try adjusting your search criteria or filters.</p>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

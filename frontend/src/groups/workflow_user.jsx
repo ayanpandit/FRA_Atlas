@@ -81,7 +81,7 @@ const Workflow_User = () => {
   const effectiveSidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : sidebarWidth);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+  <div className="flex h-screen bg-white overflow-hidden">
       {/* Sidebar Container */}
       <div 
         ref={sidebarRef}
@@ -138,20 +138,20 @@ const Workflow_User = () => {
       {/* Mobile Overlay */}
       {isMobile && !sidebarCollapsed && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-white bg-opacity-50 z-40"
           onClick={() => setSidebarCollapsed(true)}
         />
       )}
 
       {/* Main Content Area */}
       <div 
-        className="flex-1 flex flex-col min-w-0 overflow-hidden"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white"
         style={{ 
           width: `calc(100% - ${effectiveSidebarWidth}px)`,
           transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
         }}
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-white">
           <div className="p-6 lg:p-8">
             {renderMainContent()}
           </div>

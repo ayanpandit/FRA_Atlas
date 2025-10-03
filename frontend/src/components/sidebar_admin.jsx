@@ -169,7 +169,7 @@ const Sidebar_Admin = ({
 
   return (
     <div 
-      className="h-full flex flex-col bg-white border-r border-gray-200 overflow-hidden transition-all duration-300 ease-in-out"
+      className="h-full flex flex-col bg-black border-r border-gray-900 overflow-hidden transition-all duration-300 ease-in-out"
       style={{ 
         width: isCollapsed ? '80px' : '280px',
         minWidth: isCollapsed ? '80px' : '280px'
@@ -177,7 +177,7 @@ const Sidebar_Admin = ({
       ref={sidebarRef}
     >
       {/* Header with Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+  <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-black">
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'min-w-0'}`}>
           {/* Logo */}
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
@@ -185,7 +185,7 @@ const Sidebar_Admin = ({
               <img 
                 src={logo}
                 alt="FRA Portal Logo"
-                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg object-cover border-2 border-blue-200`}
+                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg object-cover border-2 border-gray-700`}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   const fallback = e.target.nextSibling;
@@ -194,7 +194,7 @@ const Sidebar_Admin = ({
               />
               {/* Fallback logo */}
               <div 
-                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold border-2 border-blue-200 hidden`}
+                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center text-white font-bold border-2 border-gray-700 hidden`}
               >
                 <span className={isCollapsed ? 'text-sm' : 'text-base'}>FRA</span>
               </div>
@@ -202,8 +202,8 @@ const Sidebar_Admin = ({
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-gray-900 truncate">FRA Portal</h1>
-                <p className="text-xs text-gray-600 truncate">Forest Rights</p>
+                <h1 className="text-lg font-bold text-white truncate">FRA Portal</h1>
+                <p className="text-xs text-gray-300 truncate">Forest Rights</p>
               </div>
             )}
           </div>
@@ -213,10 +213,10 @@ const Sidebar_Admin = ({
         {!isCollapsed && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="p-2 rounded-lg hover:bg-gray-800 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
           >
             <svg
-              className="w-4 h-4 text-gray-600 transition-transform duration-200"
+              className="w-4 h-4 text-gray-300 transition-transform duration-200"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -230,44 +230,70 @@ const Sidebar_Admin = ({
       {/* Enhanced Menu Items Container */}
       <div className="flex-1 overflow-y-auto py-4">
         <nav className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`}>
-          {menuItems.map(renderMenuItem)}
+          {menuItems.map(item => (
+            <div key={item.id} className="w-full mb-1">
+              <button
+                onClick={() => {
+                  handleNavigation(item.id, item.externalPath);
+                  if (item.subItems) {
+                    setExpandedMenus(prev => ({ ...prev, [item.id]: !prev[item.id] }));
+                  }
+                }}
+                className={`
+                  w-full flex items-center rounded-lg transition-all duration-200 ease-in-out
+                  ${activeComponent === item.id 
+                    ? 'bg-gray-800 text-white border-l-4 border-blue-400' 
+                    : 'text-gray-300 hover:bg-gray-900 hover:text-white'}
+                  ${isCollapsed ? 'justify-center py-3 px-2' : 'justify-start py-4 px-4'}
+                `}
+              >
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
+                  <span className={`flex-shrink-0 ${activeComponent === item.id ? 'text-blue-400' : 'text-gray-400'} ${isCollapsed ? '' : 'mr-4'}`}>
+                    {item.icon}
+                  </span>
+                  {!isCollapsed && (
+                    <span className="truncate font-semibold text-base">{item.name}</span>
+                  )}
+                </div>
+              </button>
+            </div>
+          ))}
         </nav>
       </div>
 
       {/* Enhanced Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
+  <div className="p-4 border-t border-gray-800 bg-gray-950">
         <div className={`flex items-center ${isCollapsed ? 'flex-col space-y-2 justify-center' : 'justify-between'}`}>
           {!isCollapsed ? (
             <>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-gray-400">
                 <div className="font-medium">v2.1.0</div>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-600">Online</span>
+                <span className="text-xs text-gray-400">Online</span>
               </div>
             </>
           ) : (
             <>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <div className="text-xs text-gray-600">v2.1.0</div>
+              <div className="text-xs text-gray-400">v2.1.0</div>
             </>
           )}
         </div>
         
         {/* User info when not collapsed */}
         {!isCollapsed && user && (
-  <div className="mt-3 pt-3 border-t border-gray-200">
+  <div className="mt-3 pt-3 border-t border-gray-800">
     <div className="flex items-center space-x-2">
-      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full 
-                      flex items-center justify-center text-white text-xs font-bold">
+      <div className="w-6 h-6 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center text-white text-xs font-bold">
         {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-gray-900 truncate">
+        <div className="text-sm font-medium text-white truncate">
           {user.name || 'Admin'}
         </div>
-        <div className="text-xs text-gray-500 truncate">
+        <div className="text-xs text-gray-400 truncate">
           {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Administrator'}
         </div>
       </div>
@@ -280,10 +306,10 @@ const Sidebar_Admin = ({
         {isCollapsed && (
           <button
             onClick={() => setIsCollapsed(false)}
-            className="w-full mt-3 p-2 rounded-lg hover:bg-gray-200 transition-all duration-200 flex items-center justify-center"
+            className="w-full mt-3 p-2 rounded-lg hover:bg-gray-800 transition-all duration-200 flex items-center justify-center"
           >
             <svg
-              className="w-4 h-4 text-gray-600 transform rotate-180"
+              className="w-4 h-4 text-gray-300 transform rotate-180"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

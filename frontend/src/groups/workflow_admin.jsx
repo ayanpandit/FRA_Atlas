@@ -80,7 +80,7 @@ const Workflow_Admin = () => {
   const effectiveSidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : sidebarWidth);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+  <div className="flex h-screen bg-black overflow-hidden">
       {/* Sidebar Container */}
       <div 
         ref={sidebarRef}
@@ -144,13 +144,13 @@ const Workflow_Admin = () => {
 
       {/* Main Content Area */}
       <div 
-        className="flex-1 flex flex-col min-w-0 overflow-hidden"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden bg-black"
         style={{ 
           width: `calc(100% - ${effectiveSidebarWidth}px)`,
           transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
         }}
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-black">
           <div className="p-6 lg:p-8">
             {renderMainContent()}
           </div>

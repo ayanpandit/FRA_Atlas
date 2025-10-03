@@ -158,16 +158,27 @@ const Sidebar_Off = ({
   );
 
   return (
-    <div 
-      className="h-full flex flex-col bg-white border-r border-gray-200 overflow-hidden transition-all duration-300 ease-in-out"
-      style={{ 
-        width: isCollapsed ? '80px' : '280px',
-        minWidth: isCollapsed ? '80px' : '280px'
-      }}
-      ref={sidebarRef}
-    >
+    <>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@728&display=swap');
+        .alan-sans {
+          font-family: "Alan Sans", sans-serif;
+          font-optical-sizing: auto;
+          font-weight: 728;
+          font-style: normal;
+        }`}
+      </style>
+      <div 
+        className="h-full flex flex-col bg-teal-900 border-r border-teal-800 overflow-hidden transition-all duration-300 ease-in-out alan-sans"
+        style={{ 
+          width: isCollapsed ? '80px' : '280px',
+          minWidth: isCollapsed ? '80px' : '280px',
+          boxShadow: 'inset 1px 0 0 rgba(255,255,255,0.1), 4px 0 20px rgba(0,0,0,0.3)'
+        }}
+        ref={sidebarRef}
+      >
       {/* Header with Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+        <div className="flex items-center justify-between p-4 border-b border-teal-700 bg-gradient-to-r from-teal-800 to-teal-900" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)'}}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'min-w-0'}`}>
           {/* Logo */}
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
@@ -175,7 +186,7 @@ const Sidebar_Off = ({
               <img 
                 src={logo}
                 alt="FRA Portal Logo"
-                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg object-cover border-2 border-blue-200`}
+                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg object-cover border-2 border-teal-600`}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   const fallback = e.target.parentElement.querySelector('[data-fallback="true"]');
@@ -184,7 +195,8 @@ const Sidebar_Off = ({
               />
               <div 
                 data-fallback="true"
-                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold border-2 border-blue-200 hidden`}
+                className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-teal-700 to-teal-800 rounded-lg items-center justify-center text-white font-bold border-2 border-teal-600 hidden`}
+                style={{ display: 'none' }}
               >
                 {/* Fallback logo */}
                 <span className={isCollapsed ? 'text-sm' : 'text-base'}>FRA</span>
@@ -193,8 +205,8 @@ const Sidebar_Off = ({
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-gray-900 truncate">FRA Portal</h1>
-                <p className="text-xs text-gray-600 truncate">Forest Rights</p>
+                <h1 className="text-lg font-bold text-white truncate" style={{textShadow: '0 1px 2px rgba(0,0,0,0.5)', filter: 'contrast(1.2) brightness(1.1)'}}>FRA Portal</h1>
+                <p className="text-xs text-teal-200 truncate" style={{textShadow: '0 1px 1px rgba(0,0,0,0.3)'}}>Gram Panchayat</p>
               </div>
             )}
           </div>
@@ -204,10 +216,10 @@ const Sidebar_Off = ({
         {!isCollapsed && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="p-2 rounded-lg hover:bg-teal-700 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
           >
             <svg
-              className="w-4 h-4 text-gray-600 transition-transform duration-200"
+              className="w-4 h-4 text-gray-300 transition-transform duration-200"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -221,43 +233,93 @@ const Sidebar_Off = ({
       {/* Enhanced Menu Items Container */}
       <div className="flex-1 overflow-y-auto py-4">
         <nav className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`}>
-          {menuItems.map(renderMenuItem)}
+          {menuItems.map(item => (
+            <div key={item.id} className="w-full mb-1">
+              <button
+                onClick={() => {
+                  handleNavigation(item.id, item.externalPath);
+                  if (item.subItems) {
+                    setExpandedMenus(prev => ({ ...prev, [item.id]: !prev[item.id] }));
+                  }
+                }}
+                className={`
+                  w-full flex items-center rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105
+                  ${activeComponent === item.id 
+                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white border-l-4 border-teal-200 shadow-lg' 
+                    : 'text-teal-50 hover:bg-gradient-to-r hover:from-teal-800 hover:to-teal-700 hover:text-white hover:shadow-md'}
+                  ${isCollapsed ? 'justify-center py-3 px-2' : 'justify-start py-4 px-4'}
+                `}
+                style={activeComponent === item.id ? {
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.2)'
+                } : {}}
+              >
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
+                  <span 
+                    className={`flex-shrink-0 ${activeComponent === item.id ? 'text-white' : 'text-teal-100'} ${isCollapsed ? '' : 'mr-4'} transition-all duration-300 transform hover:scale-110`}
+                    style={{
+                      filter: activeComponent === item.id 
+                        ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3)) brightness(1.2) contrast(1.3)' 
+                        : 'drop-shadow(0 1px 2px rgba(0,0,0,0.2)) brightness(1.1) contrast(1.2)',
+                      textShadow: activeComponent === item.id 
+                        ? '0 1px 2px rgba(0,0,0,0.5)' 
+                        : '0 1px 1px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    {item.icon}
+                  </span>
+                  {!isCollapsed && (
+                    <span 
+                      className={`truncate font-bold text-base ${activeComponent === item.id ? 'text-white' : 'text-teal-50'}`}
+                      style={{
+                        textShadow: activeComponent === item.id 
+                          ? '0 1px 2px rgba(0,0,0,0.5)' 
+                          : '0 1px 1px rgba(0,0,0,0.3)',
+                        filter: 'contrast(1.2) brightness(1.1)'
+                      }}
+                    >
+                      {item.name}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+          ))}
         </nav>
       </div>
 
       {/* Enhanced Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
+  <div className="p-4 border-t border-teal-800 bg-teal-800">
         <div className={`flex items-center ${isCollapsed ? 'flex-col space-y-2 justify-center' : 'justify-between'}`}>
           {!isCollapsed ? (
             <>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-teal-200">
                 <div className="font-medium">v2.1.0</div>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-600">Online</span>
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-teal-200">Online</span>
               </div>
             </>
           ) : (
             <>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <div className="text-xs text-gray-600">v2.1.0</div>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="text-xs text-teal-200">v2.1.0</div>
             </>
           )}
         </div>
         
         {/* User info when not collapsed */}
         {!isCollapsed && user && (
-  <div className="mt-3 pt-3 border-t border-gray-200">
+  <div className="mt-3 pt-3 border-t border-teal-700">
     <div className="flex items-center space-x-2">
-      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+      <div className="w-6 h-6 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
         {user.name ? user.name.charAt(0).toUpperCase() : 'O'}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-gray-900 truncate">
+        <div className="text-sm font-medium text-white truncate">
           {user.name || 'Officer'}
         </div>
-        <div className="text-xs text-gray-500 truncate">
+        <div className="text-xs text-teal-200 truncate">
           {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Officer'}
         </div>
       </div>
@@ -270,10 +332,10 @@ const Sidebar_Off = ({
         {isCollapsed && (
           <button
             onClick={() => setIsCollapsed(false)}
-            className="w-full mt-3 p-2 rounded-lg hover:bg-gray-200 transition-all duration-200 flex items-center justify-center"
+            className="w-full mt-3 p-2 rounded-lg hover:bg-teal-700 transition-all duration-200 flex items-center justify-center"
           >
             <svg
-              className="w-4 h-4 text-gray-600 transform rotate-180"
+              className="w-4 h-4 text-teal-200 transform rotate-180"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -282,8 +344,9 @@ const Sidebar_Off = ({
             </svg>
           </button>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

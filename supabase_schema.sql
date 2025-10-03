@@ -22,6 +22,8 @@ create table public.pattas (
   area_hectares numeric, -- hectares
   status text default 'pending', -- pending, verified, approved, cancelled
   recommended_schemes jsonb default '[]'::jsonb, -- array of scheme ids or names
+  ndvi_index double precision not null default 0.0, -- NDVI index (stored as float, default 0.0)
+  ndwi_index double precision not null default 0.0, -- NDWI index (stored as float, default 0.0)
   date_applied timestamptz default now(),
   time_applied timestamptz default now(),
   date_verified timestamptz,
