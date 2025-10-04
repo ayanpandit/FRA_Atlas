@@ -9,14 +9,16 @@ services:
     name: fra-atlas-frontend
     env: static
     branch: main
-    buildCommand: "cd frontend && npm install && npm run build"
-    publishPath: frontend/dist
+    root: frontend
+    buildCommand: "npm install && npm run build"
+    publishPath: dist
 
   - type: web_service
     name: fra-atlas-backend
     env: python
     branch: main
-    buildCommand: "cd backend && pip install -r requirements.txt"
+    root: backend
+    buildCommand: "pip install -r requirements.txt"
     # Use the combined service file (ocr_ner_map.py) that exposes `app` as the Flask application
-    startCommand: "cd backend && gunicorn ocr_ner_map:app --bind 0.0.0.0:$PORT --workers 4"
+    startCommand: "gunicorn ocr_ner_map:app --bind 0.0.0.0:$PORT --workers 4"
     plan: starter
