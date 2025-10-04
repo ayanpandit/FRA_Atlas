@@ -33,21 +33,42 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 # -------------------------------
-# Earth Engine Initialization
-# -------------------------------
-EE_PROJECT_ID = "fra-a-472418"  # Your Google Earth Engine project ID
-try:
-    ee.Initialize(project=EE_PROJECT_ID)
-    print("✅ Earth Engine initialized successfully")
-except Exception as e:
-    print(f"❌ Earth Engine initialization failed: {e}")
-    print("Note: Make sure you're authenticated with 'ee.Authenticate()' first")
-
-# -------------------------------
 # Output folder for temporary storage
 # -------------------------------
-OUTPUT_FOLDER = "FRA_Exports"
+OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "FRA_Exports")
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# -------------------------------
+# Earth Engine Initialization
+# -------------------------------
+EE_PROJECT_ID = os.getenv("EE_PROJECT_ID", "fra-a-472418")
+
+def initialize_earth_engine():
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    service_account_json = os.getenv("EE_SERVICE_ACCOUNT_JSON")
+
+    if service_account_json and not credentials_path:
+        temp_path = os.path.join(OUTPUT_FOLDER, "ee_service_account.json")
+        try:
+            with open(temp_path, "w", encoding="utf-8") as fh:
+                fh.write(service_account_json)
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+            credentials_path = temp_path
+            print(f"🔐 Wrote Earth Engine credentials to {temp_path}")
+        except Exception as err:
+            print(f"❌ Failed to write EE service account file: {err}")
+
+    if credentials_path:
+        print(f"🔐 Using Earth Engine credentials from {credentials_path}")
+
+    try:
+        ee.Initialize(project=EE_PROJECT_ID)
+        print("✅ Earth Engine initialized successfully")
+    except Exception as e:
+        print(f"❌ Earth Engine initialization failed: {e}")
+        print("Note: Provide credentials via GOOGLE_APPLICATION_CREDENTIALS or EE_SERVICE_ACCOUNT_JSON and ensure the service account has access to the project.")
+
+initialize_earth_engine()
 
 # ========================================================================
 # EARTH ENGINE ANALYSIS FUNCTIONS
