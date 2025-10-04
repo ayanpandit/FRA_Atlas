@@ -24,11 +24,24 @@ CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-
 # -------------------------------
 EE_PROJECT_ID = "fra-a-472418"  # Your Google Earth Engine project ID
 try:
+    ee_sa_json = os.getenv('EE_SERVICE_ACCOUNT_JSON')
+    ee_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if ee_sa_json and not ee_credentials_path:
+        tmp_path = os.path.join('FRA_Exports', 'ee_service_account.json')
+        with open(tmp_path, 'w', encoding='utf-8') as fh:
+            fh.write(ee_sa_json)
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = tmp_path
+        ee_credentials_path = tmp_path
+        print(f"🔐 Wrote Earth Engine service account to: {tmp_path}")
+
+    if ee_credentials_path:
+        print(f"🔐 Using GOOGLE_APPLICATION_CREDENTIALS from: {ee_credentials_path}")
+
     ee.Initialize(project=EE_PROJECT_ID)
     print("✅ Earth Engine initialized successfully")
 except Exception as e:
     print(f"❌ Earth Engine initialization failed: {e}")
-    print("Note: Make sure you're authenticated with 'ee.Authenticate()' first")
+    print("Hint: Provide Earth Engine credentials. See https://developers.google.com/earth-engine/guides/python_install#authentication")
 
 # -------------------------------
 # Output folder for temporary storage
