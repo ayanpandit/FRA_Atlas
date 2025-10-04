@@ -46,6 +46,7 @@ EE_PROJECT_ID = os.getenv("EE_PROJECT_ID", "fra-a-472418")
 def initialize_earth_engine():
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     service_account_json = os.getenv("EE_SERVICE_ACCOUNT_JSON")
+    service_account_email = os.getenv("EE_SERVICE_ACCOUNT_EMAIL")
 
     if service_account_json and not credentials_path:
         temp_path = os.path.join(OUTPUT_FOLDER, "ee_service_account.json")
@@ -55,18 +56,33 @@ def initialize_earth_engine():
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
             credentials_path = temp_path
             print(f"🔐 Wrote Earth Engine credentials to {temp_path}")
+            if not service_account_email:
+                service_account_email = json.loads(service_account_json).get("client_email")
         except Exception as err:
             print(f"❌ Failed to write EE service account file: {err}")
 
+    if credentials_path and not service_account_email:
+        try:
+            with open(credentials_path, "r", encoding="utf-8") as fh:
+                service_account_email = json.load(fh).get("client_email")
+        except Exception as err:
+            print(f"⚠️ Unable to read client_email from credentials file: {err}")
+
     if credentials_path:
         print(f"🔐 Using Earth Engine credentials from {credentials_path}")
+    if service_account_email:
+        print(f"🆔 Earth Engine service account: {service_account_email}")
 
     try:
-        ee.Initialize(project=EE_PROJECT_ID)
+        if credentials_path and service_account_email:
+            credentials = ee.ServiceAccountCredentials(service_account_email, credentials_path)
+            ee.Initialize(credentials=credentials, project=EE_PROJECT_ID)
+        else:
+            ee.Initialize(project=EE_PROJECT_ID)
         print("✅ Earth Engine initialized successfully")
     except Exception as e:
         print(f"❌ Earth Engine initialization failed: {e}")
-        print("Note: Provide credentials via GOOGLE_APPLICATION_CREDENTIALS or EE_SERVICE_ACCOUNT_JSON and ensure the service account has access to the project.")
+        print("Note: Ensure GOOGLE_APPLICATION_CREDENTIALS / EE_SERVICE_ACCOUNT_JSON and EE_SERVICE_ACCOUNT_EMAIL are set and the service account has Earth Engine access.")
 
 initialize_earth_engine()
 

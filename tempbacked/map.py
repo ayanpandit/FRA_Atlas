@@ -24,26 +24,11 @@ CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-
 # -------------------------------
 EE_PROJECT_ID = "fra-a-472418"  # Your Google Earth Engine project ID
 try:
-    ee_sa_json = os.getenv('EE_SERVICE_ACCOUNT_JSON')
-    ee_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if ee_sa_json and not ee_credentials_path:
-        tmp_path = os.path.join('FRA_Exports', 'ee_service_account.json')
-        with open(tmp_path, 'w', encoding='utf-8') as fh:
-            fh.write(ee_sa_json)
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = tmp_path
-        ee_credentials_path = tmp_path
-        print(f"🔐 Wrote Earth Engine service account to: {tmp_path}")
-
-    if ee_credentials_path:
-        print(f"🔐 Using GOOGLE_APPLICATION_CREDENTIALS from: {ee_credentials_path}")
-
     ee.Initialize(project=EE_PROJECT_ID)
-    EE_INITIALIZED = True
     print("✅ Earth Engine initialized successfully")
 except Exception as e:
-    EE_INITIALIZED = False
     print(f"❌ Earth Engine initialization failed: {e}")
-    print("Hint: Provide Earth Engine credentials. See https://developers.google.com/earth-engine/guides/python_install#authentication")
+    print("Note: Make sure you're authenticated with 'ee.Authenticate()' first")
 
 # -------------------------------
 # Output folder for temporary storage
@@ -205,20 +190,6 @@ def analyze_location():
         
         print(f"📍 Processing request for: Lat={lat}, Lon={lon}, Radius={radius_m}m")
         
-        # Check Earth Engine initialization early and return helpful message when not ready
-        try:
-            if not EE_INITIALIZED:
-                return jsonify({
-                    'error': 'earth_engine_not_initialized',
-                    'message': 'Earth Engine client not initialized on the server. Please configure EE_SERVICE_ACCOUNT_JSON (paste service account JSON) or set GOOGLE_APPLICATION_CREDENTIALS to a credentials file with Earth Engine access. See DEPLOY_RENDER.md for instructions.'
-                }), 503
-        except NameError:
-            # If EE_INITIALIZED is not defined for some reason, treat as not initialized
-            return jsonify({
-                'error': 'earth_engine_not_initialized',
-                'message': 'Earth Engine client not initialized on the server. Please configure EE_SERVICE_ACCOUNT_JSON (paste service account JSON) or set GOOGLE_APPLICATION_CREDENTIALS to a credentials file with Earth Engine access. See DEPLOY_RENDER.md for instructions.'
-            }), 503
-
         # -------------------------------
         # Step 1: Define Area of Interest (AOI)
         # -------------------------------
