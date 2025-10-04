@@ -48,6 +48,17 @@ def initialize_earth_engine():
     service_account_json = os.getenv("EE_SERVICE_ACCOUNT_JSON")
     service_account_email = os.getenv("EE_SERVICE_ACCOUNT_EMAIL")
 
+    print("🌐 EE_PROJECT_ID:", EE_PROJECT_ID)
+
+    if credentials_path:
+        print(f"📝 GOOGLE_APPLICATION_CREDENTIALS is set to: {credentials_path}")
+        print(f"📁 Credential file exists: {os.path.exists(credentials_path)}")
+    else:
+        print("⚠️ GOOGLE_APPLICATION_CREDENTIALS not set")
+
+    if service_account_json:
+        print(f"📄 EE_SERVICE_ACCOUNT_JSON provided (length={len(service_account_json)})")
+
     if service_account_json and not credentials_path:
         temp_path = os.path.join(OUTPUT_FOLDER, "ee_service_account.json")
         try:
