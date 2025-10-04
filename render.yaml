@@ -15,10 +15,9 @@ services:
 
   - type: web_service
     name: fra-atlas-backend
-    env: python
+    env: docker
     branch: main
-    root: backend
-    buildCommand: "pip install -r requirements.txt"
-    # Use the combined service file (ocr_ner_map.py) that exposes `app` as the Flask application
-    startCommand: "gunicorn ocr_ner_map:app --bind 0.0.0.0:$PORT --workers 4"
+    dockerfilePath: backend/Dockerfile
+    buildContext: backend
+    healthCheckPath: /health
     plan: starter
