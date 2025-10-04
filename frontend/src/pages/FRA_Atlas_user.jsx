@@ -416,20 +416,6 @@ const FRAAtlas_user = ({ userData }) => {
 
   const mapLayers = [
     {
-      id: 'satellite',
-      name: 'Satellite View',
-      description: 'High-resolution satellite imagery',
-      icon: Satellite,
-      enabled: true
-    },
-    {
-      id: 'terrain',
-      name: 'Terrain',
-      description: 'Topographical features and elevation',
-      icon: Mountain,
-      enabled: false
-    },
-    {
       id: 'forest_cover',
       name: 'Forest Cover',
       description: 'Forest density and vegetation type',
@@ -637,7 +623,7 @@ const FRAAtlas_user = ({ userData }) => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
         <div className="space-y-3">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-gray-900 leading-tight">FRA Atlas</h2>
-          <p className="text-gray-600 text-base sm:text-lg max-w-2xl leading-relaxed">Interactive 3D/2D map visualization of your forest rights and surrounding areas with real-time layer controls</p>
+          <p className="text-gray-600 text-base sm:text-lg max-w-2xl leading-relaxed">Interactive map visualization of your forest rights and surrounding areas with real-time layer controls and satellite imagery</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <button className="group flex items-center justify-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
@@ -674,32 +660,49 @@ const FRAAtlas_user = ({ userData }) => {
 
           {sidebarOpen && (
             <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto" style={{ height: 'calc(100% - 80px)' }}>
-              {/* View Controls */}
+              {/* Base Map Layer Selector */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4 text-base sm:text-lg">View Mode</h4>
-                <div className="flex bg-gray-100 rounded-xl p-1.5" style={{boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'}}>
-                  <button
-                    onClick={() => setMapMode('2d')}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      mapMode === '2d' ? 'bg-teal-800 text-white transform scale-105' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    2D
-                  </button>
-                  <button
-                    onClick={() => setMapMode('3d')}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      mapMode === '3d' ? 'bg-teal-800 text-white transform scale-105' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    3D
-                  </button>
-                </div>
+                <h4 className="font-semibold text-gray-900 mb-4 text-base sm:text-lg">Base Map</h4>
+                <select 
+                  value={activeLayer}
+                  onChange={(e) => {
+                    setActiveLayer(e.target.value);
+                    if (!leafletMap) return;
+                    
+                    const layers = {
+                      satellite: window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Esri',
+                        maxZoom: 19
+                      }),
+                      street: window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: 'OpenStreetMap',
+                        maxZoom: 19
+                      }),
+                      terrain: window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: 'OpenTopoMap',
+                        maxZoom: 17
+                      })
+                    };
+                    
+                    leafletMap.eachLayer((layer) => {
+                      if (layer instanceof window.L.TileLayer) {
+                        leafletMap.removeLayer(layer);
+                      }
+                    });
+                    layers[e.target.value].addTo(leafletMap);
+                  }}
+                  className="w-full bg-white border border-gray-300 text-gray-800 text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-medium" 
+                  style={{boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'}}
+                >
+                  <option value="satellite">🛰️ Satellite View</option>
+                  <option value="street">🗺️ Street Map</option>
+                  <option value="terrain">🏔️ Terrain Map</option>
+                </select>
               </div>
 
               {/* Map Layers */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4 text-base sm:text-lg">Map Layers</h4>
+                <h4 className="font-semibold text-gray-900 mb-4 text-base sm:text-lg">Data Layers</h4>
                 <div className="space-y-3">
                   {mapLayers.map((layer) => (
                     <LayerToggle key={layer.id} layer={layer} />
@@ -750,11 +753,11 @@ const FRAAtlas_user = ({ userData }) => {
 
         {/* Map Area */}
   <div className={`h-full ${sidebarOpen ? 'ml-56 sm:ml-64' : 'ml-16'} transition-all duration-300 relative z-20`}>
-          {/* Cesium Map Container */}
+          {/* Leaflet Map Container */}
           <div 
             ref={mapContainerRef} 
-            className="w-full h-full"
-            style={{ position: 'relative' }}
+            className="w-full h-full bg-gray-100"
+            style={{ position: 'relative', minHeight: '500px' }}
           ></div>
 
           {/* Map Controls - Positioned to avoid overlap */}

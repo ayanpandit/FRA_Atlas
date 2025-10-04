@@ -36,27 +36,52 @@ const Workflow_Admin = () => {
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      setIsMobile(width < 768);
+      const isMobileDevice = width < 768;
+      setIsMobile(isMobileDevice);
       
-      // Responsive sidebar width adjustments
-      if (width < 768) {
+      // Enhanced responsive sidebar width adjustments
+      if (width < 640) {
+        // Mobile phones (portrait)
+        setSidebarWidth(0);
+        setSidebarCollapsed(true);
+      } else if (width < 768) {
+        // Mobile phones (landscape) & small tablets
         setSidebarWidth(0);
         setSidebarCollapsed(true);
       } else if (width < 1024) {
-        setSidebarWidth(64);
+        // Tablets (portrait) - collapsed sidebar with icons
+        setSidebarWidth(72);
         setSidebarCollapsed(true);
       } else if (width < 1280) {
-        setSidebarWidth(200);
+        // Tablets (landscape) & small laptops - medium sidebar
+        setSidebarWidth(220);
+        setSidebarCollapsed(false);
+      } else if (width < 1536) {
+        // Laptops - standard sidebar
+        setSidebarWidth(280);
         setSidebarCollapsed(false);
       } else {
-        setSidebarWidth(280);
+        // Large desktops - wider sidebar
+        setSidebarWidth(300);
         setSidebarCollapsed(false);
       }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Debounce resize events for better performance
+    let resizeTimer;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleResize, 150);
+    };
+    
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', debouncedResize);
+    };
   }, []);
 
   // Render main content
@@ -77,23 +102,56 @@ const Workflow_Admin = () => {
     }
   };
 
-  const effectiveSidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 64 : sidebarWidth);
+  const effectiveSidebarWidth = isMobile ? 0 : (sidebarCollapsed ? 72 : sidebarWidth);
 
   return (
   <div className="flex h-screen bg-white overflow-hidden">
-      {/* Sidebar Container */}
+      {/* Mobile Menu Toggle Button */}
+      {isMobile && (
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="fixed top-4 left-4 z-50 p-3 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 active:scale-95"
+          aria-label="Toggle Menu"
+        >
+          <svg
+            className="w-6 h-6 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {sidebarCollapsed ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            )}
+          </svg>
+        </button>
+      )}
+
+      {/* Sidebar Container - Only renders when not mobile OR when mobile menu is open */}
+      {(!isMobile || !sidebarCollapsed) && (
       <div 
         ref={sidebarRef}
         className={`
           relative bg-white shadow-2xl border-r border-gray-200
           ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'flex-shrink-0'}
-          ${isMobile && sidebarCollapsed ? 'transform -translate-x-full' : ''}
+          ${isMobile ? 'transform transition-transform duration-300 ease-in-out' : ''}
         `}
         style={{ 
-          width: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
-          minWidth: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
-          maxWidth: isMobile ? '320px' : `${effectiveSidebarWidth}px`,
-          transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
+          width: isMobile ? 'min(85vw, 320px)' : `${effectiveSidebarWidth}px`,
+          minWidth: isMobile ? 'min(85vw, 320px)' : `${effectiveSidebarWidth}px`,
+          maxWidth: isMobile ? 'min(85vw, 320px)' : `${effectiveSidebarWidth}px`,
+          transition: isResizing ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
         <Sidebar_Admin 
@@ -133,12 +191,14 @@ const Workflow_Admin = () => {
           />
         )}
       </div>
+      )}
 
       {/* Mobile Overlay */}
       {isMobile && !sidebarCollapsed && (
         <div 
-          className="fixed inset-0 bg-white bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={() => setSidebarCollapsed(true)}
+          style={{ touchAction: 'none' }}
         />
       )}
 
@@ -146,12 +206,11 @@ const Workflow_Admin = () => {
       <div 
         className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white"
         style={{ 
-          width: `calc(100% - ${effectiveSidebarWidth}px)`,
-          transition: isResizing ? 'none' : 'all 0.3s ease-in-out'
+          transition: isResizing ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
         <div className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8">
+          <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full">
             {renderMainContent()}
           </div>
         </div>
