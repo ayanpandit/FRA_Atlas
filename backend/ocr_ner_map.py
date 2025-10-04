@@ -6,6 +6,8 @@ import numpy as np
 import requests
 import io
 import base64
+import threading
+import time
 from datetime import datetime
 import gc  # Garbage collector for memory management
 import json
@@ -96,6 +98,45 @@ def initialize_earth_engine():
         print("Note: Ensure GOOGLE_APPLICATION_CREDENTIALS / EE_SERVICE_ACCOUNT_JSON and EE_SERVICE_ACCOUNT_EMAIL are set and the service account has Earth Engine access.")
 
 initialize_earth_engine()
+
+# ------------------------------------------------------------------------
+# Keep-alive background pinger START
+# ------------------------------------------------------------------------
+KEEPALIVE_BASE_URL = os.getenv("KEEPALIVE_URL") or os.getenv("RENDER_EXTERNAL_URL")
+KEEPALIVE_ENABLED = os.getenv("KEEPALIVE_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
+KEEPALIVE_INTERVAL_SECONDS = int(os.getenv("KEEPALIVE_INTERVAL_SECONDS", "720"))  # 12 minutes by default
+KEEPALIVE_PATH = os.getenv("KEEPALIVE_PATH", "/health")
+
+
+def start_keepalive_pinger():
+    """Spin up a daemon thread that pings the service periodically to keep it warm."""
+    if not KEEPALIVE_ENABLED:
+        print("⏸️  Keep-alive pinger disabled via KEEPALIVE_ENABLED")
+        return
+
+    if not KEEPALIVE_BASE_URL:
+        print("⏸️  Keep-alive pinger disabled: no KEEPALIVE_URL or RENDER_EXTERNAL_URL provided")
+        return
+
+    ping_url = KEEPALIVE_BASE_URL.rstrip('/') + KEEPALIVE_PATH
+    print(f"🔁 Keep-alive pinger targeting {ping_url} every {KEEPALIVE_INTERVAL_SECONDS} seconds")
+
+    def _ping_loop():
+        while True:
+            try:
+                response = requests.get(ping_url, timeout=10)
+                print(f"✅ Keep-alive ping -> {response.status_code}")
+            except Exception as err:
+                print(f"⚠️ Keep-alive ping failed: {err}")
+            time.sleep(KEEPALIVE_INTERVAL_SECONDS)
+
+    threading.Thread(target=_ping_loop, name="KeepAlivePinger", daemon=True).start()
+
+
+start_keepalive_pinger()
+# ------------------------------------------------------------------------
+# Keep-alive background pinger END
+# ------------------------------------------------------------------------
 
 # ========================================================================
 # EARTH ENGINE ANALYSIS FUNCTIONS
