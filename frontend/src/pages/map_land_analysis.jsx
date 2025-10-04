@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabaseClient';
-import { API_BASE_URL, backendUrl } from '../lib/api';
+import { backendUrl } from '../lib/api';
 
 // Add Alan Sans font integration
 const style = document.createElement('style');
@@ -13,150 +13,37 @@ style.textContent = `
 document.head.appendChild(style);
 
 const Map_Land_Analysis = () => {
-  // Helper to normalise different coordinate formats coming from database
-  const parsePattaCoordinates = (rawCoords) => {
-    if (!rawCoords) return null;
-
-    const validatePair = (lat, lon) => (
-      typeof lat === 'number' && typeof lon === 'number' &&
-      !Number.isNaN(lat) && !Number.isNaN(lon) &&
-      lat >= -90 && lat <= 90 &&
-      lon >= -180 && lon <= 180
-    );
-
-    let candidate = rawCoords;
-    if (typeof candidate === 'string') {
-      const trimmed = candidate.trim();
-      // Attempt to parse common stringified JSON first
-      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-        try {
-          candidate = JSON.parse(trimmed.replace(/'/g, '"'));
-        } catch {
-          candidate = trimmed;
-        }
-      }
-      if (typeof candidate === 'string') {
-        const matches = candidate.match(/-?\d+(?:\.\d+)?/g);
-        if (matches && matches.length >= 2) {
-          const lat = parseFloat(matches[0]);
-          const lon = parseFloat(matches[1]);
-          if (validatePair(lat, lon)) {
-            return { lat, lon };
-          }
-        }
-      }
-    }
-
-    if (Array.isArray(candidate) && candidate.length >= 2) {
-      const lat = parseFloat(candidate[0]);
-      const lon = parseFloat(candidate[1]);
-      if (validatePair(lat, lon)) {
-        return { lat, lon };
-      }
-    }
-
-    if (typeof candidate === 'object' && candidate !== null) {
-      const potentialLat = candidate.lat ?? candidate.latitude ?? candidate[0];
-      const potentialLon = candidate.lon ?? candidate.lng ?? candidate.longitude ?? candidate[1];
-      const lat = typeof potentialLat === 'string' ? parseFloat(potentialLat) : potentialLat;
-      const lon = typeof potentialLon === 'string' ? parseFloat(potentialLon) : potentialLon;
-      if (validatePair(lat, lon)) {
-        return { lat, lon };
-      }
-    }
-
-    return null;
-  };
-
   // Add missing patta search handler
-  const searchRequestRef = useRef(0);
-
-  const handlePattaSearch = async (overrideValue, overrideType) => {
-    const value = (overrideValue ?? searchValue ?? '').trim();
-    const activeType = overrideType ?? searchType;
-
-    if (!value) {
-      searchRequestRef.current = 0;
-      setPattaResults([]);
-      setSuggestions([]);
-      setMapPoints([]);
-      return;
-    }
-
-    const escapedValue = value.replace(/,/g, '\\,');
-
+  const handlePattaSearch = async () => {
     let query = supabase.from('pattas').select('*');
-
-    if (activeType && activeType !== 'auto') {
-      query = query.ilike(activeType, `%${escapedValue}%`);
-    } else {
-      const orFilters = [
-        `patta_id.ilike.%${escapedValue}%`,
-        `holder_name.ilike.%${escapedValue}%`,
-        `village.ilike.%${escapedValue}%`,
-        `state.ilike.%${escapedValue}%`
-      ].join(',');
-      query = query.or(orFilters);
+    if (searchType === 'patta_id' && searchValue) {
+      query = query.ilike('patta_id', `%${searchValue}%`);
+    } else if (searchType === 'holder_name' && searchValue) {
+      query = query.ilike('holder_name', `%${searchValue}%`);
+    } else if (searchType === 'village' && searchValue) {
+      query = query.ilike('village', `%${searchValue}%`);
+    } else if (searchType === 'state' && searchValue) {
+      query = query.ilike('state', `%${searchValue}%`);
     }
-
-    const requestId = Date.now();
-    searchRequestRef.current = requestId;
-
-    const { data, error } = await query.limit(50);
-    if (searchRequestRef.current !== requestId) {
-      return;
-    }
+    const { data, error } = await query;
     if (error) {
-      console.error('Patta search failed:', error);
       setPattaResults([]);
-      setSuggestions([]);
       setMapPoints([]);
       return;
     }
-
-    const records = data || [];
-    setPattaResults(records);
-
-    const suggestionSet = new Set();
-    const normalizedValue = value.toLowerCase();
-    records.forEach(record => {
-      ['patta_id', 'holder_name', 'village', 'state'].forEach(field => {
-        if (!record[field]) return;
-        const strValue = String(record[field]);
-        if (strValue.toLowerCase().includes(normalizedValue)) {
-          suggestionSet.add(strValue);
-        }
-      });
-    });
-    setSuggestions(Array.from(suggestionSet).slice(0, 8));
-
-    const parsedPoints = records
-      .map(record => parsePattaCoordinates(record.coordinates))
-      .filter(Boolean);
-    setMapPoints(parsedPoints);
+    setPattaResults(data || []);
+    if ((searchType === 'village' || searchType === 'state') && data) {
+      setMapPoints(data.filter(p => p.coordinates).map(p => p.coordinates));
+    } else {
+      setMapPoints([]);
+    }
   };
   // Patta search states (required for search UI)
-  const [searchType, setSearchType] = useState('auto');
+  const [searchType, setSearchType] = useState('patta_id');
   const [searchValue, setSearchValue] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [pattaResults, setPattaResults] = useState([]);
   const [mapPoints, setMapPoints] = useState([]);
-
-  useEffect(() => {
-    const trimmed = searchValue.trim();
-    if (!trimmed) {
-      setPattaResults([]);
-      setSuggestions([]);
-      setMapPoints([]);
-      return;
-    }
-
-    const debounce = setTimeout(() => {
-      handlePattaSearch(trimmed, searchType);
-    }, 400);
-
-    return () => clearTimeout(debounce);
-  }, [searchValue, searchType]);
   // ============================================
   // STATE MANAGEMENT
   // ============================================
@@ -179,9 +66,6 @@ const Map_Land_Analysis = () => {
   // Track if the analysis was initiated from a specific patta (so we persist results only for that patta)
   const [selectedPattaId, setSelectedPattaId] = useState(null);
   
-  // API endpoint comes from Vite env VITE_BACKEND_URL or falls back to localhost
-  // Use backendUrl('/analyze') to build full paths
-
   // ============================================
   // RESPONSIVE DESIGN HANDLER
   // ============================================
@@ -230,7 +114,7 @@ const Map_Land_Analysis = () => {
 
     try {
       // Call Flask API
-  const response = await fetch(backendUrl('/analyze'), {
+  const response = await fetch(backendUrl('analyze'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -370,7 +254,6 @@ const Map_Land_Analysis = () => {
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
                 }}
               >
-                <option value="auto" className="bg-white">Auto Detect (All Fields)</option>
                 <option value="patta_id" className="bg-white">Patta ID</option>
                 <option value="holder_name" className="bg-white">Holder Name</option>
                 <option value="village" className="bg-white">Village</option>
@@ -385,7 +268,7 @@ const Map_Land_Analysis = () => {
                   type="text"
                   value={searchValue}
                   onChange={e => setSearchValue(e.target.value)}
-                  placeholder={searchType === 'auto' ? 'Search by patta ID, holder, village, or state...' : `Enter ${searchType.replace('_', ' ')}...`}
+                  placeholder={`Enter ${searchType.replace('_', ' ')}...`}
                   className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" style={{
                     boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
                   }}
@@ -413,7 +296,7 @@ const Map_Land_Analysis = () => {
 
             <div className="flex items-end">
               <button
-                onClick={() => handlePattaSearch()}
+                onClick={handlePattaSearch}
                 className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,14 +324,8 @@ const Map_Land_Analysis = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {pattaResults.map((patta, idx) => {
-                const parsedCoords = parsePattaCoordinates(patta.coordinates);
-                const coordinateDisplay = parsedCoords
-                  ? `${parsedCoords.lat.toFixed(6)}, ${parsedCoords.lon.toFixed(6)}`
-                  : 'Not available';
-
-                return (
-                  <div key={idx} className="group bg-gradient-to-br from-gray-800/80 to-gray-700/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-600/50 p-8 hover:border-emerald-500/40 transition-all duration-500 hover:scale-[1.02] hover:shadow-emerald-500/10">
+              {pattaResults.map((patta, idx) => (
+                <div key={idx} className="group bg-gradient-to-br from-gray-800/80 to-gray-700/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-600/50 p-8 hover:border-emerald-500/40 transition-all duration-500 hover:scale-[1.02] hover:shadow-emerald-500/10">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -495,7 +372,7 @@ const Map_Land_Analysis = () => {
                       <svg className="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                       </svg>
-                      <span className="text-gray-700"><span className="text-blue-600 font-medium">Coordinates:</span> {coordinateDisplay}</span>
+                      <span className="text-gray-700"><span className="text-blue-600 font-medium">Coordinates:</span> {patta.coordinates ? 'Available' : 'Not available'}</span>
                     </div>
                   </div>
 
@@ -503,12 +380,30 @@ const Map_Land_Analysis = () => {
                     className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
                     onClick={() => {
                       // Autofill location analysis form and trigger analysis
-                      if (parsedCoords) {
-                        const { lat, lon } = parsedCoords;
+                      let lat, lon;
+                      if (patta.coordinates) {
+                        let coords = patta.coordinates;
+                        if (typeof coords === 'string') {
+                          try {
+                            const parsed = JSON.parse(coords);
+                            if (Array.isArray(parsed) && parsed.length === 2) {
+                              lat = parsed[0];
+                              lon = parsed[1];
+                            }
+                          } catch {}
+                        } else if (Array.isArray(coords) && coords.length === 2) {
+                          lat = coords[0];
+                          lon = coords[1];
+                        } else if (typeof coords === 'object') {
+                          lat = coords.latitude ?? coords.lat;
+                          lon = coords.longitude ?? coords.lon;
+                        }
+                      }
+                      if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
                         // Mark this analysis as coming from a patta so results will be persisted
                         setSelectedPattaId(patta.patta_id ?? patta.id ?? null);
-                        setLatitude(lat.toString());
-                        setLongitude(lon.toString());
+                        setLatitude(lat);
+                        setLongitude(lon);
                         setRadius('1000');
                         fetchAnalysis();
                       } else {
@@ -522,12 +417,11 @@ const Map_Land_Analysis = () => {
                     Analyze Land
                   </button>
                 </div>
-                );
-              })}
+              ))}
             </div>
           </div>
         )}        {/* Map Visualization for village/state search */}
-        {(searchType === 'village' || searchType === 'state' || searchType === 'auto') && mapPoints && mapPoints.length > 0 && (() => {
+        {(searchType === 'village' || searchType === 'state') && mapPoints && mapPoints.length > 0 && (() => {
           // Find first valid coordinate for map center
           const validCoords = mapPoints.filter(pt => {
             let lat, lon;

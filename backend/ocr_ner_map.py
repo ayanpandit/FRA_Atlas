@@ -19,14 +19,8 @@ load_dotenv()
 # Flask App Initialization
 # -------------------------------
 app = Flask(__name__)
-# Updated CORS setup: read allowed origin from FRONTEND_URL env to avoid CORS issues in production
-frontend_origin = os.getenv('FRONTEND_URL', '*')
-if frontend_origin == '*':
-    cors_origins = '*'
-else:
-    cors_origins = [frontend_origin]
-print(f"🔒 Configuring CORS to allow origin: {cors_origins}")
-CORS(app, resources={r"/*": {"origins": cors_origins}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
+# Updated CORS setup for full frontend/backend compatibility
+CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
 
 # -------------------------------
 # API Keys Configuration
@@ -41,37 +35,19 @@ if GEMINI_API_KEY:
 # -------------------------------
 # Earth Engine Initialization
 # -------------------------------
-# Output folder for temporary storage (ensure available before any temp writes)
-OUTPUT_FOLDER = "FRA_Exports"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
 EE_PROJECT_ID = "fra-a-472418"  # Your Google Earth Engine project ID
-# Allow supplying service account JSON content via environment variable (EE_SERVICE_ACCOUNT_JSON)
-# or a path via GOOGLE_APPLICATION_CREDENTIALS. On Render, add the JSON as a secret and set
-# EE_SERVICE_ACCOUNT_JSON to its content or upload the file and set GOOGLE_APPLICATION_CREDENTIALS to the file path.
 try:
-    # If raw JSON is provided in EE_SERVICE_ACCOUNT_JSON, write to a temp file and point GOOGLE_APPLICATION_CREDENTIALS to it
-    ee_sa_json = os.getenv('EE_SERVICE_ACCOUNT_JSON')
-    ee_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if ee_sa_json and not ee_credentials_path:
-        tmp_path = os.path.join(OUTPUT_FOLDER, 'ee_service_account.json')
-        with open(tmp_path, 'w', encoding='utf-8') as fh:
-            fh.write(ee_sa_json)
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = tmp_path
-        ee_credentials_path = tmp_path
-        print(f"🔐 Wrote Earth Engine service account to: {tmp_path}")
-
-    if ee_credentials_path:
-        print(f"🔐 Using GOOGLE_APPLICATION_CREDENTIALS from: {ee_credentials_path}")
-
     ee.Initialize(project=EE_PROJECT_ID)
     print("✅ Earth Engine initialized successfully")
 except Exception as e:
     print(f"❌ Earth Engine initialization failed: {e}")
-    print("Hint: Provide Earth Engine credentials. See https://developers.google.com/earth-engine/guides/python_install#authentication")
-    print("On Render: set EE_SERVICE_ACCOUNT_JSON (content of service account JSON) as a secret or set GOOGLE_APPLICATION_CREDENTIALS to the mounted file path.")
+    print("Note: Make sure you're authenticated with 'ee.Authenticate()' first")
 
-# (OUTPUT_FOLDER already defined above)
+# -------------------------------
+# Output folder for temporary storage
+# -------------------------------
+OUTPUT_FOLDER = "FRA_Exports"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # ========================================================================
 # EARTH ENGINE ANALYSIS FUNCTIONS

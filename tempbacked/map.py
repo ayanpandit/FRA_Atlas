@@ -38,8 +38,10 @@ try:
         print(f"🔐 Using GOOGLE_APPLICATION_CREDENTIALS from: {ee_credentials_path}")
 
     ee.Initialize(project=EE_PROJECT_ID)
+    EE_INITIALIZED = True
     print("✅ Earth Engine initialized successfully")
 except Exception as e:
+    EE_INITIALIZED = False
     print(f"❌ Earth Engine initialization failed: {e}")
     print("Hint: Provide Earth Engine credentials. See https://developers.google.com/earth-engine/guides/python_install#authentication")
 
@@ -203,6 +205,20 @@ def analyze_location():
         
         print(f"📍 Processing request for: Lat={lat}, Lon={lon}, Radius={radius_m}m")
         
+        # Check Earth Engine initialization early and return helpful message when not ready
+        try:
+            if not EE_INITIALIZED:
+                return jsonify({
+                    'error': 'earth_engine_not_initialized',
+                    'message': 'Earth Engine client not initialized on the server. Please configure EE_SERVICE_ACCOUNT_JSON (paste service account JSON) or set GOOGLE_APPLICATION_CREDENTIALS to a credentials file with Earth Engine access. See DEPLOY_RENDER.md for instructions.'
+                }), 503
+        except NameError:
+            # If EE_INITIALIZED is not defined for some reason, treat as not initialized
+            return jsonify({
+                'error': 'earth_engine_not_initialized',
+                'message': 'Earth Engine client not initialized on the server. Please configure EE_SERVICE_ACCOUNT_JSON (paste service account JSON) or set GOOGLE_APPLICATION_CREDENTIALS to a credentials file with Earth Engine access. See DEPLOY_RENDER.md for instructions.'
+            }), 503
+
         # -------------------------------
         # Step 1: Define Area of Interest (AOI)
         # -------------------------------

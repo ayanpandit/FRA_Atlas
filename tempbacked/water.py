@@ -14,32 +14,10 @@ import ee
 import datetime
 import requests
 
-import os
-
 # ----------------------------- Initialize GEE -----------------------------
 # Replace with your GEE project ID
-EE_PROJECT_ID = os.getenv('GOOGLE_EARTH_ENGINE_PROJECT', 'fra-a-472418')
-try:
-    ee_sa_json = os.getenv('EE_SERVICE_ACCOUNT_JSON')
-    ee_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if ee_sa_json and not ee_credentials_path:
-        tmp_path = 'FRA_Exports/ee_service_account.json'
-        os.makedirs('FRA_Exports', exist_ok=True)
-        with open(tmp_path, 'w', encoding='utf-8') as fh:
-            fh.write(ee_sa_json)
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = tmp_path
-        ee_credentials_path = tmp_path
-        print(f"🔐 Wrote Earth Engine service account to: {tmp_path}")
-
-    if ee_credentials_path:
-        print(f"🔐 Using GOOGLE_APPLICATION_CREDENTIALS from: {ee_credentials_path}")
-
-    ee.Initialize(project=EE_PROJECT_ID)
-    print(f"✅ Earth Engine initialized with project {EE_PROJECT_ID}")
-except Exception as e:
-    print(f"❌ Earth Engine initialization failed: {e}")
-    print('Hint: set EE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS to authenticate Earth Engine.')
-    raise
+ee.Initialize(project='fra-a-472418')
+print("✅ Earth Engine initialized with project fra-a-472418")
 
 # ----------------------------- User Input -----------------------------
 lat_lon = input("Enter latitude and longitude separated by comma (e.g., 25.76,84.15): ")
