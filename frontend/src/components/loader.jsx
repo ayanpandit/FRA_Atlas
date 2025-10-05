@@ -21,17 +21,13 @@ const Loader = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 2rem;
-          padding: 3rem;
-          background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-          border-radius: 2rem;
-          border: 2px solid rgba(255,255,255,0.1);
-          box-shadow: 
-            inset 0 2px 4px 0 rgba(255,255,255,0.1),
-            inset 0 -2px 4px 0 rgba(0,0,0,0.3),
-            0 25px 50px -12px rgba(0,0,0,0.5),
-            0 0 0 1px rgba(255,255,255,0.05);
-          backdrop-filter: blur(10px);
+          gap: 1.5rem;
+          padding: 0;
+          background: none;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          backdrop-filter: none;
         }
         .earth-loader {
           --watercolor: #0d9488;
@@ -53,13 +49,31 @@ const Loader = () => {
           animation-iteration-count: 1, infinite;
           transform-style: preserve-3d;
         }
+        @media (max-width: 640px) {
+          .earth-loader {
+            width: 7em;
+            height: 7em;
+          }
+          .earth p {
+            font-size: 1.1em;
+          }
+        }
+        @media (max-width: 400px) {
+          .earth-loader {
+            width: 5em;
+            height: 5em;
+          }
+          .earth p {
+            font-size: 0.95em;
+          }
+        }
         .earth p {
           color: white;
           display: flex;
           justify-content: center;
           align-items: center;
           padding-top: 0.5em;
-          font-size: 1.5em;
+          font-size: 1.3em;
           font-weight: 600;
           font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
           text-shadow: 

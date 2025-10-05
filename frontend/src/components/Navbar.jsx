@@ -235,21 +235,30 @@ const Navbar = () => {
                                         {/* Mobile Explore Dropdown */}
                                         <div className={`transition-all duration-300 ${showExploreDropdown ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                                             <div className="mt-2 space-y-1 pl-2 sm:pl-4">
-                                                <button className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl">
+                                                <button 
+                                                    className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl"
+                                                    onClick={() => { setIsMenuOpen(false); setShowExploreDropdown(false); handleExplorePortal('user'); }}
+                                                >
                                                     <User className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors flex-shrink-0" />
                                                     <div className="text-left min-w-0">
                                                         <div className="font-medium text-sm sm:text-base">Explore User Side</div>
                                                         <div className="text-xs sm:text-sm text-white/70">Citizen portal access</div>
                                                     </div>
                                                 </button>
-                                                <button className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl">
+                                                <button 
+                                                    className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl"
+                                                    onClick={() => { setIsMenuOpen(false); setShowExploreDropdown(false); handleExplorePortal('gp'); }}
+                                                >
                                                     <Home className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors flex-shrink-0" />
                                                     <div className="text-left min-w-0">
                                                         <div className="font-medium text-sm sm:text-base">Explore Gramsabha Side</div>
                                                         <div className="text-xs sm:text-sm text-white/70">Local governance portal</div>
                                                     </div>
                                                 </button>
-                                                <button className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl">
+                                                <button 
+                                                    className="w-full px-3 sm:px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group rounded-xl"
+                                                    onClick={() => { setIsMenuOpen(false); setShowExploreDropdown(false); handleExplorePortal('admin'); }}
+                                                >
                                                     <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors flex-shrink-0" />
                                                     <div className="text-left min-w-0">
                                                         <div className="font-medium text-sm sm:text-base">Explore Administrator Side</div>
