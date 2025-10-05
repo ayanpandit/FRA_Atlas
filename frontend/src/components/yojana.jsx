@@ -199,10 +199,10 @@ const Yojana = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 xs:gap-7 sm:gap-8 relative z-10">
             {/* Step 1 */}
             <div className="text-center px-2">
-              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 ${
+              <div className={`bg-gradient-to-br from-yellow-100 to-yellow-200 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 border-2 border-yellow-300/50 transition-all duration-500 ${
                 isVisible ? 'animate-pulse' : ''
-              }`}>
-                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              }`} style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(250, 204, 21, 0.3), 0 2px 4px rgba(0,0,0,0.15)'}}>
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
@@ -212,10 +212,10 @@ const Yojana = () => {
 
             {/* Step 2 */}
             <div className="text-center px-2">
-              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-1000 ${
+              <div className={`bg-gradient-to-br from-yellow-100 to-yellow-200 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 border-2 border-yellow-300/50 transition-all duration-500 delay-1000 ${
                 isVisible ? 'animate-pulse' : ''
-              }`}>
-                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              }`} style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(250, 204, 21, 0.3), 0 2px 4px rgba(0,0,0,0.15)'}}>
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
@@ -225,10 +225,10 @@ const Yojana = () => {
 
             {/* Step 3 */}
             <div className="text-center px-2">
-              <div className={`bg-yellow-100 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 shadow-lg border-2 border-yellow-200 transition-all duration-500 delay-2000 ${
+              <div className={`bg-gradient-to-br from-yellow-100 to-yellow-200 w-14 h-14 xs:w-16 xs:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 xs:mb-4 border-2 border-yellow-300/50 transition-all duration-500 delay-2000 ${
                 isVisible ? 'animate-pulse' : ''
-              }`}>
-                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              }`} style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(250, 204, 21, 0.3), 0 2px 4px rgba(0,0,0,0.15)'}}>
+                <svg className="w-7 h-7 xs:w-8 xs:h-8 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               </div>
@@ -253,12 +253,12 @@ const Yojana = () => {
           {yojanas.map((yojana, index) => (
             <div 
               key={yojana.id}
-              className={`bg-white/25 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 ${
+              className={`bg-white/25 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 hover:scale-105 border-2 border-gray-200/50 ${
                 isVisible 
                   ? 'opacity-100 translate-y-0' 
                   : 'opacity-0 translate-y-20'
               }`}
-            >
+              style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.05)'}}>
               {/* Card Header */}
               <div className="p-4 xs:p-5 sm:p-6 md:p-7 lg:p-8">
                 <div className="mb-3 xs:mb-4 group">

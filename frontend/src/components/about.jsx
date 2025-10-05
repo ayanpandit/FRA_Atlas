@@ -7,7 +7,7 @@ const About = () => {
 				<div className="grid grid-cols-1 lg:grid-cols-[58%_42%] gap-6 xs:gap-8 sm:gap-10 md:gap-12 lg:gap-10 xl:gap-14 2xl:gap-16 items-start">
 					<div className="order-2 lg:order-1 w-full space-y-6 xs:space-y-8 sm:space-y-10 md:space-y-12">
 						<div className="group w-full">
-							<div className="relative overflow-hidden rounded-2xl shadow-2xl transition-transform duration-500 hover:scale-[1.02] w-full">
+							<div className="relative overflow-hidden rounded-2xl transition-transform duration-500 hover:scale-[1.02] w-full border-2 border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.15), 0 4px 6px -1px rgba(0,0,0,0.1)'}}>
 								<div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-yellow-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
 								<div className="w-full" style={{ aspectRatio: '16/9' }}>
 									<img 
@@ -20,7 +20,7 @@ const About = () => {
 						</div>
 						
 						<div className="group w-full">
-							<div className="relative overflow-hidden rounded-2xl shadow-2xl transition-transform duration-500 hover:scale-[1.02] w-full">
+							<div className="relative overflow-hidden rounded-2xl transition-transform duration-500 hover:scale-[1.02] w-full border-2 border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.9), inset 0 -1px 0 0 rgba(0,0,0,0.05), 0 20px 40px -12px rgba(0,0,0,0.15), 0 4px 6px -1px rgba(0,0,0,0.1)'}}>
 								<div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-yellow-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
 								<div className="w-full" style={{ aspectRatio: '16/9' }}>
 									<img 
@@ -39,19 +39,19 @@ const About = () => {
 								Know Us Better
 							</h2>
 							<div className="space-y-6 xs:space-y-7 sm:space-y-8 md:space-y-9 lg:space-y-6 xl:space-y-7 2xl:space-y-8">
-								<div className="relative pl-5 border-l-4 border-yellow-500">
+								<div className="relative pl-5 border-l-4 border-yellow-500" style={{boxShadow: '-2px 0 4px rgba(250, 204, 21, 0.3)'}}>
 									<p className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-base xl:text-lg 2xl:text-xl text-gray-700 leading-relaxed font-normal">
 										Our integrated platform is engineered to revolutionize Tribal Land Governance under the Forest Rights Act (FRA), moving decisively beyond the historical paralysis of paper-based records to dynamic, data-driven action. The core innovation lies in the synergy of technology: we initiate the process by digitizing scattered, non-standardized legacy claims using Optical Character Recognition (OCR) and Named Entity Recognition (NER). This structured data then fuels the real-time, visual FRA Atlas on a WebGIS platform, which serves as a transparent and centralized repository.
 									</p>
 								</div>
 								
-								<div className="relative pl-5 border-l-4 border-yellow-500">
+								<div className="relative pl-5 border-l-4 border-yellow-500" style={{boxShadow: '-2px 0 4px rgba(250, 204, 21, 0.3)'}}>
 									<p className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-base xl:text-lg 2xl:text-xl text-gray-700 leading-relaxed font-normal">
 										The Atlas is fortified by AI-based asset mapping, where Computer Vision models analyze satellite imagery to precisely delineate resources—from water bodies and forest cover to cultivable land and barren tracts. This granular, verifiable land inventory is crucial for validating Individual and Community Forest Rights (IFR/CFR).
 									</p>
 								</div>
 								
-								<div className="relative pl-5 border-l-4 border-yellow-500">
+								<div className="relative pl-5 border-l-4 border-yellow-500" style={{boxShadow: '-2px 0 4px rgba(250, 204, 21, 0.3)'}}>
 									<p className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-base xl:text-lg 2xl:text-xl text-gray-700 leading-relaxed font-normal">
 										Most critically, this geographic intelligence powers the Decision Support System (DSS). The DSS employs rule-based and AI-enhanced logic to automatically cross-reference FRA patta holders and their associated geographical needs with the eligibility criteria of Central Sector Schemes (CSS), such as PM-KISAN, Jal Jeevan Mission, and DAJGUA. This process streamlines decision-making at the policy level, ensuring targeted, layered development is delivered efficiently, maximizing resource impact, and truly empowering forest-dwelling communities.
 									</p>

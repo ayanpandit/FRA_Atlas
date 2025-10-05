@@ -33,25 +33,25 @@ function LandingPage() {
         <Route path="/patta_management" element={<WorkflowAdmin />} />
         <Route path="/fra_documentation" element={<FRADocumentation />} />
         <Route path="/" element={
-          <div className="min-h-screen bg-gray-50 alan-sans">
+          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 alan-sans">
             <Navbar />
             <Hero />
-            <div className="bg-gray-50">
+            <div className="bg-gradient-to-b from-gray-50 to-white" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <About />
             </div>
-            <div className="bg-gray-50">
+            <div className="bg-gradient-to-b from-white to-gray-50" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <Timelines />
             </div>
             {/* <div className="bg-gray-50">
               <Level />
             </div> */}
-            <div className="bg-gray-50">
+            <div className="bg-gradient-to-b from-gray-50 to-white" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <Yojana />
             </div>
-            <div className="bg-gray-50">
+            <div className="bg-gradient-to-b from-white to-gray-100" style={{boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'}}>
               <Data_Availability />
             </div>
-            <div className="bg-gray-50">
+            <div className="bg-gradient-to-b from-gray-100 to-gray-200" style={{boxShadow: 'inset 0 4px 6px -1px rgba(0,0,0,0.1)'}}>
               <Footer />
             </div>
           </div>

@@ -192,10 +192,11 @@ const Hero = () => {
             className="/* Responsive padding and text */
                        px-4 py-2 xs:px-5 xs:py-2 sm:px-6 sm:py-3
                        text-sm xs:text-base sm:text-base
-                       text-black font-semibold bg-[#FACC15] hover:bg-[#FACC15]/80 
-                       rounded-full shadow-lg transition
+                       text-black font-semibold bg-gradient-to-br from-[#FACC15] to-yellow-500 hover:from-yellow-500 hover:to-yellow-600
+                       rounded-full transition transform hover:scale-105 duration-300
                        /* Responsive width */
                        w-full xs:w-auto" 
+            style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.15), 0 8px 16px rgba(250, 204, 21, 0.5), 0 4px 6px rgba(0,0,0,0.2)'}}
           >
             FRA Portal
           </button>
@@ -205,12 +206,13 @@ const Hero = () => {
             className="/* Responsive padding and text */
                        px-4 py-2 xs:px-5 xs:py-2 sm:px-6 sm:py-3
                        text-sm xs:text-base sm:text-base
-                       border font-semibold bg-white/50 border-gray-300 
+                       border-2 font-semibold bg-white/30 backdrop-blur-sm border-white/50
                        text-white hover:bg-white hover:text-black 
-                       rounded-full transition
+                       rounded-full transition transform hover:scale-105 duration-300
                        /* Responsive width */
                        w-full xs:w-auto"
             onClick={() => navigate('/fra_documentation')}
+            style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(255,255,255,0.1)'}}
           >
             FRA Documentation
           </button>
