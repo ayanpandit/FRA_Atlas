@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logo from "/logo.png";
 // ...existing code...
 
@@ -6,6 +7,7 @@ import logo from "/logo.png";
 const Sidebar_Off = ({ 
   activeComponent, 
   setActiveComponent, 
+  onMenuSelect,
   sidebarWidth = 280, 
   setSidebarWidth,
   isCollapsed: externalCollapsed,
@@ -25,13 +27,23 @@ const Sidebar_Off = ({
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
   const setIsCollapsed = setExternalCollapsed || setInternalCollapsed;
 
-  // Navigate and update hash
+  const navigate = useNavigate();
+
+  // Navigate via router
   const handleNavigation = (itemId, externalPath) => {
     if (externalPath) {
-      window.location.href = externalPath;
-    } else {
+      if (/^https?:/i.test(externalPath)) {
+        window.location.href = externalPath;
+      } else {
+        navigate(externalPath);
+      }
+      return;
+    }
+
+    if (onMenuSelect) {
+      onMenuSelect(itemId);
+    } else if (setActiveComponent) {
       setActiveComponent(itemId);
-      window.location.hash = itemId;
     }
   };
 
@@ -56,14 +68,6 @@ const Sidebar_Off = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Handle initial hash
-  useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-      setActiveComponent(hash);
-    }
-  }, [setActiveComponent]);
 
   // Menu items with enhanced icons
   const menuItems = [

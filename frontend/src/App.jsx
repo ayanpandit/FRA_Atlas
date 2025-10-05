@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import LandingPage from "./groups/Landing_page";
-import { BrowserRouter as Router } from 'react-router-dom';
+import { HashRouter as Router } from 'react-router-dom';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {

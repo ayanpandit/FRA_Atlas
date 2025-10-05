@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logo from "/logo.png";
 // ...existing code...
 
@@ -7,6 +8,7 @@ import logo from "/logo.png";
 const Sidebar_User = ({ 
   activeComponent, 
   setActiveComponent, 
+  onMenuSelect,
   sidebarWidth = 280, 
   setSidebarWidth,
   isCollapsed: externalCollapsed,
@@ -26,28 +28,26 @@ const Sidebar_User = ({
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
   const setIsCollapsed = setExternalCollapsed || setInternalCollapsed;
 
-  // Navigate and update hash
-  // Hash routing: when user clicks a sidebar item for an internal view, update
-  // window.location.hash so the workflows listen and render the correct page.
-  // If an externalPath is provided, navigate to it instead.
+  const navigate = useNavigate();
+
   const handleNavigation = (itemId, externalPath) => {
     try {
       if (externalPath) {
-        // External link (absolute or relative) — navigate normally
-        window.location.href = externalPath;
+        if (/^https?:/i.test(externalPath)) {
+          window.location.href = externalPath;
+        } else {
+          navigate(externalPath);
+        }
+        if (isMobileMenuOpen) setIsMobileMenuOpen(false);
         return;
       }
 
-      // Internal route: set the hash and update the currently active component
-      // This keeps the URL in sync, enables back/forward navigation, and
-      // allows direct linking to a specific view.
-      const hash = `#${itemId}`;
-      if (window.location.hash !== hash) {
-        window.location.hash = itemId;
+      if (onMenuSelect) {
+        onMenuSelect(itemId);
+      } else if (setActiveComponent) {
+        setActiveComponent(itemId);
       }
-      setActiveComponent(itemId);
 
-      // Close mobile menu if open
       if (isMobileMenuOpen) setIsMobileMenuOpen(false);
     } catch (err) {
       console.warn('Navigation error', err);
@@ -75,14 +75,6 @@ const Sidebar_User = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Handle initial hash
-  useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-      setActiveComponent(hash);
-    }
-  }, [setActiveComponent]);
 
   // Menu items with enhanced icons
   const menuItems = [

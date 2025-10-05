@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar_User from '../components/sidebar_user';
 // import Dashboard from '../pages/dashboard';
 import UserManagement from '../pages/user_management';
@@ -18,20 +19,49 @@ const Workflow_User = () => {
   
   const sidebarRef = useRef(null);
   const resizeRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Handle hash changes
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash) {
-        setActiveComponent(hash);
-      }
-    };
+    const allowedComponents = new Set([
+      'dashboard',
+      'patta',
+      'schemes',
+      'fra_atlas',
+      'user_management'
+    ]);
 
-    handleHashChange(); // Handle initial hash
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [setActiveComponent]);
+    const rawPath = location.pathname.replace(/^\/workflow_user\/?/, '');
+    const nextComponent = rawPath ? rawPath.split('/')[0] : 'dashboard';
+
+    if (!allowedComponents.has(nextComponent)) {
+      if (location.pathname !== '/workflow_user') {
+        navigate('/workflow_user', { replace: true });
+      }
+      setActiveComponent('dashboard');
+      return;
+    }
+
+    if (nextComponent !== activeComponent) {
+      setActiveComponent(nextComponent);
+    }
+  }, [location.pathname, activeComponent, navigate]);
+
+  const handleComponentChange = (componentId) => {
+    const targetPath = componentId === 'dashboard'
+      ? '/workflow_user'
+      : `/workflow_user/${componentId}`;
+
+    setActiveComponent(componentId);
+
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  };
 
   // Screen size detection and responsive handling
   useEffect(() => {
@@ -157,7 +187,7 @@ const Workflow_User = () => {
       >
         <Sidebar_User 
           activeComponent={activeComponent} 
-          setActiveComponent={setActiveComponent}
+          onMenuSelect={handleComponentChange}
           sidebarWidth={sidebarWidth}
           setSidebarWidth={setSidebarWidth}
           isCollapsed={sidebarCollapsed}

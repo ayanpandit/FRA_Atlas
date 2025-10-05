@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar_Off from '../components/sidebar_off';
 import Dashboard from '../pages/dashboard';
 import PattaManagement from '../pages/patta_management';
@@ -17,20 +18,50 @@ const Workflow_Off = () => {
   
   const sidebarRef = useRef(null);
   const resizeRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Handle hash changes
+  // Sync active component with current route
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash) {
-        setActiveComponent(hash);
-      }
-    };
+    const allowedComponents = new Set([
+      'dashboard',
+      'patta_management',
+      'beneficiary_schemes',
+      'map_land_analysis',
+      'user_management'
+    ]);
 
-    handleHashChange(); // Handle initial hash
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [setActiveComponent]);
+    const rawPath = location.pathname.replace(/^\/workflow_off\/?/, '');
+    const nextComponent = rawPath ? rawPath.split('/')[0] : 'dashboard';
+
+    if (!allowedComponents.has(nextComponent)) {
+      if (location.pathname !== '/workflow_off') {
+        navigate('/workflow_off', { replace: true });
+      }
+      setActiveComponent('dashboard');
+      return;
+    }
+
+    if (nextComponent !== activeComponent) {
+      setActiveComponent(nextComponent);
+    }
+  }, [location.pathname, activeComponent, navigate]);
+
+  const handleComponentChange = (componentId) => {
+    const targetPath = componentId === 'dashboard' 
+      ? '/workflow_off' 
+      : `/workflow_off/${componentId}`;
+
+    setActiveComponent(componentId);
+
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  };
 
   // Screen size detection and responsive handling
   useEffect(() => {
@@ -156,7 +187,7 @@ const Workflow_Off = () => {
       >
         <Sidebar_Off 
           activeComponent={activeComponent} 
-          setActiveComponent={setActiveComponent}
+          onMenuSelect={handleComponentChange}
           sidebarWidth={sidebarWidth}
           setSidebarWidth={setSidebarWidth}
           isCollapsed={sidebarCollapsed}

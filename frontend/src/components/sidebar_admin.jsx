@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logo from "/logo.png";
 // ...existing code...
 
@@ -6,6 +7,7 @@ import logo from "/logo.png";
 const Sidebar_Admin = ({ 
   activeComponent, 
   setActiveComponent, 
+  onMenuSelect,
   sidebarWidth = 280, 
   setSidebarWidth,
   isCollapsed: externalCollapsed,
@@ -25,16 +27,26 @@ const Sidebar_Admin = ({
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
   const setIsCollapsed = setExternalCollapsed || setInternalCollapsed;
 
-  // Navigate and update hash
+  const navigate = useNavigate();
+
   const handleNavigation = (itemId, externalPath) => {
     try {
       if (externalPath) {
-        window.location.href = externalPath;
+        if (/^https?:/i.test(externalPath)) {
+          window.location.href = externalPath;
+        } else {
+          navigate(externalPath);
+        }
+        if (isMobileMenuOpen) setIsMobileMenuOpen(false);
         return;
       }
-      const hash = `#${itemId}`;
-      if (window.location.hash !== hash) window.location.hash = itemId;
-      setActiveComponent(itemId);
+
+      if (onMenuSelect) {
+        onMenuSelect(itemId);
+      } else if (setActiveComponent) {
+        setActiveComponent(itemId);
+      }
+
       if (isMobileMenuOpen) setIsMobileMenuOpen(false);
     } catch (err) {
       console.warn('Navigation error', err);
@@ -62,14 +74,6 @@ const Sidebar_Admin = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Handle initial hash
-  useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-      setActiveComponent(hash);
-    }
-  }, [setActiveComponent]);
 
   // Menu items with enhanced icons
   const menuItems = [

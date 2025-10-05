@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar_Admin from '../components/sidebar_admin';
 import Dashboard from '../pages/dashboard';
 import PattaManagement from '../pages/patta_management';
@@ -17,20 +18,49 @@ const Workflow_Admin = () => {
   
   const sidebarRef = useRef(null);
   const resizeRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Handle hash changes
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash) {
-        setActiveComponent(hash);
-      }
-    };
+    const allowedComponents = new Set([
+      'dashboard',
+      'patta_management',
+      'beneficiary_schemes',
+      'map_land_analysis',
+      'user_management'
+    ]);
 
-    handleHashChange(); // Handle initial hash
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [setActiveComponent]);
+    const rawPath = location.pathname.replace(/^\/workflow_admin\/?/, '');
+    const nextComponent = rawPath ? rawPath.split('/')[0] : 'dashboard';
+
+    if (!allowedComponents.has(nextComponent)) {
+      if (location.pathname !== '/workflow_admin') {
+        navigate('/workflow_admin', { replace: true });
+      }
+      setActiveComponent('dashboard');
+      return;
+    }
+
+    if (nextComponent !== activeComponent) {
+      setActiveComponent(nextComponent);
+    }
+  }, [location.pathname, activeComponent, navigate]);
+
+  const handleComponentChange = (componentId) => {
+    const targetPath = componentId === 'dashboard'
+      ? '/workflow_admin'
+      : `/workflow_admin/${componentId}`;
+
+    setActiveComponent(componentId);
+
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  };
 
   // Screen size detection and responsive handling
   useEffect(() => {
@@ -156,7 +186,7 @@ const Workflow_Admin = () => {
       >
         <Sidebar_Admin 
           activeComponent={activeComponent} 
-          setActiveComponent={setActiveComponent}
+          onMenuSelect={handleComponentChange}
           isCollapsed={sidebarCollapsed}
           setIsCollapsed={setSidebarCollapsed}
           sidebarWidth={sidebarWidth}

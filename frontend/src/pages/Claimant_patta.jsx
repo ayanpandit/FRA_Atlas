@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, 
   FileText, 
@@ -238,6 +239,7 @@ const OfficialCertificate = ({ pattaId, onClose }) => {
 };
 
 const Claimant_patta = ({ userData }) => {
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [ocrResult, setOcrResult] = useState(null);
@@ -723,8 +725,13 @@ const Claimant_patta = ({ userData }) => {
                   // publish patta for dashboard to pick up and navigate there
                   window.__openPattaOnDashboard = patta;
                 } catch (e) { console.warn('Failed to set global patta', e); }
-                // navigate to workflow_user dashboard via hash used by Workflow_User
-                try { window.location.hash = 'dashboard'; } catch (e) { window.location.href = '/'; }
+                // navigate to workflow_user dashboard
+                try {
+                  navigate('/workflow_user');
+                } catch (e) {
+                  console.warn('Failed to navigate to dashboard', e);
+                  window.location.href = '/#/workflow_user';
+                }
               }}
             >
               <MapIcon className="h-4 w-4" />
