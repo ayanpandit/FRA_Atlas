@@ -77,15 +77,15 @@ const Navbar = () => {
             {showLoader && <Loader />}
             <nav className={
                 isAnalyzerPage
-                    ? "relative rounded-2xl backdrop-blur-lg border-2 border-white/30 mt-4 mb-0 md:mt-6 md:mb-0 lg:mt-8 lg:mb-0 mx-4 sm:mx-6 md:mx-12"
-                    : `fixed top-4 sm:top-9 left-4 right-4 sm:left-12 sm:right-12 z-40 transition-all duration-500 rounded-2xl ${
+                    ? "relative rounded-xl sm:rounded-2xl backdrop-blur-lg border border-white/20 sm:border-2 sm:border-white/30 mt-3 mb-0 sm:mt-4 md:mt-6 lg:mt-8 mx-3 sm:mx-4 md:mx-6 lg:mx-12"
+                    : `fixed top-3 sm:top-4 md:top-6 lg:top-9 left-3 right-3 sm:left-4 sm:right-4 md:left-6 md:right-6 lg:left-12 lg:right-12 z-40 transition-all duration-500 rounded-xl sm:rounded-2xl ${
                         !visible
                             ? 'opacity-0 translate-y-[-100%] pointer-events-none'
                             : isScrolled
-                                ? 'bg-black/20 backdrop-blur-lg border-2 border-white/30 opacity-100 translate-y-0'
-                                : 'bg-black/20 backdrop-blur-lg border-2 border-white/30 opacity-100 translate-y-0'
+                                ? 'bg-black/20 backdrop-blur-lg border border-white/20 sm:border-2 sm:border-white/30 opacity-100 translate-y-0'
+                                : 'bg-black/20 backdrop-blur-lg border border-white/20 sm:border-2 sm:border-white/30 opacity-100 translate-y-0'
                     }`
-            } style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.15), inset 0 -1px 0 0 rgba(0,0,0,0.2), 0 20px 40px -12px rgba(0,0,0,0.4), 0 4px 6px -1px rgba(0,0,0,0.3)'}}>
+            } style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 0 rgba(255,255,255,0.1), 0 10px 20px -8px rgba(0,0,0,0.3)' : 'inset 0 1px 0 0 rgba(255,255,255,0.15), inset 0 -1px 0 0 rgba(0,0,0,0.2), 0 20px 40px -12px rgba(0,0,0,0.4), 0 4px 6px -1px rgba(0,0,0,0.3)'}}>
                 <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
                     <div className={`flex items-center justify-between ${isAnalyzerPage ? 'h-14 sm:h-16 md:h-20' : 'h-14 sm:h-16 md:h-20'}`}>
                         {/* Logo */}
@@ -130,7 +130,7 @@ const Navbar = () => {
                                 <div className="relative dropdown-container">
                                     <button 
                                         onClick={() => setShowExploreDropdown(!showExploreDropdown)}
-                                        className="px-4 lg:px-6 py-2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-black font-semibold rounded-full hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-105 transition-all duration-300 flex items-center space-x-2 text-sm lg:text-base" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.15), 0 6px 12px rgba(250, 204, 21, 0.4), 0 2px 4px rgba(0,0,0,0.2)'}}>
+                                        className="px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-black font-semibold rounded-full hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-105 transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm md:text-sm lg:text-base" style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 8px rgba(250, 204, 21, 0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.15), 0 6px 12px rgba(250, 204, 21, 0.4), 0 2px 4px rgba(0,0,0,0.2)'}}>
                                         <span>Explore Now</span>
                                         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showExploreDropdown ? 'rotate-180' : ''}`} />
                                     </button>
@@ -306,12 +306,12 @@ const Navbar = () => {
                 <div className="hidden md:block fixed left-0 right-0 z-30 mt-2" style={{ top: isAnalyzerPage ? '120px' : '110px' }}>
                     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-end">
-                            <div className="py-2 w-56 bg-black/20 backdrop-blur-lg rounded-xl border-2 border-white/30" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.15), 0 12px 24px rgba(0,0,0,0.35), 0 4px 6px rgba(0,0,0,0.25)'}}>
+                            <div className="py-2 w-48 sm:w-52 md:w-56 lg:w-64 bg-black/20 backdrop-blur-lg rounded-lg sm:rounded-xl border border-white/20 sm:border-2 sm:border-white/30" style={{boxShadow: window.innerWidth < 768 ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 16px rgba(0,0,0,0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.15), 0 12px 24px rgba(0,0,0,0.35), 0 4px 6px rgba(0,0,0,0.25)'}}>
                                 {/* User Portal Option */}
-                                <button className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-3 group"
+                                <button className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-2 sm:space-x-3 group"
                                     onClick={() => handleExplorePortal('user')}
                                 >
-                                    <User className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors transform group-hover:scale-110 duration-200" style={{filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4)) brightness(1.2)'}} />
+                                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors transform group-hover:scale-110 duration-200" style={{filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4)) brightness(1.2)'}} />
                                     <div className="text-left">
                                         <div className="font-medium text-sm lg:text-base">User Portal</div>
                                         <div className="text-xs text-white/70">Citizen portal access</div>
