@@ -1,28 +1,31 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Eye, Download, Filter, Search, X, Check, XCircle, Clock, FileText, MapPin, Calendar, User, Building2, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import PattaApplicationModal from '../components/PattaApplicationModal';
 
 const PattaManagement = () => {
-  const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [districtFilter, setDistrictFilter] = useState('all');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedPatta, setSelectedPatta] = useState(null);
   const [editablePatta, setEditablePatta] = useState(null);
   const [showRaw, setShowRaw] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState('table');
-  const [showFilters, setShowFilters] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [pattas, setPattas] = useState([]);
   const [loadingPattas, setLoadingPattas] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null); // Track which patta's dropdown is open
   const itemsPerPage = 10;
+
+  const enrichPattaRow = (row = {}) => ({
+    ...row,
+    owner_full_name: row.owner_full_name || row.owner_name || row.owner_id || 'Unknown',
+    owner_email: row.owner_email || ''
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -53,12 +56,7 @@ const PattaManagement = () => {
           return;
         }
         const rows = data || [];
-        // normalize owner display fields
-        const enriched = rows.map(r => ({
-          ...r,
-          owner_full_name: r.owner_full_name || r.owner_name || r.owner_id || 'Unknown',
-          owner_email: r.owner_email || ''
-        }));
+        const enriched = rows.map(enrichPattaRow);
         enriched.sort((a, b) => new Date(b.date_applied || b.created_at || 0).getTime() - new Date(a.date_applied || a.created_at || 0).getTime());
         if (mounted) {
           setPattas(enriched);
@@ -75,6 +73,12 @@ const PattaManagement = () => {
     fetchPattas();
     return () => { mounted = false };
   }, []);
+
+  const handlePattaCreated = (row) => {
+    if (!row) return;
+    const enriched = enrichPattaRow(row);
+    setPattas((prev = []) => [enriched, ...prev]);
+  };
 
   // Approve a patta (set status to verified)
   const handleApprove = async () => {
@@ -150,12 +154,6 @@ const PattaManagement = () => {
       alert('Failed to reject: ' + (e.message || e));
     } finally {
       setIsUpdating(false);
-    }
-  };
-
-  const handleFileSelect = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
     }
   };
 
@@ -318,7 +316,7 @@ const PattaManagement = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setShowUploadModal(true)}
+                onClick={() => setShowApplicationModal(true)}
                 className="flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                 style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 16px rgba(20, 83, 83, 0.3)'}}
               >
@@ -442,111 +440,158 @@ const PattaManagement = () => {
             </div>
           </div>
 
-          {/* Enhanced Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-100/50 to-gray-50 border-b border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.05)'}}>
-                <tr>
-                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Patta Details</th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">Location</th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Date</th>
-                  <th className="px-4 sm:px-6 lg:px-8 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200/50">
-                {paginatedPattas.map((patta) => (
-                  <tr key={patta.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-white transition-all duration-300 transform hover:scale-[1.01]" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)'}}>
-                    <td className="px-4 sm:px-6 lg:px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                          <FileText className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold text-gray-900 truncate">{patta.patta_id}</div>
-                          <div className="text-sm text-gray-700 truncate">{patta.holder_name}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.area_hectares} ha</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.right_type}</span>
+          {/* Results: table or card view */}
+          {viewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-gray-100/50 to-gray-50 border-b border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.05)'}}>
+                  <tr>
+                    <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Patta Details</th>
+                    <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">Location</th>
+                    <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 lg:px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Date</th>
+                    <th className="px-4 sm:px-6 lg:px-8 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200/50">
+                  {paginatedPattas.map((patta) => (
+                    <tr key={patta.id} className="hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-white transition-all duration-300 transform hover:scale-[1.01]" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)'}}>
+                      <td className="px-4 sm:px-6 lg:px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                            <FileText className="w-6 h-6 text-white" />
                           </div>
-                          {/* Mobile-only location info */}
-                          <div className="md:hidden mt-2 text-xs text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {patta.village}, {patta.district}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-gray-900 truncate">{patta.patta_id}</div>
+                            <div className="text-sm text-gray-700 truncate">{patta.holder_name}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.area_hectares} ha</span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200/50" style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.1)'}}>{patta.right_type}</span>
+                            </div>
+                            {/* Mobile-only location info */}
+                            <div className="md:hidden mt-2 text-xs text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {patta.village}, {patta.district}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 lg:px-8 py-6 hidden md:table-cell">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
-                        <div>
-                          <div className="text-sm font-semibold text-gray-900">{patta.village}</div>
-                          <div className="text-sm text-gray-600">{patta.district}, {patta.state}</div>
+                      </td>
+                      <td className="px-4 sm:px-6 lg:px-8 py-6 hidden md:table-cell">
+                        <div className="flex items-start gap-3">
+                          <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">{patta.village}</div>
+                            <div className="text-sm text-gray-600">{patta.district}, {patta.state}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 lg:px-8 py-6">
-                      {getStatusBadge(patta.status)}
-                    </td>
-                    <td className="px-4 sm:px-6 lg:px-8 py-6 hidden lg:table-cell">
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
-                        <div className="text-sm text-gray-700">
-                          {new Date(patta.date_applied).toLocaleDateString('en-IN', { 
-                            day: 'numeric', 
-                            month: 'short', 
-                            year: 'numeric' 
-                          })}
+                      </td>
+                      <td className="px-4 sm:px-6 lg:px-8 py-6">
+                        {getStatusBadge(patta.status)}
+                      </td>
+                      <td className="px-4 sm:px-6 lg:px-8 py-6 hidden lg:table-cell">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
+                          <div className="text-sm text-gray-700">
+                            {new Date(patta.date_applied).toLocaleDateString('en-IN', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 lg:px-8 py-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleViewDetails(patta)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-110 transform border border-blue-200/50"
-                          title="View Details"
-                          style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(59, 130, 246, 0.2)'}}
-                        >
-                          <Eye className="w-5 h-5" />
-                        </button>
-                        <div className="relative">
+                      </td>
+                      <td className="px-4 sm:px-6 lg:px-8 py-6">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => setDropdownOpen(dropdownOpen === patta.id ? null : patta.id)}
-                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-all hover:scale-110 transform border border-gray-200/50"
-                            title="More Actions"
-                            style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.1)'}}
+                            onClick={() => handleViewDetails(patta)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:scale-110 transform border border-blue-200/50"
+                            title="View Details"
+                            style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(59, 130, 246, 0.2)'}}
                           >
-                            <MoreVertical className="w-5 h-5" />
+                            <Eye className="w-5 h-5" />
                           </button>
-                          {dropdownOpen === patta.id && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 z-10 overflow-hidden" style={{boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)'}}>
-                              <div className="py-2">
-                                <button
-                                  onClick={() => {
-                                    handleDeletePatta(patta);
-                                    setDropdownOpen(null);
-                                  }}
-                                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all flex items-center gap-3 font-medium"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                  Delete Patta
-                                </button>
+                          <div className="relative">
+                            <button
+                              onClick={() => setDropdownOpen(dropdownOpen === patta.id ? null : patta.id)}
+                              className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-all hover:scale-110 transform border border-gray-200/50"
+                              title="More Actions"
+                              style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.1)'}}
+                            >
+                              <MoreVertical className="w-5 h-5" />
+                            </button>
+                            {dropdownOpen === patta.id && (
+                              <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 z-10 overflow-hidden" style={{boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)'}}>
+                                <div className="py-2">
+                                  <button
+                                    onClick={() => {
+                                      handleDeletePatta(patta);
+                                      setDropdownOpen(null);
+                                    }}
+                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all flex items-center gap-3 font-medium"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                    Delete Patta
+                                  </button>
+                                </div>
                               </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedPattas.map(patta => (
+                <div key={patta.id || patta.patta_id} className="bg-white rounded-2xl p-4 border border-gray-200/50 shadow-sm hover:shadow-lg transition-all">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-gray-900 truncate">{patta.patta_id}</div>
+                          <div className="text-sm text-gray-700 truncate">{patta.holder_name}</div>
+                        </div>
+                        <div className="text-left sm:text-right mt-2 sm:mt-0 flex flex-col items-start sm:items-end">
+                          <div className="text-xs text-gray-500">{patta.date_applied ? new Date(patta.date_applied).toLocaleDateString() : ''}</div>
+                          <div className="mt-2">{getStatusBadge(patta.status)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm text-gray-600 gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <div className="truncate">{patta.village}, {patta.district}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">{patta.area_hectares} ha</span>
+                          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">{patta.right_type}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+                        <button onClick={() => handleViewDetails(patta)} className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50">View</button>
+                        <div className="relative w-full sm:w-auto">
+                          <button onClick={() => setDropdownOpen(dropdownOpen === patta.id ? null : patta.id)} className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm">More</button>
+                          {dropdownOpen === patta.id && (
+                            <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-200 z-20">
+                              <button onClick={() => { handleDeletePatta(patta); setDropdownOpen(null); }} className="w-full text-left px-4 py-3 text-sm text-red-600">Delete Patta</button>
                             </div>
                           )}
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Enhanced Pagination */}
           {totalPages > 1 && (
@@ -916,6 +961,13 @@ const PattaManagement = () => {
           </div>
         </div>
       )}
+      <PattaApplicationModal
+        isOpen={showApplicationModal}
+        onClose={() => setShowApplicationModal(false)}
+        ownerId="admin-management"
+        submitLabel="Create Application"
+        onPattaCreated={handlePattaCreated}
+      />
       </div>
     </>
   );

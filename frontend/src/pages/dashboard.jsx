@@ -5,6 +5,7 @@ import {
   ChevronDown, Printer, CreditCard, DollarSign, Clock
 } from 'lucide-react';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
+import PattaApplicationModal from '../components/PattaApplicationModal';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -40,6 +41,8 @@ const Dashboard = () => {
   const [recentApplications, setRecentApplications] = useState([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
   const [metricsError, setMetricsError] = useState(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const normalizeStatus = (status) => (status || 'Unknown').toString().trim();
 
@@ -217,7 +220,27 @@ const Dashboard = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshKey]);
+
+  const handlePattaCreated = (newPatta) => {
+    setRefreshKey((prev) => prev + 1);
+    if (newPatta) {
+      setRecentApplications((prev) => {
+        const formatted = {
+          id: newPatta.patta_id || '—',
+          holder: newPatta.holder_name || '—',
+          status: normalizeStatus(newPatta.status),
+          area:
+            typeof newPatta.area_hectares === 'number' && !Number.isNaN(newPatta.area_hectares)
+              ? `${newPatta.area_hectares.toFixed(2)} ha`
+              : '—',
+          date: formatDate(newPatta.date_applied || newPatta.created_at)
+        };
+        const deduped = [formatted, ...prev.filter((item) => item.id !== formatted.id)];
+        return deduped.slice(0, 8);
+      });
+    }
+  };
 
   const applicationsGrowth = computeGrowth(monthlySeries.applications);
   const approvalsGrowth = computeGrowth(monthlySeries.approvals);
@@ -270,7 +293,10 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-semibold text-gray-900">FRA Dashboard</h1>
-          <button className="bg-teal-800 hover:bg-teal-900 text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm">
+          <button
+            className="bg-teal-800 hover:bg-teal-900 text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm"
+            onClick={() => setShowApplicationModal(true)}
+          >
             <span>New Application</span>
             <Plus className="w-4 h-4" />
           </button>
@@ -576,6 +602,14 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        <PattaApplicationModal
+          isOpen={showApplicationModal}
+          onClose={() => setShowApplicationModal(false)}
+          ownerId="admin-dashboard"
+          submitLabel="Create Application"
+          onPattaCreated={handlePattaCreated}
+        />
         </div>
       </div>
     </>

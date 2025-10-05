@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabaseClient';
@@ -12,38 +12,241 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+const SEARCHABLE_FIELDS = ['patta_id', 'holder_name', 'village', 'state'];
+const SEARCH_FIELD_LABELS = {
+  patta_id: 'Patta ID',
+  holder_name: 'Holder Name',
+  village: 'Village',
+  state: 'State'
+};
+
+const sanitizeSearchTerm = (value = '') => value.trim().replace(/\s+/g, ' ');
+
+const buildIlikePattern = (term) => {
+  const sanitized = sanitizeSearchTerm(term);
+  if (!sanitized) return '';
+  const escaped = sanitized.replace(/[%_]/g, (char) => `\\${char}`);
+  return `%${escaped.replace(/\s+/g, '%')}%`;
+};
+
+const textIncludesTerm = (value, term) => {
+  if (value === null || value === undefined) return false;
+  const target = value.toString().toLowerCase();
+  return target.includes(term.toLowerCase());
+};
+
+const normalizeCoordinatePair = (lat, lon) => {
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) return null;
+  if (latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) return null;
+  return { lat: latNum, lon: lonNum };
+};
+
+const parseCoordinateValue = (raw) => {
+  if (raw === null || raw === undefined) return null;
+
+  if (Array.isArray(raw)) {
+    if (raw.length >= 2) {
+      const pair = normalizeCoordinatePair(raw[0], raw[1]);
+      if (pair) return pair;
+    }
+    return null;
+  }
+
+  if (typeof raw === 'object') {
+    const latCandidate = raw.lat ?? raw.latitude ?? raw.Latitude ?? raw.LAT ?? raw.y ?? raw.Y;
+    const lonCandidate = raw.lon ?? raw.lng ?? raw.longitude ?? raw.Longitude ?? raw.LONG ?? raw.x ?? raw.X;
+    const pair = normalizeCoordinatePair(latCandidate, lonCandidate);
+    if (pair) return pair;
+
+    if (raw.coordinates) {
+      const nested = parseCoordinateValue(raw.coordinates);
+      if (nested) return nested;
+    }
+
+    try {
+      const numericMatches = JSON.stringify(raw).match(/-?\d+(?:\.\d+)?/g);
+      if (numericMatches && numericMatches.length >= 2) {
+        const numericPair = normalizeCoordinatePair(numericMatches[0], numericMatches[1]);
+        if (numericPair) return numericPair;
+      }
+    } catch (err) {
+      console.warn('Unable to serialize coordinate object for parsing:', err);
+    }
+    return null;
+  }
+
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    const attempts = [
+      trimmed,
+      trimmed.replace(/'/g, '"'),
+      trimmed
+        .replace(/([\{\[,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":')
+        .replace(/'/g, '"')
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        const parsed = JSON.parse(attempt);
+        const pair = parseCoordinateValue(parsed);
+        if (pair) return pair;
+      } catch (err) {
+        // ignore and try fallback parsing
+      }
+    }
+
+    const bracketCleaned = trimmed.replace(/^\[|\]$/g, '');
+    const splitTokens = bracketCleaned.split(/[,;|\s]+/).filter(Boolean);
+    if (splitTokens.length >= 2) {
+      const pair = normalizeCoordinatePair(splitTokens[0], splitTokens[1]);
+      if (pair) return pair;
+    }
+
+    const numericMatches = trimmed.match(/-?\d+(?:\.\d+)?/g);
+    if (numericMatches && numericMatches.length >= 2) {
+      const pair = normalizeCoordinatePair(numericMatches[0], numericMatches[1]);
+      if (pair) return pair;
+    }
+  }
+
+  return null;
+};
+
+const PROGRESS_STAGES = [
+  { threshold: 0, message: 'Initializing satellite feeds...' },
+  { threshold: 20, message: 'Syncing orbital data streams...' },
+  { threshold: 45, message: 'Analyzing spectral signatures...' },
+  { threshold: 70, message: 'Mapping vegetation & water layers...' },
+  { threshold: 90, message: 'Finalizing actionable insights...' }
+];
+
+const FUN_FACTS = [
+  '🌿 Healthy vegetation reflects near-infrared light — that\'s what NDVI reads!',
+  '🛰️ Sentinel satellites revisit most locations on Earth every 5 days.',
+  '💧 Water indices like MNDWI highlight surface moisture invisible to the naked eye.',
+  '🌾 Remote sensing helps communities plan crop cycles with precision.',
+  '🔭 Cloud-free imagery is stitched from multiple orbital passes for clarity.'
+];
+
 const Map_Land_Analysis = () => {
   // Add missing patta search handler
   const handlePattaSearch = async () => {
-    let query = supabase.from('pattas').select('*');
-    if (searchType === 'patta_id' && searchValue) {
-      query = query.ilike('patta_id', `%${searchValue}%`);
-    } else if (searchType === 'holder_name' && searchValue) {
-      query = query.ilike('holder_name', `%${searchValue}%`);
-    } else if (searchType === 'village' && searchValue) {
-      query = query.ilike('village', `%${searchValue}%`);
-    } else if (searchType === 'state' && searchValue) {
-      query = query.ilike('state', `%${searchValue}%`);
-    }
-    const { data, error } = await query;
-    if (error) {
+    const normalizedTerm = sanitizeSearchTerm(searchValue);
+
+    if (!normalizedTerm) {
       setPattaResults([]);
       setMapPoints([]);
+      setSuggestions([]);
+      setDetectedField(null);
       return;
     }
-    setPattaResults(data || []);
-    if ((searchType === 'village' || searchType === 'state') && data) {
-      setMapPoints(data.filter(p => p.coordinates).map(p => p.coordinates));
-    } else {
+
+    const pattern = buildIlikePattern(normalizedTerm);
+    if (!pattern) {
+      setPattaResults([]);
       setMapPoints([]);
+      setSuggestions([]);
+      setDetectedField(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('pattas')
+        .select('*')
+        .or(SEARCHABLE_FIELDS.map((field) => `${field}.ilike.${pattern}`).join(','));
+
+      if (error) throw error;
+
+      const enrichedRecords = (data || []).map((record) => ({
+        ...record,
+        resolvedCoordinates: parseCoordinateValue(record.coordinates ?? record.location ?? record.geo_coordinates ?? record.geo_json ?? null)
+      }));
+
+      const detectionScores = SEARCHABLE_FIELDS.reduce((acc, field) => {
+        acc[field] = enrichedRecords.filter((record) => textIncludesTerm(record[field], normalizedTerm)).length;
+        return acc;
+      }, {});
+
+      let bestField = null;
+      let bestScore = 0;
+      SEARCHABLE_FIELDS.forEach((field) => {
+        if (detectionScores[field] > bestScore) {
+          bestScore = detectionScores[field];
+          bestField = field;
+        }
+      });
+
+      setDetectedField(searchType === 'smart' && bestScore > 0 ? bestField : null);
+
+      const effectiveField = searchType === 'smart' ? (bestScore > 0 ? bestField : null) : searchType;
+
+      const prioritized = [];
+      const secondary = [];
+      if (effectiveField) {
+        enrichedRecords.forEach((record) => {
+          if (textIncludesTerm(record[effectiveField], normalizedTerm)) {
+            prioritized.push(record);
+          } else {
+            secondary.push(record);
+          }
+        });
+      }
+
+      const orderedResults = effectiveField ? [...prioritized, ...secondary] : enrichedRecords;
+      setPattaResults(orderedResults);
+
+      if (normalizedTerm.length >= 2) {
+        const suggestionFields = searchType === 'smart' ? SEARCHABLE_FIELDS : [searchType];
+        const suggestionSet = new Set();
+        suggestionFields.forEach((field) => {
+          orderedResults.forEach((record) => {
+            const value = record[field];
+            if (!value) return;
+            const stringValue = value.toString().trim();
+            if (stringValue && textIncludesTerm(stringValue, normalizedTerm)) {
+              suggestionSet.add(stringValue);
+            }
+          });
+        });
+        setSuggestions(Array.from(suggestionSet).slice(0, 8));
+      } else {
+        setSuggestions([]);
+      }
+
+      if (['village', 'state', 'smart'].includes(searchType)) {
+        const points = orderedResults
+          .map((record) => record.resolvedCoordinates)
+          .filter(Boolean)
+          .map((coords) => [coords.lat, coords.lon]);
+        setMapPoints(points);
+      } else {
+        setMapPoints([]);
+      }
+    } catch (err) {
+      console.error('Patta search failed:', err);
+      setPattaResults([]);
+      setMapPoints([]);
+      setSuggestions([]);
+      setDetectedField(null);
     }
   };
   // Patta search states (required for search UI)
-  const [searchType, setSearchType] = useState('patta_id');
+  const [searchType, setSearchType] = useState('smart');
   const [searchValue, setSearchValue] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [pattaResults, setPattaResults] = useState([]);
   const [mapPoints, setMapPoints] = useState([]);
+  const [detectedField, setDetectedField] = useState(null);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [funFactIndex, setFunFactIndex] = useState(0);
+  const progressIntervalRef = useRef(null);
+  const progressResetTimeoutRef = useRef(null);
   // ============================================
   // STATE MANAGEMENT
   // ============================================
@@ -78,19 +281,96 @@ const Map_Land_Analysis = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      if (progressResetTimeoutRef.current) {
+        clearTimeout(progressResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+    const stage = [...PROGRESS_STAGES].reverse().find((entry) => analysisProgress >= entry.threshold);
+    if (stage && progressMessage !== stage.message) {
+      setProgressMessage(stage.message);
+    }
+  }, [analysisProgress, loading, progressMessage]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const factTimer = setInterval(() => {
+      setFunFactIndex((prev) => (prev + 1) % FUN_FACTS.length);
+    }, 4000);
+    return () => clearInterval(factTimer);
+  }, [loading]);
+
+  // ============================================
+  // PROGRESS ANIMATION HELPERS
+  // ============================================
+  const startProgressAnimation = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    if (progressResetTimeoutRef.current) {
+      clearTimeout(progressResetTimeoutRef.current);
+      progressResetTimeoutRef.current = null;
+    }
+    setFunFactIndex(0);
+    setAnalysisProgress(5);
+    progressIntervalRef.current = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev >= 94) return prev;
+        const increment = Math.random() * 8 + 4;
+        return Math.min(prev + increment, 94);
+      });
+    }, 900);
+  };
+
+  const finishProgressAnimation = (status = 'success') => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    if (progressResetTimeoutRef.current) {
+      clearTimeout(progressResetTimeoutRef.current);
+    }
+
+    const finalMessage = status === 'success'
+      ? 'Satellite insights ready!'
+      : 'We hit a lane of clouds — give it another try.';
+
+    setAnalysisProgress(100);
+    setProgressMessage(finalMessage);
+
+    progressResetTimeoutRef.current = setTimeout(() => {
+      setAnalysisProgress(0);
+      setProgressMessage('');
+      setFunFactIndex(0);
+      progressResetTimeoutRef.current = null;
+    }, 1800);
+  };
+
   // ============================================
   // API INTEGRATION - FETCH ANALYSIS DATA
   // ============================================
-  const fetchAnalysis = async () => {
-    // Validate inputs
-    if (!latitude || !longitude) {
+  const fetchAnalysis = async (overrides = {}) => {
+    const latInputRaw = overrides.lat ?? overrides.latitude ?? latitude;
+    const lonInputRaw = overrides.lon ?? overrides.longitude ?? longitude;
+    const radiusInputRaw = overrides.radius ?? radius;
+
+    if (latInputRaw === undefined || latInputRaw === null || latInputRaw === '' ||
+        lonInputRaw === undefined || lonInputRaw === null || lonInputRaw === '') {
       setError('Please enter both latitude and longitude');
       return;
     }
 
-    const lat = parseFloat(latitude);
-    const lon = parseFloat(longitude);
-    const rad = parseFloat(radius);
+    const lat = typeof latInputRaw === 'number' ? latInputRaw : parseFloat(latInputRaw);
+    const lon = typeof lonInputRaw === 'number' ? lonInputRaw : parseFloat(lonInputRaw);
+    const rad = typeof radiusInputRaw === 'number' ? radiusInputRaw : parseFloat(radiusInputRaw);
 
     if (isNaN(lat) || isNaN(lon) || isNaN(rad)) {
       setError('Please enter valid numbers');
@@ -111,10 +391,12 @@ const Map_Land_Analysis = () => {
     setLoading(true);
     setError(null);
     setAnalysisData(null);
+    setProgressMessage(PROGRESS_STAGES[0].message);
+    startProgressAnimation();
 
     try {
       // Call Flask API
-  const response = await fetch(backendUrl('analyze'), {
+      const response = await fetch(backendUrl('analyze'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,10 +448,12 @@ const Map_Land_Analysis = () => {
           setSelectedPattaId(null);
         }
       }
+      finishProgressAnimation('success');
       
     } catch (err) {
       setError(err.message || 'Failed to fetch analysis. Make sure the Flask server is running.');
       console.error('API Error:', err);
+      finishProgressAnimation('error');
     } finally {
       setLoading(false);
     }
@@ -218,6 +502,10 @@ const Map_Land_Analysis = () => {
     { id: 'ndwi', label: 'NDWI', description: 'Water content', icon: '💦' }
   ];
 
+  const searchPlaceholder = searchType === 'smart'
+    ? 'Search by Patta ID, Holder Name, Village or State...'
+    : `Enter ${SEARCH_FIELD_LABELS[searchType] || searchType.replace('_', ' ')}...`;
+
   // ============================================
   // RENDER: MAIN COMPONENT
   // ============================================
@@ -249,16 +537,24 @@ const Map_Land_Analysis = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Search Type</label>
               <select
                 value={searchType}
-                onChange={e => setSearchType(e.target.value)}
+                onChange={e => {
+                  const nextType = e.target.value;
+                  setSearchType(nextType);
+                  setDetectedField(null);
+                }}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" style={{
                   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
                 }}
               >
+                <option value="smart" className="bg-white">Smart Detect (All Fields)</option>
                 <option value="patta_id" className="bg-white">Patta ID</option>
                 <option value="holder_name" className="bg-white">Holder Name</option>
                 <option value="village" className="bg-white">Village</option>
                 <option value="state" className="bg-white">State</option>
               </select>
+              {searchType === 'smart' && detectedField && (
+                <p className="mt-2 text-xs font-medium text-blue-600">Smart detect focusing on {SEARCH_FIELD_LABELS[detectedField]} matches.</p>
+              )}
             </div>
 
             <div className="relative lg:col-span-2">
@@ -267,12 +563,26 @@ const Map_Land_Analysis = () => {
                 <input
                   type="text"
                   value={searchValue}
-                  onChange={e => setSearchValue(e.target.value)}
-                  placeholder={`Enter ${searchType.replace('_', ' ')}...`}
+                  onChange={e => {
+                    setSearchValue(e.target.value);
+                    if (suggestions.length) {
+                      setSuggestions([]);
+                    }
+                    if (searchType === 'smart' && detectedField) {
+                      setDetectedField(null);
+                    }
+                  }}
+                  placeholder={searchPlaceholder}
                   className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" style={{
                     boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08)'
                   }}
                   autoComplete="off"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handlePattaSearch();
+                    }
+                  }}
                 />
                 <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -325,25 +635,32 @@ const Map_Land_Analysis = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {pattaResults.map((patta, idx) => (
-                <div key={idx} className="group bg-gradient-to-br from-gray-800/80 to-gray-700/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-600/50 p-8 hover:border-emerald-500/40 transition-all duration-500 hover:scale-[1.02] hover:shadow-emerald-500/10">
+                <div
+                  key={idx}
+                  className="group bg-white rounded-3xl shadow-xl border border-gray-200 p-8 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-emerald-200/30"
+                  style={{
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 15px 35px rgba(15, 23, 42, 0.15)',
+                    backgroundImage: 'radial-gradient(circle at top, rgba(59,130,246,0.08), transparent 55%), radial-gradient(circle at bottom, rgba(16,185,129,0.08), transparent 60%)'
+                  }}
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                       </div>
                       <div>
-                        <h4 className="text-lg font-bold text-white">{patta.patta_id}</h4>
-                        <p className="text-gray-600 text-sm">{patta.category}</p>
+                        <h4 className="text-lg font-bold text-gray-900">{patta.patta_id}</h4>
+                        <p className="text-gray-500 text-sm">{patta.category}</p>
                       </div>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       patta.status === 'verified'
-                        ? 'bg-green-600 text-white border border-green-500'
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                         : patta.status === 'pending'
-                        ? 'bg-yellow-600 text-white border border-yellow-500'
-                        : 'bg-red-600 text-white border border-red-500'
+                        ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                        : 'bg-rose-100 text-rose-700 border border-rose-200'
                     }`}>
                       {patta.status.charAt(0).toUpperCase() + patta.status.slice(1)}
                     </div>
@@ -351,63 +668,49 @@ const Map_Land_Analysis = () => {
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-3 text-sm">
-                      <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span className="text-gray-700"><span className="text-blue-600 font-medium">Holder:</span> {patta.holder_name}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <svg className="w-4 h-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       </svg>
                       <span className="text-gray-700"><span className="text-blue-600 font-medium">Location:</span> {patta.village}, {patta.state}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                       </svg>
                       <span className="text-gray-700"><span className="text-blue-600 font-medium">Area:</span> {patta.area_hectares} hectares</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <svg className="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                       </svg>
-                      <span className="text-gray-700"><span className="text-blue-600 font-medium">Coordinates:</span> {patta.coordinates ? 'Available' : 'Not available'}</span>
+                      <span className="text-gray-700">
+                        <span className="text-blue-600 font-medium">Coordinates:</span>{' '}
+                        {patta.resolvedCoordinates
+                          ? `${patta.resolvedCoordinates.lat.toFixed(6)}, ${patta.resolvedCoordinates.lon.toFixed(6)}`
+                          : 'Not available'}
+                      </span>
                     </div>
                   </div>
 
                   <button
-                    className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
                     onClick={() => {
-                      // Autofill location analysis form and trigger analysis
-                      let lat, lon;
-                      if (patta.coordinates) {
-                        let coords = patta.coordinates;
-                        if (typeof coords === 'string') {
-                          try {
-                            const parsed = JSON.parse(coords);
-                            if (Array.isArray(parsed) && parsed.length === 2) {
-                              lat = parsed[0];
-                              lon = parsed[1];
-                            }
-                          } catch {}
-                        } else if (Array.isArray(coords) && coords.length === 2) {
-                          lat = coords[0];
-                          lon = coords[1];
-                        } else if (typeof coords === 'object') {
-                          lat = coords.latitude ?? coords.lat;
-                          lon = coords.longitude ?? coords.lon;
-                        }
-                      }
-                      if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
-                        // Mark this analysis as coming from a patta so results will be persisted
+                      const coords = patta.resolvedCoordinates || parseCoordinateValue(patta.coordinates);
+                      if (coords) {
+                        const defaultRadius = '1000';
                         setSelectedPattaId(patta.patta_id ?? patta.id ?? null);
-                        setLatitude(lat);
-                        setLongitude(lon);
-                        setRadius('1000');
-                        fetchAnalysis();
+                        setLatitude(coords.lat.toString());
+                        setLongitude(coords.lon.toString());
+                        setRadius(defaultRadius);
+                        fetchAnalysis({ lat: coords.lat, lon: coords.lon, radius: Number(defaultRadius) });
                       } else {
-                        alert('Coordinates not available for this patta.');
+                        alert('Coordinates not available or invalid for this patta.');
                       }
                     }}
                   >
@@ -420,8 +723,9 @@ const Map_Land_Analysis = () => {
               ))}
             </div>
           </div>
-        )}        {/* Map Visualization for village/state search */}
-        {(searchType === 'village' || searchType === 'state') && mapPoints && mapPoints.length > 0 && (() => {
+        )}
+        {/* Map Visualization for village/state search */}
+        {(searchType === 'village' || searchType === 'state' || searchType === 'smart') && mapPoints && mapPoints.length > 0 && (() => {
           // Find first valid coordinate for map center
           const validCoords = mapPoints.filter(pt => {
             let lat, lon;
@@ -608,7 +912,7 @@ const Map_Land_Analysis = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span className="text-lg">Analyzing Satellite Data...</span>
+                  <span className="text-lg">Analyzing Satellite Data... {Math.min(99, Math.round(analysisProgress))}%</span>
                 </>
               ) : (
                 <>
@@ -619,6 +923,41 @@ const Map_Land_Analysis = () => {
                 </>
               )}
             </button>
+
+            {(loading || analysisProgress > 0) && progressMessage && (
+              <div className="relative mt-8 overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 via-slate-900/90 to-indigo-900/90 p-6 sm:p-8 text-white transition-all duration-500">
+                <div className="pointer-events-none absolute -top-20 -right-24 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl"></div>
+                <div className="pointer-events-none absolute -bottom-16 -left-24 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl"></div>
+                <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: `conic-gradient(#22d3ee ${Math.min(analysisProgress, 100) * 3.6}deg, rgba(148, 163, 184, 0.25) ${Math.min(analysisProgress, 100) * 3.6}deg)`
+                      }}
+                    ></div>
+                    <div className="absolute inset-3 rounded-full border border-cyan-400/40 bg-slate-900/90 flex items-center justify-center">
+                      <span className="text-2xl sm:text-3xl font-bold text-cyan-300">{Math.min(100, Math.round(analysisProgress))}%</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-4 text-center sm:text-left">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-200/80">Live analysis feed</p>
+                      <h4 className="mt-2 text-lg sm:text-2xl font-semibold text-white">{progressMessage}</h4>
+                    </div>
+                    <p className="text-sm sm:text-base text-cyan-100/80 leading-relaxed">
+                      {(FUN_FACTS[funFactIndex] || FUN_FACTS[0])}
+                    </p>
+                    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-emerald-400 transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.round(analysisProgress))}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (
