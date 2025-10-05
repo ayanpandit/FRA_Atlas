@@ -27,11 +27,17 @@ const Sidebar_Admin = ({
 
   // Navigate and update hash
   const handleNavigation = (itemId, externalPath) => {
-    if (externalPath) {
-      window.location.href = externalPath;
-    } else {
+    try {
+      if (externalPath) {
+        window.location.href = externalPath;
+        return;
+      }
+      const hash = `#${itemId}`;
+      if (window.location.hash !== hash) window.location.hash = itemId;
       setActiveComponent(itemId);
-      window.location.hash = itemId;
+      if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    } catch (err) {
+      console.warn('Navigation error', err);
     }
   };
 

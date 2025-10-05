@@ -27,17 +27,30 @@ const Sidebar_User = ({
   const setIsCollapsed = setExternalCollapsed || setInternalCollapsed;
 
   // Navigate and update hash
+  // Hash routing: when user clicks a sidebar item for an internal view, update
+  // window.location.hash so the workflows listen and render the correct page.
+  // If an externalPath is provided, navigate to it instead.
   const handleNavigation = (itemId, externalPath) => {
-    if (externalPath) {
-      window.location.href = externalPath;
-    } else {
-      setActiveComponent(itemId);
-      window.location.hash = itemId;
-      
-      // Close mobile menu if open
-      if (isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
+    try {
+      if (externalPath) {
+        // External link (absolute or relative) — navigate normally
+        window.location.href = externalPath;
+        return;
       }
+
+      // Internal route: set the hash and update the currently active component
+      // This keeps the URL in sync, enables back/forward navigation, and
+      // allows direct linking to a specific view.
+      const hash = `#${itemId}`;
+      if (window.location.hash !== hash) {
+        window.location.hash = itemId;
+      }
+      setActiveComponent(itemId);
+
+      // Close mobile menu if open
+      if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    } catch (err) {
+      console.warn('Navigation error', err);
     }
   };
 
