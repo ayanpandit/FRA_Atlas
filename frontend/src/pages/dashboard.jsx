@@ -321,7 +321,10 @@ const Dashboard = () => {
                 <p className="text-sm text-teal-100 mb-6">
                   Streamline your forest rights applications and documentation process
                 </p>
-                <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <button
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  onClick={() => setShowApplicationModal(true)}
+                >
                   Get Started
                 </button>
               </div>
