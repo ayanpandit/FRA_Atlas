@@ -310,46 +310,59 @@ const Claimant_patta = ({ userData }) => {
   const QRCodeModal = ({ patta, onClose }) => {
     const [qrDataURL, setQrDataURL] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
       if (!patta) return;
       
-      // Create a shareable URL with patta ID encoded
-      const shareableData = `https://fra-atlas.vercel.app/verify/${patta.id}`;
-      
-      // Generate QR code URL using QR Server API with better quality
-      const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&margin=20&data=${encodeURIComponent(shareableData)}`;
-      setQrDataURL(qrURL);
+  // Prefer encoding the actual patta document URL so scanning goes directly to the document
+  const shareableData = patta.patta_doc_url && patta.patta_doc_url !== 'null' ? patta.patta_doc_url : `https://fra-atlas.vercel.app/verify/${patta.id}`;
+
+  // Generate QR code URL using QR Server API (encodes the document URL)
+  const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&margin=20&data=${encodeURIComponent(shareableData)}`;
+  setQrDataURL(qrURL);
       
       // Simulate loading
       setTimeout(() => setIsLoading(false), 800);
     }, [patta]);
 
-    const handleCopyLink = async () => {
-      try {
-        const shareableURL = `https://fra-atlas.vercel.app/verify/${patta.id}`;
-        await navigator.clipboard.writeText(shareableURL);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-      }
-    };
-
+    // Share the QR image (preferred) or fallback to sharing the document URL
     const handleShare = async () => {
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'FRA Patta Certificate',
-            text: `View ${patta.title}'s Forest Rights Certificate`,
-            url: `https://fra-atlas.vercel.app/verify/${patta.id}`
-          });
-        } catch (err) {
-          console.error('Error sharing: ', err);
+      const shareableData = patta.patta_doc_url && patta.patta_doc_url !== 'null' ? patta.patta_doc_url : `https://fra-atlas.vercel.app/verify/${patta.id}`;
+      try {
+        // Attempt to fetch the generated QR image and share as a file (Web Share API with files)
+        if (qrDataURL) {
+          const resp = await fetch(qrDataURL, { mode: 'cors' });
+          const blob = await resp.blob();
+          const file = new File([blob], `fra-patta-${patta.id}-qr.png`, { type: blob.type || 'image/png' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: `Patta QR: ${patta.id}`, text: `${patta.title || patta.id}` });
+            return;
+          }
         }
-      } else {
-        handleCopyLink();
+
+        // Fallback: share the document URL (or verification URL)
+        if (navigator.share) {
+          await navigator.share({ title: `Patta: ${patta.id}`, text: `${patta.title || patta.id}`, url: shareableData });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(shareableData);
+          alert('Document link copied to clipboard');
+        } else {
+          // Last resort open the link in a new tab
+          window.open(shareableData, '_blank');
+        }
+      } catch (err) {
+        console.error('Error sharing QR/image:', err);
+        try {
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(shareableData);
+            alert('Document link copied to clipboard');
+          } else {
+            window.open(shareableData, '_blank');
+          }
+        } catch (e) {
+          console.error('Fallback share failed', e);
+        }
       }
     };
 
@@ -418,54 +431,21 @@ const Claimant_patta = ({ userData }) => {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
-                    setShowQRModal(false);
-                    setSelectedPattaForCert(patta.id);
-                    setShowCertificate(true);
+                    const url = patta.patta_doc_url && patta.patta_doc_url !== 'null' ? patta.patta_doc_url : `https://fra-atlas.vercel.app/verify/${patta.id}`;
+                    window.open(url, '_blank');
                   }}
                   className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
                 >
                   <Eye className="h-3 w-3" />
                   <span>View</span>
                 </button>
-                
-                <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = qrDataURL;
-                    link.download = `fra-patta-${patta.id}-qr.png`;
-                    link.click();
-                  }}
-                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
-                >
-                  <Download className="h-3 w-3" />
-                  <span>Save</span>
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleShare}
                   className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
                 >
                   <Share2 className="h-3 w-3" />
                   <span>Share</span>
-                </button>
-                
-                <button
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-1 text-xs"
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 text-green-300" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-3 w-3" />
-                      <span>Copy</span>
-                    </>
-                  )}
                 </button>
               </div>
             </div>
