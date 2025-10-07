@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
-// ...existing code...
+import { User, Home, Briefcase, ChevronDown } from 'lucide-react';
+import Loader from './loader';
 import { useNavigate } from "react-router-dom";
 
 import bg1 from "/bg1.jpg";
@@ -17,14 +17,44 @@ const TYPING_SPEED = 70; // ms per character (slower)
 const FADE_IN_DELAY = 400; // ms after typing ends
 
 const Hero = () => {
-  // Remove auth and modal logic
-  const handlePortalClick = () => {
-    // Placeholder: implement new auth logic here later
-    // For now, just navigate to a default page or show a message
-    // Example: navigate('/fra_portal');
-    alert('FRA Portal access will be available after new authentication is implemented.');
-  };
   const navigate = useNavigate();
+  
+  // Dropdown and loader states
+  const [showPortalDropdown, setShowPortalDropdown] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [selectedPortal, setSelectedPortal] = useState(null);
+
+  // Handler for portal selection from FRA Portal dropdown
+  const handlePortalClick = (portalType = null) => {
+    if (portalType) {
+      // Portal selection from dropdown
+      let route = '';
+      switch(portalType) {
+        case 'user':
+          route = '#/workflow_user';
+          break;
+        case 'gp':
+          route = '#/workflow_off';
+          break;
+        case 'admin':
+          route = '#/workflow_admin';
+          break;
+        default:
+          route = '#/';
+      }
+      setSelectedPortal(route);
+      setShowLoader(true);
+      setShowPortalDropdown(false);
+      // Navigate after 3 second delay
+      setTimeout(() => {
+        setShowLoader(false);
+        window.location.href = route;
+      }, 3000);
+    } else {
+      // Toggle dropdown when clicking main button
+      setShowPortalDropdown(!showPortalDropdown);
+    }
+  };
   const [typed, setTyped] = useState("");
   const [showSub, setShowSub] = useState(false);
   useEffect(() => {
@@ -61,8 +91,12 @@ const Hero = () => {
     return () => clearInterval(interval);
   }, []);
 
+
+
   return (
     <>
+    {/* Show loader overlay when loading */}
+    {showLoader && <Loader />}
     <section
       className="relative w-full h-screen flex items-center justify-center text-center bg-cover bg-center transition-all duration-700"
       style={{
@@ -149,7 +183,7 @@ const Hero = () => {
       </div>
 
       {/* Bottom-right: Description + Buttons - RESPONSIVE POSITIONING WITH OVERLAP PREVENTION */}
-      <div className="absolute right-0 bottom-0 z-10 
+      <div className="absolute right-0 z-10 
                       /* Mobile: Full width, centered, below main content */
                       w-full text-center bottom-8 p-4
                       /* Small mobile: Better spacing */
@@ -177,45 +211,104 @@ const Hero = () => {
           Access the VanMitra Portal and documentation for smarter, AI-powered tribal land governance and forest rights management.
         </p>
 
-        {/* Buttons - Responsive layout */}
-        <div className="flex 
-                        /* Mobile: Stack vertically */
-                        flex-col gap-3 w-full max-w-xs
-                        /* Small screens: Horizontal with wrap */
-                        xs:flex-row xs:flex-wrap xs:justify-center xs:gap-3 xs:max-w-none
-                        /* Tablet and up: Original horizontal layout */
-                        sm:flex-row sm:justify-end sm:gap-4 sm:max-w-none">
+        {/* Buttons Container - Stack vertically */}
+        <div className="flex flex-col items-center space-y-4 w-full max-w-xs xs:max-w-sm sm:max-w-md">
           
-          {/* FRA Portal Button - Responsive sizing */}
-          <button 
-            onClick={handlePortalClick}
-            className="/* Responsive padding and text */
-                       px-3 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2 md:px-6 md:py-3
-                       text-xs xs:text-sm sm:text-base
-                       text-black font-semibold bg-gradient-to-br from-[#FACC15] to-yellow-500 hover:from-yellow-500 hover:to-yellow-600
-                       rounded-full transition transform hover:scale-105 duration-300
-                       /* Responsive width */
-                       w-full xs:w-auto" 
-            style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 8px rgba(250, 204, 21, 0.4)' : window.innerWidth < 768 ? 'inset 0 1px 0 rgba(255,255,255,0.5), 0 6px 12px rgba(250, 204, 21, 0.45)' : 'inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.15), 0 8px 16px rgba(250, 204, 21, 0.5), 0 4px 6px rgba(0,0,0,0.2)'}}
-          >
-            FRA Portal
-          </button>
+          {/* Main Buttons Row */}
+          <div className="flex 
+                          /* Mobile: Stack vertically */
+                          flex-col gap-3 w-full
+                          /* Small screens: Horizontal */
+                          xs:flex-row xs:gap-3
+                          /* Tablet and up: Original horizontal layout */
+                          sm:flex-row sm:gap-4">
+            
+            {/* FRA Portal Button - Responsive sizing */}
+            <button 
+              onClick={() => handlePortalClick()}
+              className="/* Responsive padding and text */
+                         px-3 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2 md:px-6 md:py-3
+                         text-xs xs:text-sm sm:text-base
+                         text-black font-semibold bg-gradient-to-br from-[#FACC15] to-yellow-500 hover:from-yellow-500 hover:to-yellow-600
+                         rounded-full transition transform hover:scale-105 duration-300
+                         /* Responsive width */
+                         w-full xs:w-auto flex items-center justify-center space-x-1 sm:space-x-2" 
+              style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 8px rgba(250, 204, 21, 0.4)' : window.innerWidth < 768 ? 'inset 0 1px 0 rgba(255,255,255,0.5), 0 6px 12px rgba(250, 204, 21, 0.45)' : 'inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.15), 0 8px 16px rgba(250, 204, 21, 0.5), 0 4px 6px rgba(0,0,0,0.2)'}}
+            >
+              <span>FRA Portal</span>
+              <ChevronDown className={`w-3 h-3 xs:w-4 xs:h-4 transition-transform duration-200 ${showPortalDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Documentation Button - Responsive sizing */}
+            <button 
+              className="/* Responsive padding and text */
+                         px-3 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2 md:px-6 md:py-3
+                         text-xs xs:text-sm sm:text-base
+                         border sm:border-2 font-semibold bg-white/30 backdrop-blur-sm border-white/40 sm:border-white/50
+                         text-white hover:bg-white hover:text-black 
+                         rounded-full transition transform hover:scale-105 duration-300
+                         /* Responsive width */
+                         w-full xs:w-auto"
+              onClick={() => navigate('/fra_documentation')}
+              style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.25)' : window.innerWidth < 768 ? 'inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 10px rgba(0,0,0,0.275)' : 'inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(255,255,255,0.1)'}}
+            >
+              FRA Documentation
+            </button>
+          </div>
           
-          {/* Documentation Button - Responsive sizing */}
-          <button 
-            className="/* Responsive padding and text */
-                       px-3 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2 md:px-6 md:py-3
-                       text-xs xs:text-sm sm:text-base
-                       border sm:border-2 font-semibold bg-white/30 backdrop-blur-sm border-white/40 sm:border-white/50
-                       text-white hover:bg-white hover:text-black 
-                       rounded-full transition transform hover:scale-105 duration-300
-                       /* Responsive width */
-                       w-full xs:w-auto"
-            onClick={() => navigate('/fra_documentation')}
-            style={{boxShadow: window.innerWidth < 640 ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.25)' : window.innerWidth < 768 ? 'inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 10px rgba(0,0,0,0.275)' : 'inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(255,255,255,0.1)'}}
-          >
-            FRA Documentation
-          </button>
+          {/* Portal Buttons - Fade in below main buttons */}
+          <div className={`w-full transition-all duration-500 overflow-hidden ${
+            showPortalDropdown 
+              ? 'max-h-60 opacity-100' 
+              : 'max-h-0 opacity-0'
+          }`}>
+            <div className="space-y-2 sm:space-y-3 w-full">
+              {/* User Portal Button */}
+              <button 
+                className="w-full px-3 py-2 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 
+                           text-xs xs:text-sm sm:text-base
+                           bg-white/20 backdrop-blur-sm border border-white/30 
+                           text-white hover:bg-white hover:text-black 
+                           rounded-full transition-all transform hover:scale-105 duration-300
+                           flex items-center justify-center space-x-2"
+                onClick={() => handlePortalClick('user')}
+                style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.25)'}}
+              >
+                <User className="w-4 h-4 xs:w-5 xs:h-5" />
+                <span>User Portal</span>
+              </button>
+              
+              {/* Gram Panchayat Portal Button */}
+              <button 
+                className="w-full px-3 py-2 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 
+                           text-xs xs:text-sm sm:text-base
+                           bg-white/20 backdrop-blur-sm border border-white/30 
+                           text-white hover:bg-white hover:text-black 
+                           rounded-full transition-all transform hover:scale-105 duration-300
+                           flex items-center justify-center space-x-2"
+                onClick={() => handlePortalClick('gp')}
+                style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.25)'}}
+              >
+                <Home className="w-4 h-4 xs:w-5 xs:h-5" />
+                <span>Gram Panchayat Portal</span>
+              </button>
+              
+              {/* Admin Portal Button */}
+              <button 
+                className="w-full px-3 py-2 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 
+                           text-xs xs:text-sm sm:text-base
+                           bg-white/20 backdrop-blur-sm border border-white/30 
+                           text-white hover:bg-white hover:text-black 
+                           rounded-full transition-all transform hover:scale-105 duration-300
+                           flex items-center justify-center space-x-2"
+                onClick={() => handlePortalClick('admin')}
+                style={{boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.25)'}}
+              >
+                <Briefcase className="w-4 h-4 xs:w-5 xs:h-5" />
+                <span>Admin Portal</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       
