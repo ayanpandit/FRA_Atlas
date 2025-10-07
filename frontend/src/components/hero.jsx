@@ -129,7 +129,7 @@ const Hero = () => {
             style={{ 
               minHeight: window.innerWidth < 640 ? '1.5em' : window.innerWidth < 1024 ? '2em' : '2.5em'
             }}>
-          <span style={{ color: '#FACC15' }}>FRA Atlas</span>
+          <span style={{ color: '#FACC15' }}>VanMitra</span>
           <br className="hidden xs:block" />
           <span className="xs:hidden"> </span>
           Mapping Rights, Powering Targeted Tribal Development
@@ -174,7 +174,7 @@ const Hero = () => {
                       rounded-lg 
                       /* Responsive padding */
                       px-3 py-2 xs:px-4 xs:py-2 sm:px-4 sm:py-2">
-          Access the FRA Portal and documentation for smarter, AI-powered tribal land governance and forest rights management.
+          Access the VanMitra Portal and documentation for smarter, AI-powered tribal land governance and forest rights management.
         </p>
 
         {/* Buttons - Responsive layout */}

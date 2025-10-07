@@ -53,7 +53,7 @@ const Footer = () => {
                     className="w-10 h-10 object-contain"
                   />
                   <h3 className=" text-2xl text-yellow-400">
-                    FRA <span className="text-2xl font-bold text-black">Atlas</span>
+                  Van<span className="text-2xl font-bold text-black">Mitra</span>
                   </h3>
                 </div>
                 <p className="text-black text-sm leading-relaxed">
@@ -186,7 +186,7 @@ const Footer = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <div className="text-sm text-black">
-                © 2025 FRA Atlas. A Digital India Initiative by Government of India. All rights reserved.
+                © 2025 VanMitra. A Digital India Initiative by Government of India. All rights reserved.
               </div>
               <div className="flex space-x-6 text-sm">
                 <a href="/privacy" className="text-black hover:text-yellow-400 transition-colors">

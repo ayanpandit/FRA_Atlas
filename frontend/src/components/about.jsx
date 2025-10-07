@@ -1,4 +1,4 @@
-import aboutImage from '/dash-image.png';
+import aboutImage from '/dash-2.jpg';
 
 const About = () => {
 		return (
@@ -11,8 +11,8 @@ const About = () => {
 								<div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 via-transparent to-yellow-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
 								<div className="w-full" style={{ aspectRatio: '16/9' }}>
 									<img 
-										src={aboutImage} 
-										alt="About Our Portal"
+										src="/dash-1.jpg" 
+										alt="About Our Portal - alternate"
 										className="w-full h-full object-contain"
 									/>
 								</div>

@@ -92,9 +92,9 @@ const Navbar = () => {
                         <div className="flex-shrink-0 cursor-pointer">
                             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
                                 <span className="text-yellow-400">
-                                    FRA
+                                    Van
                                 </span>
-                                <span className="text-white"> Atlas</span>
+                                <span className="text-white">Mitra</span>
                             </h1>
                         </div>
 
