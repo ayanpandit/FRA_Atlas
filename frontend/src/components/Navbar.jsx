@@ -62,7 +62,7 @@ const Navbar = () => {
             icon: Briefcase, 
             isDropdown: true,
             subItems: [
-                { name: 'CodeChef' },
+                { name: 'FRA ATLAS', route: '/Services_fra_atlas' },
                 { name: 'LeetCode' },
                 { name: 'CodeForces' }
             ]
@@ -300,6 +300,12 @@ const Navbar = () => {
                                     <button
                                         key={subItem.name}
                                         className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2 text-sm lg:text-base"
+                                        onClick={() => {
+                                            if (subItem.route) {
+                                                navigate(subItem.route);
+                                                setOpenDropdown('');
+                                            }
+                                        }}
                                     >
                                         <span>{subItem.name}</span>
                                     </button>
