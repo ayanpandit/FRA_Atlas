@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, Download, Share2, TreePine, Mountain, Home, Droplet,
   BarChart3, Camera, FileText, Navigation, Globe, Target, Compass, Filter
@@ -6,6 +7,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 
 const FRAAtlas_user = ({ userData }) => {
+  const navigate = useNavigate();
   // Helper: Export map as image
   const handleExportMap = async () => {
     try {
@@ -353,6 +355,16 @@ const FRAAtlas_user = ({ userData }) => {
         .alan-sans { font-family: "Alan Sans", sans-serif; font-optical-sizing: auto; font-weight: 728; font-style: normal; }`}
       </style>
       <div className="min-h-screen bg-gray-50 text-gray-900 alan-sans">
+        {/* Back to Home Button */}
+        <div className="w-full flex justify-start items-center pt-4 pb-2 px-2 sm:px-4">
+          <button
+            onClick={() => navigate('/')}
+            className="bg-teal-700 hover:bg-teal-800 text-white font-bold py-2 px-5 sm:py-2 sm:px-6 rounded-full shadow-lg transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 text-sm sm:text-base"
+            style={{maxWidth: '180px'}}
+          >
+            ← Back to Home
+          </button>
+        </div>
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
             <div className="space-y-3">
