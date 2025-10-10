@@ -6,6 +6,43 @@ import {
 import { supabase } from '../lib/supabaseClient';
 
 const FRAAtlas_user = ({ userData }) => {
+  // Helper: Export map as image
+  const handleExportMap = async () => {
+    try {
+      const mapContainer = document.getElementById('fraAtlasMap');
+      if (!mapContainer) throw new Error('Map container not found');
+      // Use html2canvas to export map, optimize for speed
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(mapContainer, {
+        useCORS: false, // disables cross-origin checks for speed
+        backgroundColor: null,
+        logging: false, // disables logging
+        removeContainer: true, // removes temp container immediately
+        scale: 1, // disables high-DPI scaling for speed
+        imageTimeout: 0 // disables image loading timeout
+      });
+      const link = document.createElement('a');
+      link.download = 'fra-atlas-map.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      alert('Failed to export map: ' + err.message);
+    }
+  };
+
+  // Helper: Share map center location
+  const handleShareLocation = () => {
+    try {
+      const map = window.fraAtlasMapInstance;
+      if (!map) throw new Error('Map not initialized');
+      const center = map.getCenter();
+      const coords = `${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`;
+      navigator.clipboard.writeText(coords);
+      alert(`Map center coordinates copied: ${coords}`);
+    } catch (err) {
+      alert('Failed to share location: ' + err.message);
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [pattas, setPattas] = useState([]);
@@ -323,11 +360,17 @@ const FRAAtlas_user = ({ userData }) => {
               <p className="text-gray-600 text-base sm:text-lg max-w-2xl leading-relaxed">Interactive map visualization of your forest rights and surrounding areas with satellite imagery</p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-              <button className="group flex items-center justify-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+              <button
+                onClick={handleExportMap}
+                className="group flex items-center justify-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+              >
                 <Download className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
                 <span className="text-sm sm:text-base">Export Map</span>
               </button>
-              <button className="group flex items-center justify-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+              <button
+                onClick={handleShareLocation}
+                className="group flex items-center justify-center space-x-2 px-6 py-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+              >
                 <Share2 className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
                 <span className="text-sm sm:text-base">Share Location</span>
               </button>
