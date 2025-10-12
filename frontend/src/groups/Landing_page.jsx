@@ -13,7 +13,7 @@ import WorkflowUser from "./workflow_user";
 import Navbar from '../components/Navbar';
 import FRADocumentation from '../pages/FRA Documentation';
 import FRAAtlas_user from '../pages/Services_fra_atlas';
-import VillageDirectory from '../pages/VillageDirectory';
+import VillageDirectory from '../pages/villagedirectory';
 
 function LandingPage() {
   return (
