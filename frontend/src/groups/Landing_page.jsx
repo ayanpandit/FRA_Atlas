@@ -13,6 +13,7 @@ import WorkflowUser from "./workflow_user";
 import Navbar from '../components/Navbar';
 import FRADocumentation from '../pages/FRA Documentation';
 import FRAAtlas_user from '../pages/Services_fra_atlas';
+import VillageDirectory from '../pages/VillageDirectory';
 
 function LandingPage() {
   return (
@@ -33,7 +34,8 @@ function LandingPage() {
         <Route path="/workflow_user/*" element={<WorkflowUser />} />
         <Route path="/patta_management" element={<WorkflowAdmin />} />
         <Route path="/fra_documentation" element={<FRADocumentation />} />
-        <Route path="/Services_fra_atlas" element={<FRAAtlas_user />} />
+  <Route path="/Services_fra_atlas" element={<FRAAtlas_user />} />
+  <Route path="/VillageDirectory" element={<VillageDirectory />} />
         <Route path="/" element={
           <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 alan-sans">
             <Navbar />
