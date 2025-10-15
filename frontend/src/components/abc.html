@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Village Directory (India)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    select {
+      padding: 6px;
+      margin: 5px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h2>🇮🇳 Village Directory (India)</h2>
+
+  <label for="state">Select State:</label>
+  <select id="state">
+    <option value="">--Select State--</option>
+  </select>
+
+  <label for="district">Select District:</label>
+  <select id="district">
+    <option value="">--Select District--</option>
+  </select>
+
+  <h3>Villages / Localities:</h3>
+  <div id="villages">Select a district to load data...</div>
+
+  <script>
+    const DATA_GOV_API =
+      "https://api.data.gov.in/resource/9115b89c-7a80-4f54-9b06-21086e0f0bd7";
+    const DATA_GOV_API_KEY =
+      "579b464db66ec23bdd000001395dfa92eecb4086649ea1a2a1e573f1";
+
+    const stateSelect = document.getElementById("state");
+    const districtSelect = document.getElementById("district");
+    const villagesDiv = document.getElementById("villages");
+
+    // ✅ Static list of all states (no API needed)
+    const indianStates = [
+      "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
+      "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
+      "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram",
+      "Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu",
+      "Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
+      "Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu",
+      "Delhi","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"
+    ];
+
+    // ✅ District data (sample minimal map; you can expand as needed)
+    const districtsByState = {
+      "Uttar Pradesh": [
+        "Lucknow", "Varanasi", "Kanpur Nagar", "Agra", "Prayagraj",
+        "Gorakhpur", "Meerut", "Bareilly", "Jhansi", "Ayodhya"
+      ],
+      "Maharashtra": [
+        "Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad", "Thane"
+      ],
+      "Tamil Nadu": [
+        "Chennai", "Madurai", "Coimbatore", "Salem", "Tiruchirappalli"
+      ],
+      "Delhi": ["Central Delhi", "East Delhi", "North Delhi", "South Delhi", "West Delhi"]
+    };
+
+    // ✅ Load States (from static array)
+    function loadStates() {
+      indianStates.forEach((state) => {
+        const opt = document.createElement("option");
+        opt.value = state;
+        opt.textContent = state;
+        stateSelect.appendChild(opt);
+      });
+    }
+
+    // ✅ Load Districts (from local data)
+    function loadDistricts(stateName) {
+      districtSelect.innerHTML = '<option value="">--Select District--</option>';
+      villagesDiv.innerHTML = "Select a district to load data...";
+      if (!stateName) return;
+
+      const districts = districtsByState[stateName] || [];
+      if (districts.length === 0) {
+        districtSelect.innerHTML =
+          '<option value="">(District list not available)</option>';
+        return;
+      }
+
+      districts.forEach((d) => {
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        districtSelect.appendChild(opt);
+      });
+    }
+
+    // ✅ Fetch villages/localities from India Post API (Data.gov.in)
+    async function loadVillages(stateName, districtName) {
+      villagesDiv.innerHTML = "⏳ Loading real data...";
+      try {
+        const url = `${DATA_GOV_API}?api-key=${DATA_GOV_API_KEY}&format=json&filters[circlename]=${encodeURIComponent(
+          stateName
+        )}&filters[divisionname]=${encodeURIComponent(
+          districtName
+        )}&limit=200`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.records || data.records.length === 0) {
+          villagesDiv.innerHTML = "⚠️ No data found for this district.";
+          return;
+        }
+
+        let html =
+          "<table><tr><th>Office Name (Village)</th><th>Division</th><th>Region</th><th>Pincode</th></tr>";
+        data.records.forEach((v) => {
+          html += `<tr>
+            <td>${v.officename || "-"}</td>
+            <td>${v.divisionname || "-"}</td>
+            <td>${v.regionname || "-"}</td>
+            <td>${v.pincode || "-"}</td>
+          </tr>`;
+        });
+        html += "</table>";
+        villagesDiv.innerHTML = html;
+      } catch (e) {
+        villagesDiv.innerHTML = "❌ Error loading village data: " + e;
+      }
+    }
+
+    // ✅ Handle dropdown changes
+    stateSelect.addEventListener("change", () => {
+      const state = stateSelect.value;
+      loadDistricts(state);
+    });
+
+    districtSelect.addEventListener("change", () => {
+      const district = districtSelect.value;
+      const state = stateSelect.value;
+      if (district && state) loadVillages(state, district);
+    });
+
+    // Initialize
+    loadStates();
+  </script>
+</body>
+</html>

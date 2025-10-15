@@ -63,8 +63,7 @@ const Navbar = () => {
             isDropdown: true,
             subItems: [
                 { name: 'FRA ATLAS', route: '/Services_fra_atlas' },
-                { name: 'Village Directory', route: '/VillageDirectory' },
-                { name: 'CodeForces' }
+                { name: 'Village Directory', route: '/VillageDirectory' }
             ]
         },
         { name: 'About', icon: User },
