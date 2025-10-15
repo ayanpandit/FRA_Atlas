@@ -62,8 +62,8 @@ const Navbar = () => {
             icon: Briefcase, 
             isDropdown: true,
             subItems: [
-                { name: 'FRA ATLAS', route: '/Services_fra_atlas' },
-                { name: 'Village Directory', route: '/VillageDirectory' }
+                { name: 'FRA ATLAS', route: '/Services_fra_atlas' }
+                //,{ name: 'Village Directory', route: '/VillageDirectory' }
             ]
         },
         { name: 'About', icon: User, scrollTo: 'about-section' },
