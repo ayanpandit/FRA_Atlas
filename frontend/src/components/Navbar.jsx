@@ -56,7 +56,7 @@ const Navbar = () => {
     const isAnalyzerPage = false;
 
     const navItems = [
-        { name: 'Home', icon: Home },
+        { name: 'Home', icon: Home, scrollTo: 'hero-section' },
         { 
             name: 'Services', 
             icon: Briefcase, 
@@ -66,8 +66,8 @@ const Navbar = () => {
                 { name: 'Village Directory', route: '/VillageDirectory' }
             ]
         },
-        { name: 'About', icon: User },
-        { name: 'Contact', icon: Phone }
+        { name: 'About', icon: User, scrollTo: 'about-section' },
+        { name: 'Contact', icon: Phone, scrollTo: 'footer-section' }
     ];
 
     return (
@@ -102,7 +102,16 @@ const Navbar = () => {
                             {navItems.map((item) => (
                                 <div key={item.name} className="dropdown-container relative">
                                     <button 
-                                        onClick={() => item.isDropdown ? setOpenDropdown(openDropdown === item.name ? '' : item.name) : null}
+                                        onClick={() => {
+                                            if (item.isDropdown) {
+                                                setOpenDropdown(openDropdown === item.name ? '' : item.name);
+                                            } else if (item.scrollTo) {
+                                                const el = document.getElementById(item.scrollTo);
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: 'smooth' });
+                                                }
+                                            }
+                                        }}
                                         className="text-white hover:text-purple-400 transition-colors duration-200 flex items-center space-x-1 group">
                                         <item.icon className="w-4 h-4 transform hover:scale-110 transition-transform duration-200" style={{filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4)) brightness(1.1)'}} />
                                         <span className="text-sm lg:text-base">{item.name}</span>
