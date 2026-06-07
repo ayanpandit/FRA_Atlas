@@ -98,6 +98,8 @@ const parseCoordinateValue = (raw) => {
         // ignore and try fallback parsing
       }
     }
+    
+
 
     const bracketCleaned = trimmed.replace(/^\[|\]$/g, '');
     const splitTokens = bracketCleaned.split(/[,;|\s]+/).filter(Boolean);
